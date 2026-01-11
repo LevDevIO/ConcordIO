@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <OpenApiReference Include="@(ConcordIOContract)" Condition="'%(ConcordIOContract.PackageId)' == '{{ contract_package_id }}' And '%(ConcordIOContract.Version)' == '{{ contract_version }}' And '%(ConcordIOContract.Kind)' == 'openapi' ">
+            <CodeGenerator>NSwagCSharp</CodeGenerator>
+            <ClassName>{{ nswag_client_class_name }}</ClassName>
+            <OutputPath>{{ nswag_output_path }}.cs</OutputPath>
+            <NSwagGenerateExceptionClasses>{{ nswag_generate_exception_classes }}</NSwagGenerateExceptionClasses>
+{{~ for option in nswag_options ~}}
+            <{{ option.key }}>{{ option.value }}</{{ option.key }}>
+{{~ end ~}}
+        </OpenApiReference>
+</ItemGroup>
+</Project>

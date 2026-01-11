@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>{{ package_id }}</id>
+    <version>{{ version }}</version>
+    <authors>{{ authors }}</authors>
+    <description>{{ description }}</description>
+{{~ for package_property in package_properties ~}}
+    <{{ package_property.key }}>{{ package_property.value }}</{{ package_property.key }}>
+{{~ end ~}}
+    <contentFiles>
+      <files include="any/any/{{ spec_file }}" buildAction="None" copyToOutput="false" />
+    </contentFiles>
+  </metadata>
+  <files>
+    <file src="{{ spec_file }}" target="contentFiles/any/any/{{ spec_file }}" />
+    <file src="{{ spec_file }}" target="{{ contract_kind }}/{{ spec_file }}" />
+    <file src="build/{{ package_id }}.targets" target="build/{{ package_id }}.targets" />
+  </files>
+</package>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+    <metadata>
+        <id>{{ client_package_id }}</id>
+        <version>{{ version }}</version>
+        <authors>{{ authors }}</authors>
+        <description>{{ description }}</description>
+{{~ for package_property in package_properties ~}}
+        <{{ package_property.key }}>{{ package_property.value }}</{{ package_property.key }}>
+{{~ end ~}}
+        <dependencies>
+            <dependency id="{{ contract_package_id }}" version="{{ contract_version }}" />
+            <dependency id="NSwag.ApiDescription.Client" version="14.*" include="build,contentFiles" exclude="compile,runtime"/>
+            <dependency id="Newtonsoft.Json" version="13.*" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="build/{{ client_package_id }}.targets" target="build/{{ client_package_id }}.targets" />
+    </files>
+</package>
