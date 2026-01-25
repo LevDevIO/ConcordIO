@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Acme.PetStore.Contracts</id>
+    <version>2.1.0</version>
+    <authors>Acme Corporation</authors>
+    <description>OpenAPI specification for the Pet Store API</description>
+    <projectUrl>https://github.com/acme/petstore</projectUrl>
+    <repositoryUrl>https://github.com/acme/petstore.git</repositoryUrl>
+    <contentFiles>
+      <files include="any/any/petstore.yaml" buildAction="None" copyToOutput="false" />
+    </contentFiles>
+  </metadata>
+  <files>
+    <file src="petstore.yaml" target="contentFiles/any/any/petstore.yaml" />
+    <file src="petstore.yaml" target="openapi/petstore.yaml" />
+    <file src="build/Acme.PetStore.Contracts.targets" target="build/Acme.PetStore.Contracts.targets" />
+  </files>
+</package>

@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <OpenApiReference Include="@(ConcordIOContract)" Condition="'%(ConcordIOContract.PackageId)' == 'Acme.PetStore.Contracts' And '%(ConcordIOContract.Version)' == '2.1.0' And '%(ConcordIOContract.Kind)' == 'openapi' ">
+            <CodeGenerator>NSwagCSharp</CodeGenerator>
+            <ClassName>PetStoreClient</ClassName>
+            <OutputPath>PetStoreClient.cs</OutputPath>
+            <NSwagGenerateExceptionClasses></NSwagGenerateExceptionClasses>
+            <NSwagJsonLibrary>SystemTextJson</NSwagJsonLibrary>
+            <NSwagJsonPolymorphicSerializationStyle>SystemTextJson</NSwagJsonPolymorphicSerializationStyle>
+            <NSwagGenerateExceptionClasses>true</NSwagGenerateExceptionClasses>
+            <NSwagInjectHttpClient>true</NSwagInjectHttpClient>
+        </OpenApiReference>
+</ItemGroup>
+</Project>

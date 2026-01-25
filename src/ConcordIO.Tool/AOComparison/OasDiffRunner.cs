@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using ConcordIO.Tool.Services;
 
 namespace ConcordIO.Tool.AOComparison;
 
 /// <summary>
 /// Wrapper for running oasdiff commands to compare OpenAPI specifications.
 /// </summary>
-public class OasDiffRunner
+public class OasDiffRunner : IOasDiffRunner
 {
     private readonly string _oasdiffPath;
 

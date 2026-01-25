@@ -1,0 +1,76 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"${workspaceFolder}/src/ConcordIO.Tool.sln"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "test",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"test",
+				"${workspaceFolder}/src/ConcordIO.Tool.sln"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "watch",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"watch",
+				"build",
+				"--project",
+				"${workspaceFolder}/src/ConcordIO.Tool/ConcordIO.Tool.csproj"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "clean",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"clean",
+				"${workspaceFolder}/src/ConcordIO.Tool.sln"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "publish",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"publish",
+				"${workspaceFolder}/src/ConcordIO.Tool/ConcordIO.Tool.csproj",
+				"-c",
+				"Release"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			]
+		}
+	]
+}

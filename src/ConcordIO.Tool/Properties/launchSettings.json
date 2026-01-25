@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "ConcordIO.Tool breaking change test": {
+      "commandName": "Project",
+      "commandLineArgs": " b --package-id Server.OpenApi  --spec server.json",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}

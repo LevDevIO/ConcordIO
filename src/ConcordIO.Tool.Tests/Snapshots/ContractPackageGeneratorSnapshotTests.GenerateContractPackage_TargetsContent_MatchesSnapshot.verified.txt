@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <ConcordIOContract Include="$(MSBuildThisFileDirectory)..\openapi\petstore.yaml">
+            <PackageId>Acme.PetStore.Contracts</PackageId>
+            <Kind>openapi</Kind>
+            <Version>2.1.0</Version>
+        </ConcordIOContract>
+    </ItemGroup>
+</Project>
