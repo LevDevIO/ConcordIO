@@ -1,34 +1,63 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    
-    <!-- dotnet tool settings -->
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>concordio</ToolCommandName>
-    <PackageId>ConcordIO.Tool</PackageId>
-    <Version>0.1.0</Version>
-    <Authors>LevDev</Authors>
-    <Description>CLI tool for generating OpenAPI and Protobuf contract packages</Description>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/LevDevIO/ConcordIO</RepositoryUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
 
-  <ItemGroup>
-    <PackageReference Include="DotMake.CommandLine" Version="3.1.0" />
-    <PackageReference Include="Scriban" Version="6.5.2" />
-  </ItemGroup>
+		<!-- dotnet tool settings -->
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>concordio</ToolCommandName>
+		<PackageId>ConcordIO.Tool</PackageId>
+		<Version>0.1.0</Version>
+		<Authors>LevDev</Authors>
+		<Description>CLI tool for generating OpenAPI and Protobuf contract packages</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/LevDevIO/ConcordIO</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Templates\**\*" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="DotMake.CommandLine" Version="3.1.0" />
+		<PackageReference Include="Scriban" Version="6.5.2" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="Templates\**\*" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<!-- oasdiff binaries for OpenAPI comparison -->
+	<ItemGroup>
+		<Content Include="AOComparison\oasdiff_bin\oasdiff_1.11.8_windows_amd64\oasdiff.exe">
+			<Link>oasdiff\win-x64\oasdiff.exe</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+		<Content Include="AOComparison\oasdiff_bin\oasdiff_1.11.8_windows_arm64\oasdiff.exe">
+			<Link>oasdiff\win-arm64\oasdiff.exe</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+		<Content Include="AOComparison\oasdiff_bin\oasdiff_1.11.8_linux_amd64\oasdiff">
+			<Link>oasdiff\linux-x64\oasdiff</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+		<Content Include="AOComparison\oasdiff_bin\oasdiff_1.11.8_linux_arm64\oasdiff">
+			<Link>oasdiff\linux-arm64\oasdiff</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+		<Content Include="AOComparison\oasdiff_bin\oasdiff_1.11.8_darwin_all\oasdiff">
+			<Link>oasdiff\osx\oasdiff</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+	</ItemGroup>
 
 </Project>
