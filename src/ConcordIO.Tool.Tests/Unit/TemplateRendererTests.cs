@@ -110,7 +110,6 @@ public class TemplateRendererTests
             ["contract_version"] = "1.0.0",
             ["nswag_client_class_name"] = "TestClient",
             ["nswag_output_path"] = "TestClient",
-            ["nswag_generate_exception_classes"] = "true",
             ["nswag_options"] = nswagOptions
         };
 
@@ -122,5 +121,6 @@ public class TemplateRendererTests
         result.Should().Contain("<ClassName>TestClient</ClassName>");
         result.Should().Contain("<OutputPath>TestClient.cs</OutputPath>");
         result.Should().Contain("<NSwagJsonLibrary>SystemTextJson</NSwagJsonLibrary>");
+        result.Should().Contain("<NSwagGenerateExceptionClasses>true</NSwagGenerateExceptionClasses>");
     }
 }

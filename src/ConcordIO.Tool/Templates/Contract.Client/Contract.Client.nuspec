@@ -5,13 +5,13 @@
         <version>{{ version }}</version>
         <authors>{{ authors }}</authors>
         <description>{{ description }}</description>
+        <developmentDependency>true</developmentDependency>
 {{~ for package_property in package_properties ~}}
         <{{ package_property.key }}>{{ package_property.value }}</{{ package_property.key }}>
 {{~ end ~}}
         <dependencies>
             <dependency id="{{ contract_package_id }}" version="{{ contract_version }}" />
             <dependency id="NSwag.ApiDescription.Client" version="14.*" include="build,contentFiles" exclude="compile,runtime"/>
-            <dependency id="Newtonsoft.Json" version="13.*" />
         </dependencies>
     </metadata>
     <files>
