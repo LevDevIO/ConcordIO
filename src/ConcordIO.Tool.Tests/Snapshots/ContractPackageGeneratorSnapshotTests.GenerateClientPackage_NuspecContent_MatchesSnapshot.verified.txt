@@ -5,11 +5,11 @@
         <version>2.1.0</version>
         <authors>Acme Corporation</authors>
         <description>Generated client for Pet Store API</description>
+        <developmentDependency>true</developmentDependency>
         <projectUrl>https://github.com/acme/petstore</projectUrl>
         <dependencies>
             <dependency id="Acme.PetStore.Contracts" version="2.1.0" />
             <dependency id="NSwag.ApiDescription.Client" version="14.*" include="build,contentFiles" exclude="compile,runtime"/>
-            <dependency id="Newtonsoft.Json" version="13.*" />
         </dependencies>
     </metadata>
     <files>
