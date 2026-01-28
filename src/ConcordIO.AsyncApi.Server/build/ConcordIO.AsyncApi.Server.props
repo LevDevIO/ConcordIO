@@ -1,0 +1,33 @@
+<!-- ConcordIO.AsyncApi.Server.props - Default properties -->
+<Project>
+
+  <PropertyGroup>
+    <!-- 
+      NOTE: Do NOT set defaults for ConcordIOAsyncApiOutputPath or ConcordIOAsyncApiDocumentTitle here.
+      These depend on $(IntermediateOutputPath) and $(AssemblyName) which are not available at props evaluation time.
+      Defaults are computed at target execution time in ConcordIO.AsyncApi.Server.targets.
+    -->
+
+    <!-- Document version: use package Version, fall back to 1.0.0 -->
+    <ConcordIOAsyncApiDocumentVersion Condition="'$(ConcordIOAsyncApiDocumentVersion)' == ''">$(Version)</ConcordIOAsyncApiDocumentVersion>
+    <ConcordIOAsyncApiDocumentVersion Condition="'$(ConcordIOAsyncApiDocumentVersion)' == ''">1.0.0</ConcordIOAsyncApiDocumentVersion>
+
+    <!-- Output format: yaml or json -->
+    <ConcordIOAsyncApiOutputFormat Condition="'$(ConcordIOAsyncApiOutputFormat)' == ''">yaml</ConcordIOAsyncApiOutputFormat>
+
+    <!-- Whether to include the AsyncAPI spec in the NuGet package -->
+    <ConcordIOIncludeAsyncApiInPackage Condition="'$(ConcordIOIncludeAsyncApiInPackage)' == ''">true</ConcordIOIncludeAsyncApiInPackage>
+
+    <!--
+      Namespace patterns for message type discovery.
+      Use semicolon-separated patterns. Supports:
+      - Namespace.* (exact namespace match)
+      - Namespace.** (namespace and all sub-namespaces)
+
+      Example:
+      <ConcordIOEventTypes>MyApp.Events.*;MyApp.Domain.Events.**</ConcordIOEventTypes>
+      <ConcordIOCommandTypes>MyApp.Commands.*</ConcordIOCommandTypes>
+    -->
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,116 @@
+<!-- ConcordIO.AsyncApi.Server.targets - Build integration -->
+<Project>
+
+  <PropertyGroup>
+    <_ConcordIOToolsDir>$(MSBuildThisFileDirectory)..\tools\net10.0\</_ConcordIOToolsDir>
+    <_ConcordIOTaskAssembly>$(_ConcordIOToolsDir)ConcordIO.AsyncApi.Server.dll</_ConcordIOTaskAssembly>
+  </PropertyGroup>
+
+  <!-- Register the MSBuild task -->
+  <UsingTask TaskName="ConcordIO.AsyncApi.Server.Tasks.GenerateAsyncApiTask" 
+             AssemblyFile="$(_ConcordIOTaskAssembly)" />
+
+  <!-- Generate AsyncAPI spec after build -->
+  <Target Name="ConcordIOGenerateAsyncApi"
+          AfterTargets="Build"
+          Condition="'$(ConcordIOEventTypes)' != '' Or '$(ConcordIOCommandTypes)' != ''">
+
+    <!-- Convert semicolon-separated properties to ItemGroup with Kind metadata -->
+    <ItemGroup>
+      <_ConcordIOAllMessageTypes Include="$(ConcordIOEventTypes.Split(';'))">
+        <Kind>Event</Kind>
+      </_ConcordIOAllMessageTypes>
+      <_ConcordIOAllMessageTypes Include="$(ConcordIOCommandTypes.Split(';'))">
+        <Kind>Command</Kind>
+      </_ConcordIOAllMessageTypes>
+      <!-- Remove empty items that might result from empty properties -->
+      <_ConcordIOAllMessageTypes Remove="@(_ConcordIOAllMessageTypes)" Condition="'%(Identity)' == ''" />
+    </ItemGroup>
+
+    <!-- Compute output file path at target time when all properties are available -->
+    <PropertyGroup>
+      <_ConcordIOOutputExtension Condition="'$(ConcordIOAsyncApiOutputFormat)' == 'json'">.json</_ConcordIOOutputExtension>
+      <_ConcordIOOutputExtension Condition="'$(ConcordIOAsyncApiOutputFormat)' != 'json'">.yaml</_ConcordIOOutputExtension>
+      <!-- Use AssemblyName as fallback if DocumentTitle is not set -->
+      <_ConcordIODocumentTitle>$(ConcordIOAsyncApiDocumentTitle)</_ConcordIODocumentTitle>
+      <_ConcordIODocumentTitle Condition="'$(_ConcordIODocumentTitle)' == ''">$(AssemblyName)</_ConcordIODocumentTitle>
+      <!-- Compute output path at target time - IntermediateOutputPath is now available -->
+      <_ConcordIOOutputDir>$(ConcordIOAsyncApiOutputPath)</_ConcordIOOutputDir>
+      <_ConcordIOOutputDir Condition="'$(_ConcordIOOutputDir)' == '' Or !$(_ConcordIOOutputDir.Contains('obj'))">$(IntermediateOutputPath)asyncapi\</_ConcordIOOutputDir>
+      <_ConcordIOOutputFile>$(_ConcordIOOutputDir)$(_ConcordIODocumentTitle)$(_ConcordIOOutputExtension)</_ConcordIOOutputFile>
+    </PropertyGroup>
+
+    <Message Text="ConcordIO: Generating AsyncAPI specification..." Importance="high" />
+    <Message Text="ConcordIO:   Assembly: $(TargetPath)" Importance="normal" />
+    <Message Text="ConcordIO:   Output: $(_ConcordIOOutputFile)" Importance="normal" />
+    <Message Text="ConcordIO:   Message types: @(_ConcordIOAllMessageTypes)" Importance="normal" />
+
+    <!-- Run the generation task -->
+    <GenerateAsyncApiTask
+        AssemblyPath="$(TargetPath)"
+        MessageTypePatterns="@(_ConcordIOAllMessageTypes)"
+        DocumentTitle="$(_ConcordIODocumentTitle)"
+        DocumentVersion="$(ConcordIOAsyncApiDocumentVersion)"
+        OutputPath="$(_ConcordIOOutputFile)"
+        OutputFormat="$(ConcordIOAsyncApiOutputFormat)">
+      <Output TaskParameter="GeneratedFile" PropertyName="_ConcordIOGeneratedFile" />
+    </GenerateAsyncApiTask>
+
+    <Message Text="ConcordIO: Generated $(_ConcordIOGeneratedFile)" Importance="high" />
+
+    <!-- Track the generated file -->
+    <ItemGroup>
+      <FileWrites Include="$(_ConcordIOGeneratedFile)" />
+      <ConcordIOGeneratedAsyncApi Include="$(_ConcordIOGeneratedFile)" />
+    </ItemGroup>
+
+  </Target>
+
+  <!-- Include AsyncAPI spec in NuGet package -->
+  <Target Name="ConcordIOIncludeAsyncApiInPackage"
+          BeforeTargets="GenerateNuspec"
+          DependsOnTargets="ConcordIOGenerateAsyncApi"
+          Condition="'$(ConcordIOIncludeAsyncApiInPackage)' == 'true' And '@(ConcordIOGeneratedAsyncApi)' != ''">
+
+    <ItemGroup>
+      <None Include="@(ConcordIOGeneratedAsyncApi)" Pack="true" PackagePath="asyncapi" />
+    </ItemGroup>
+
+    <!-- Also include targets file for consumers -->
+    <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)\ConcordIO.Contracts.targets')">
+      <None Include="$(MSBuildProjectDirectory)\ConcordIO.Contracts.targets" Pack="true" PackagePath="build\$(PackageId).targets" />
+    </ItemGroup>
+
+  </Target>
+
+  <!-- Auto-generate consumer targets file -->
+  <Target Name="ConcordIOGenerateContractTargets"
+          AfterTargets="ConcordIOGenerateAsyncApi"
+          Condition="'$(ConcordIOIncludeAsyncApiInPackage)' == 'true'">
+
+    <PropertyGroup>
+      <_ConcordIOContractTargetsPath>$(IntermediateOutputPath)$(PackageId).targets</_ConcordIOContractTargetsPath>
+      <_ConcordIOContractTargetsContent><![CDATA[<Project>
+  <ItemGroup>
+    <ConcordIOAsyncApiContract Include="$(MSBuildThisFileDirectory)..\asyncapi\$(ConcordIOAsyncApiDocumentTitle)$(_ConcordIOOutputExtension)">
+      <PackageId>$(PackageId)</PackageId>
+      <Version>$(ConcordIOAsyncApiDocumentVersion)</Version>
+    </ConcordIOAsyncApiContract>
+  </ItemGroup>
+</Project>
+]]></_ConcordIOContractTargetsContent>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+        File="$(_ConcordIOContractTargetsPath)"
+        Lines="$(_ConcordIOContractTargetsContent)"
+        Overwrite="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(_ConcordIOContractTargetsPath)" />
+      <None Include="$(_ConcordIOContractTargetsPath)" Pack="true" PackagePath="build\$(PackageId).targets" />
+    </ItemGroup>
+
+  </Target>
+
+</Project>

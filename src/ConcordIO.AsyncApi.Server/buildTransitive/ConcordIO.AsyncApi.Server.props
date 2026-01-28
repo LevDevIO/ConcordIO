@@ -1,0 +1,5 @@
+<!-- ConcordIO.AsyncApi.Server.props - Transitive defaults -->
+<!-- This file is imported by projects that transitively reference this package -->
+<Project>
+  <Import Project="..\build\ConcordIO.AsyncApi.Server.props" />
+</Project>

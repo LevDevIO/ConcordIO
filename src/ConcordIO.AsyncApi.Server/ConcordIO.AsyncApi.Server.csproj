@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ConcordIO.AsyncApi.Server</RootNamespace>
+    
+    <!-- NuGet Package settings -->
+    <PackageId>ConcordIO.AsyncApi.Server</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>LevDev</Authors>
+    <Description>MSBuild integration for generating AsyncAPI specifications from .NET MassTransit message contracts at build time.</Description>
+    <PackageTags>asyncapi;masstransit;contracts;messaging;codegen</PackageTags>
+    <RepositoryUrl>https://github.com/LevDevIO/ConcordIO</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+    <!-- Build as a tools package -->
+    <IsTool>true</IsTool>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    
+    <!-- Build output goes to tools folder -->
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConcordIO.AsyncApi\ConcordIO.AsyncApi.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" PrivateAssets="all" ExcludeAssets="Runtime" />
+  </ItemGroup>
+
+  <!-- Include props and targets files in the package -->
+  <ItemGroup>
+    <None Include="build\**\*" Pack="true" PackagePath="build" />
+    <None Include="buildTransitive\**\*" Pack="true" PackagePath="buildTransitive" />
+  </ItemGroup>
+
+  <!-- Include tools in the package -->
+  <ItemGroup>
+    <None Include="$(OutputPath)\**\*" Pack="true" PackagePath="tools\$(TargetFramework)" />
+  </ItemGroup>
+
+</Project>
