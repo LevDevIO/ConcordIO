@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <!-- Common NuGet Package settings for MSBuild tool packages -->
+    <IsTool>true</IsTool>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Build output goes to tools folder -->
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <!-- Include props and targets files in the package -->
+  <ItemGroup>
+    <None Include="build\**\*" Pack="true" PackagePath="build" />
+    <None Include="buildTransitive\**\*" Pack="true" PackagePath="buildTransitive" />
+  </ItemGroup>
+
+  <!-- Include tools in the package -->
+  <ItemGroup>
+    <None Include="$(OutputPath)\**\*" Pack="true" PackagePath="tools\$(TargetFramework)" />
+  </ItemGroup>
+</Project>
