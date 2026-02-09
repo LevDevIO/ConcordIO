@@ -36,6 +36,8 @@ public partial class RootCommand
 
         public async Task<int> RunAsync()
         {
+            var oasDiffRunner = new OasDiffRunner();
+
             var createTempDir = WorkingDirectory == null;
             var workingDirectory = WorkingDirectory ?? Path.Combine(Path.GetTempPath(), "ConcordIO", Path.GetRandomFileName().Replace(".", ""));
 
@@ -47,7 +49,9 @@ public partial class RootCommand
             try
             {
                 var nugetSpecPath = Path.Combine(workingDirectory, $"spec_in_nuget{Path.GetExtension(Spec)}");
-                var getSpecCommand = new GetSpecCommand
+                
+                // Create a new GetSpecCommand instance with required properties
+                var getSpecCommand = new GetSpecCommand(new NuGetService())
                 {
                     PackageId = PackageId,
                     Version = Version,
@@ -64,8 +68,8 @@ public partial class RootCommand
                     return getSpecResult;
                 }
 
-                var oasdiffRunner = new OasDiffRunner();
-                var result = await oasdiffRunner.Breaking(Spec, nugetSpecPath, "-o WARN" + BuildCliOptionsString());
+                var cliOptionsString = BuildCliOptionsString();
+                var result = await oasDiffRunner.Breaking(Spec, nugetSpecPath, "-o WARN" + (string.IsNullOrEmpty(cliOptionsString) ? "" : " " + cliOptionsString));
 
                 Console.WriteLine(result.Output);
                 Console.Error.WriteLine(result.Error);
@@ -104,17 +108,11 @@ public partial class RootCommand
                 return string.Empty;
             }
 
+            var parsedPairs = StringHelpers.ParseKeyValuePairs(CliOptions);
             var sb = new StringBuilder();
-            foreach (var option in CliOptions)
+            foreach (var kvp in parsedPairs)
             {
-                var parts = option.Split('=', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-                if (parts.Length != 2)
-                    throw new ArgumentException($"Invalid key=value format: '{option}'");
-
-                var key = parts[0];
-                var value = parts[1];
-                sb.Append($" --{key} {value}");
+                sb.Append($" --{kvp.Key} {kvp.Value}");
             }
 
             return sb.ToString().TrimStart();
