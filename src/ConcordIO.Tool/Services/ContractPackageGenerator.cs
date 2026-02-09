@@ -120,11 +120,10 @@ public class ContractPackageGenerator
 }
 
 /// <summary>
-/// Options for generating a contract package.
+/// Base class for package generation options.
 /// </summary>
-public class ContractPackageOptions
+public abstract class PackageOptionsBase
 {
-    public required string PackageId { get; init; }
     public required string Version { get; init; }
     public required string Authors { get; init; }
     public required string Description { get; init; }
@@ -134,23 +133,25 @@ public class ContractPackageOptions
 }
 
 /// <summary>
+/// Options for generating a contract package.
+/// </summary>
+public class ContractPackageOptions : PackageOptionsBase
+{
+    public required string PackageId { get; init; }
+}
+
+/// <summary>
 /// Options for generating a client package.
 /// </summary>
-public class ClientPackageOptions
+public class ClientPackageOptions : PackageOptionsBase
 {
     public required string ClientPackageId { get; init; }
     public required string ContractPackageId { get; init; }
     public required string ContractVersion { get; init; }
-    public required string Version { get; init; }
-    public required string Authors { get; init; }
-    public required string Description { get; init; }
-    public required string OutputDirectory { get; init; }
     public required string NSwagClientClassName { get; init; }
     public required string NSwagOutputPath { get; init; }
-    public KeyValuePair<string, string>[] PackageProperties { get; init; } = [];
     public List<KeyValuePair<string, string>> NSwagOptions { get; init; } = [];
     public List<KeyValuePair<string, string>> ClientOptions { get; init; } = [];
-    public required Dictionary<string, List<string>> SpecsByKind { get; init; }
 }
 
 /// <summary>
