@@ -50,7 +50,7 @@ public partial class RootCommand
         /// </summary>
         private record SpecEntry(string FileName, string Kind);
 
-        private static readonly string[] ValidKinds = ["openapi", "proto", "asyncapi"];
+        private static readonly string[] ValidKinds = SpecKind.All;
 
         public async Task<int> RunAsync()
         {
@@ -112,7 +112,7 @@ public partial class RootCommand
                 }
 
                 // No valid kind suffix, default to openapi
-                entries.Add(new SpecEntry(Path.GetFileName(spec), "openapi"));
+                entries.Add(new SpecEntry(Path.GetFileName(spec), SpecKind.OpenApi));
             }
 
             return entries;
@@ -140,8 +140,8 @@ public partial class RootCommand
         private async Task GenerateClientPackageAsync(Dictionary<string, List<string>> specsByKind, string description)
         {
             var clientPackageId = ClientPackageId ?? $"{PackageId}.Client";
-            var hasOpenApi = specsByKind.ContainsKey("openapi");
-            var hasAsyncApi = specsByKind.ContainsKey("asyncapi");
+            var hasOpenApi = specsByKind.ContainsKey(SpecKind.OpenApi);
+            var hasAsyncApi = specsByKind.ContainsKey(SpecKind.AsyncApi);
 
             var clientClass = ClientClassName ?? $"{SanitizeClassName(PackageId)}Client";
             var normalizedNswagOptions = GetNormalizedNswagOptions(hasOpenApi);

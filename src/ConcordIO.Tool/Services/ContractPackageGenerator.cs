@@ -86,18 +86,18 @@ public class ContractPackageGenerator
             ["description"] = options.Description,
             ["package_properties"] = options.PackageProperties,
             ["specs_by_kind"] = specsByKind,
-            ["has_openapi"] = specsByKind.ContainsKey("openapi"),
-            ["has_proto"] = specsByKind.ContainsKey("proto"),
-            ["has_asyncapi"] = specsByKind.ContainsKey("asyncapi")
+            ["has_openapi"] = specsByKind.ContainsKey(SpecKind.OpenApi),
+            ["has_proto"] = specsByKind.ContainsKey(SpecKind.Proto),
+            ["has_asyncapi"] = specsByKind.ContainsKey(SpecKind.AsyncApi)
         };
     }
 
     private static Dictionary<string, object> BuildClientModel(ClientPackageOptions options)
     {
         var specsByKind = options.SpecsByKind;
-        var hasOpenApi = specsByKind.ContainsKey("openapi");
-        var hasProto = specsByKind.ContainsKey("proto");
-        var hasAsyncApi = specsByKind.ContainsKey("asyncapi");
+        var hasOpenApi = specsByKind.ContainsKey(SpecKind.OpenApi);
+        var hasProto = specsByKind.ContainsKey(SpecKind.Proto);
+        var hasAsyncApi = specsByKind.ContainsKey(SpecKind.AsyncApi);
 
         return new Dictionary<string, object>
         {

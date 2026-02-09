@@ -45,6 +45,7 @@ ConcordIO.Tool/
 │   └── GetSpecCommand.cs        # `concordio get-spec` — spec retrieval from NuGet
 │
 ├── Services/                    # Core business logic and abstractions
+│   ├── SpecKind.cs              # Constants for specification kinds (openapi, proto, asyncapi)
 │   ├── ContractPackageGenerator.cs  # Orchestrates template rendering → file output
 │   ├── TemplateRenderer.cs      # Scriban template engine (reads embedded resources)
 │   ├── ITemplateRenderer.cs     # Interface for template rendering
@@ -226,15 +227,18 @@ The codebase defines interfaces for testability:
 
 ### Spec Kind System
 
-The tool supports three specification kinds, identified by string constants:
+The tool supports three specification kinds via the `SpecKind` class (in `Services/SpecKind.cs`):
 
-| Kind | Description | Code generator (client) |
-|------|-------------|------------------------|
-| `openapi` | OpenAPI JSON/YAML specs | NSwag (via `NSwag.ApiDescription.Client`) |
-| `proto` | Protocol Buffer `.proto` files | (not yet implemented for client gen) |
-| `asyncapi` | AsyncAPI YAML/JSON specs | `ConcordIO.AsyncApi.Client` |
+| Constant | Value | Description | Code generator (client) |
+|----------|-------|-------------|------------------------|
+| `SpecKind.OpenApi` | `"openapi"` | OpenAPI JSON/YAML specs | NSwag (via `NSwag.ApiDescription.Client`) |
+| `SpecKind.Proto` | `"proto"` | Protocol Buffer `.proto` files | (not yet implemented for client gen) |
+| `SpecKind.AsyncApi` | `"asyncapi"` | AsyncAPI YAML/JSON specs | `ConcordIO.AsyncApi.Client` |
+| `SpecKind.All` | `["openapi", "proto", "asyncapi"]` | Array of all supported kinds | — |
 
-When using `--spec`, the kind can be specified as a suffix: `--spec myfile.yaml:asyncapi`. Without a suffix, it defaults to `openapi`.
+The `SpecKind` class centralizes these constants, replacing magic string literals throughout the codebase. `GenerateCommand` and `ContractPackageGenerator` use these constants when validating spec kinds and building template models.
+
+When using `--spec`, the kind can be specified as a suffix: `--spec myfile.yaml:asyncapi`. Without a suffix, it defaults to `SpecKind.OpenApi`.
 
 ### NSwag Default Options
 

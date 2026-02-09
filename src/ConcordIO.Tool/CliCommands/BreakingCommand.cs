@@ -1,6 +1,7 @@
 ﻿namespace ConcordIO.Tool.CliCommands;
 
 using ConcordIO.Tool.AOComparison;
+using ConcordIO.Tool.Services;
 using DotMake.CommandLine;
 using System;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ public partial class RootCommand
         public bool Prerelease { get; set; } = false;
 
         [CliOption(Description = "Contract kind: openapi or proto", Required = false)]
-        public string Kind { get; set; } = "openapi";
+        public string Kind { get; set; } = SpecKind.OpenApi;
 
         [CliOption(Description = "Working directory for downloading the package, defaults to a temp directory", Required = false)]
         public string? WorkingDirectory { get; set; }
