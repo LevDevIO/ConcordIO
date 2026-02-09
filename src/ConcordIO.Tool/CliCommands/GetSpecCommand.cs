@@ -10,6 +10,7 @@ public partial class RootCommand
     public class GetSpecCommand
     {
         private INuGetService? _nuGetService;
+        private IConsoleOutput? _console;
 
         [CliOption(Description = "Package ID of the NuGet package to retrieve the specification from", Required = true)]
         public required string PackageId { get; set; }
@@ -36,19 +37,21 @@ public partial class RootCommand
         /// <summary>
         /// Constructor for dependency injection (testing).
         /// </summary>
-        public GetSpecCommand(INuGetService nuGetService)
+        public GetSpecCommand(INuGetService nuGetService, IConsoleOutput? console = null)
         {
             _nuGetService = nuGetService;
+            _console = console;
         }
 
         public async Task<int> RunAsync()
         {
             _nuGetService ??= new NuGetService();
+            _console ??= new ConsoleOutput();
 
             await using var tempDir = new TempDirectoryScope(WorkingDirectory);
             var workingDirectory = tempDir.Path;
 
-            Console.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");
+            _console.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");
             await _nuGetService.DownloadPackageAsync(workingDirectory, PackageId, Version, prerelease: Prerelease);
 
             var packageDir = Directory.EnumerateDirectories(workingDirectory).Single();
@@ -58,7 +61,7 @@ public partial class RootCommand
             {
                 var file = Directory.EnumerateFiles(openApiDir).Single(f => f.EndsWith(".yaml") || f.EndsWith(".yml") || f.EndsWith(".json"));
                 var outputPath = OutputPath ?? Path.Combine(Environment.CurrentDirectory, Path.GetFileName(file));
-                Console.WriteLine($"Copying specification file '{file}' to '{outputPath}'...");
+                _console.WriteLine($"Copying specification file '{file}' to '{outputPath}'...");
                 File.Copy(file, outputPath, overwrite: OverwriteOutput);
                 return 0;
             }

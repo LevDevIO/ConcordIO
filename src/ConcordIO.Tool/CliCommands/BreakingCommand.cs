@@ -13,6 +13,8 @@ public partial class RootCommand
     [CliCommand(Name = "breaking", Description = "Compare OpenAPI/Protobuf specifications to latest version packed in nuget and report breaking changes")]
     public class BreakingCommand
     {
+        private IConsoleOutput? _console;
+
         [CliOption(Description = "Path to the OpenAPI/Protobuf specification file", Required = true)]
         public required string Spec { get; set; }
 
@@ -36,6 +38,7 @@ public partial class RootCommand
 
         public async Task<int> RunAsync()
         {
+            _console ??= new ConsoleOutput();
             var oasDiffRunner = new OasDiffRunner();
 
             await using var tempDir = new TempDirectoryScope(WorkingDirectory);
@@ -44,7 +47,7 @@ public partial class RootCommand
             var nugetSpecPath = Path.Combine(workingDirectory, $"spec_in_nuget{Path.GetExtension(Spec)}");
             
             // Create a new GetSpecCommand instance with required properties
-            var getSpecCommand = new GetSpecCommand(new NuGetService())
+            var getSpecCommand = new GetSpecCommand(new NuGetService(), _console)
             {
                 PackageId = PackageId,
                 Version = Version,
@@ -57,23 +60,23 @@ public partial class RootCommand
             var getSpecResult = await getSpecCommand.RunAsync();
             if (getSpecResult != 0)
             {
-                Console.Error.WriteLine("Error: Failed to retrieve specification from NuGet package.");
+                _console.WriteError("Error: Failed to retrieve specification from NuGet package.");
                 return getSpecResult;
             }
 
             var cliOptionsString = BuildCliOptionsString();
             var result = await oasDiffRunner.Breaking(Spec, nugetSpecPath, "-o WARN" + (string.IsNullOrEmpty(cliOptionsString) ? "" : " " + cliOptionsString));
 
-            Console.WriteLine(result.Output);
-            Console.Error.WriteLine(result.Error);
+            _console.WriteLine(result.Output);
+            _console.WriteError(result.Error);
 
             if (result.Breaking)
             {
-                Console.Error.WriteLine("Breaking changes detected.");
+                _console.WriteError("Breaking changes detected.");
             }
             else
             {
-                Console.WriteLine("No breaking changes detected.");
+                _console.WriteLine("No breaking changes detected.");
             }
 
             return result.ExitCode;
