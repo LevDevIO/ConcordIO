@@ -9,6 +9,10 @@ public partial class RootCommand
     [CliCommand(Name = "generate", Description = "Generate contract NuGet packages from OpenAPI, Protobuf, or AsyncAPI specifications")]
     public class GenerateCommand
     {
+        private ITemplateRenderer? _templateRenderer;
+        private IFileSystem? _fileSystem;
+        private IConsoleOutput? _console;
+
         [CliOption(Description = "Specification file(s) with optional kind (format: path[:kind], kind defaults to openapi). Can be specified multiple times.", Required = true)]
         public string[] Spec { get; set; } = [];
 
@@ -46,11 +50,26 @@ public partial class RootCommand
         public string[]? PackageProperties { get; set; }
 
         /// <summary>
+        /// Gets the template renderer. Used for dependency injection in tests.
+        /// </summary>
+        internal ITemplateRenderer TemplateRenderer => _templateRenderer ??= new TemplateRenderer();
+
+        /// <summary>
+        /// Gets the file system. Used for dependency injection in tests.
+        /// </summary>
+        internal IFileSystem FileSystem => _fileSystem ??= new FileSystem();
+
+        /// <summary>
+        /// Gets the console output service. Used for dependency injection in tests.
+        /// </summary>
+        internal IConsoleOutput Console => _console ??= new ConsoleOutput();
+
+        /// <summary>
         /// Represents a parsed specification entry with file name and kind.
         /// </summary>
         private record SpecEntry(string FileName, string Kind);
 
-        private static readonly string[] ValidKinds = ["openapi", "proto", "asyncapi"];
+        private static readonly IReadOnlyList<string> ValidKinds = SpecKind.All;
 
         public async Task<int> RunAsync()
         {
@@ -58,7 +77,7 @@ public partial class RootCommand
             var specs = ParseSpecEntries(Spec);
             if (specs.Count == 0)
             {
-                Console.Error.WriteLine("Error: At least one specification file is required.");
+                Console.WriteError("Error: At least one specification file is required.");
                 return 1;
             }
 
@@ -66,7 +85,7 @@ public partial class RootCommand
             var invalidKinds = specs.Select(s => s.Kind).Distinct().Except(ValidKinds).ToList();
             if (invalidKinds.Count > 0)
             {
-                Console.Error.WriteLine($"Error: Invalid kind(s): {string.Join(", ", invalidKinds)}. Must be 'openapi', 'proto', or 'asyncapi'.");
+                Console.WriteError($"Error: Invalid kind(s): {string.Join(", ", invalidKinds)}. Must be 'openapi', 'proto', or 'asyncapi'.");
                 return 1;
             }
 
@@ -112,7 +131,7 @@ public partial class RootCommand
                 }
 
                 // No valid kind suffix, default to openapi
-                entries.Add(new SpecEntry(Path.GetFileName(spec), "openapi"));
+                entries.Add(new SpecEntry(Path.GetFileName(spec), SpecKind.OpenApi));
             }
 
             return entries;
@@ -128,7 +147,7 @@ public partial class RootCommand
                 Authors = Authors,
                 Description = description,
                 OutputDirectory = Output,
-                PackageProperties = ParseKeyValuePairs(PackageProperties),
+                PackageProperties = StringHelpers.ParseKeyValuePairs(PackageProperties),
                 SpecsByKind = specsByKind
             };
 
@@ -140,14 +159,14 @@ public partial class RootCommand
         private async Task GenerateClientPackageAsync(Dictionary<string, List<string>> specsByKind, string description)
         {
             var clientPackageId = ClientPackageId ?? $"{PackageId}.Client";
-            var hasOpenApi = specsByKind.ContainsKey("openapi");
-            var hasAsyncApi = specsByKind.ContainsKey("asyncapi");
+            var hasOpenApi = specsByKind.ContainsKey(SpecKind.OpenApi);
+            var hasAsyncApi = specsByKind.ContainsKey(SpecKind.AsyncApi);
 
-            var clientClass = ClientClassName ?? $"{SanitizeClassName(PackageId)}Client";
+            var clientClass = ClientClassName ?? $"{StringHelpers.SanitizeClassName(PackageId)}Client";
             var normalizedNswagOptions = GetNormalizedNswagOptions(hasOpenApi);
             var clientOptions = hasAsyncApi
-                ? ParseKeyValuePairs(ClientOptions)
-                    .Select(kvp => new KeyValuePair<string, string>(NormalizePrefix("ConcordIOClient", kvp.Key), kvp.Value))
+                ? StringHelpers.ParseKeyValuePairs(ClientOptions)
+                    .Select(kvp => new KeyValuePair<string, string>(StringHelpers.NormalizePrefix("ConcordIOClient", kvp.Key), kvp.Value))
                     .ToList()
                 : [];
 
@@ -165,7 +184,7 @@ public partial class RootCommand
                 NSwagOutputPath = clientClass,
                 NSwagOptions = normalizedNswagOptions,
                 ClientOptions = clientOptions,
-                PackageProperties = ParseKeyValuePairs(PackageProperties),
+                PackageProperties = StringHelpers.ParseKeyValuePairs(PackageProperties),
                 SpecsByKind = specsByKind
             };
 
@@ -174,36 +193,8 @@ public partial class RootCommand
             Console.WriteLine($"Generated: {result.TargetsPath}");
         }
 
-        private static string SanitizeClassName(string name) =>
-            string.Concat(name.Split('.').Select(part =>
-                    char.ToUpperInvariant(part[0]) + part[1..]));
-
-        private static string NormalizePrefix(string prefix, string value)
-        {
-            if (value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return value;
-            }
-            return prefix + value;
-        }
-
-        /// <summary>
-        /// Not a dictionary because multiple key-values with the same key is expected
-        /// it's the command line argument format for arrays
-        /// </summary>
-        private static KeyValuePair<string, string>[] ParseKeyValuePairs(string[]? pairs) =>
-            pairs?.Select(pair =>
-            {
-                var parts = pair.Split('=', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-                if (parts.Length != 2)
-                    throw new ArgumentException($"Invalid key=value format: '{pair}'");
-
-                return new KeyValuePair<string, string>(parts[0], parts[1]);
-            }).ToArray() ?? [];
-
-        private static ContractPackageGenerator CreateGenerator() =>
-            new(new TemplateRenderer(), new FileSystem());
+        private ContractPackageGenerator CreateGenerator() =>
+            new(TemplateRenderer, FileSystem);
 
         private List<KeyValuePair<string, string>> GetNormalizedNswagOptions(bool hasOpenApi)
         {
@@ -212,9 +203,9 @@ public partial class RootCommand
                 return [];
             }
 
-            var parsedNswagOptions = ParseKeyValuePairs(NswagOptions);
+            var parsedNswagOptions = StringHelpers.ParseKeyValuePairs(NswagOptions);
             var normalizedNswagOptions = parsedNswagOptions
-                .Select(kvp => new KeyValuePair<string, string>(NormalizePrefix("NSwag", kvp.Key), kvp.Value))
+                .Select(kvp => new KeyValuePair<string, string>(StringHelpers.NormalizePrefix("NSwag", kvp.Key), kvp.Value))
                 .ToList();
 
             var stjOptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

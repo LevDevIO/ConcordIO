@@ -45,6 +45,7 @@ ConcordIO.Tool/
 │   └── GetSpecCommand.cs        # `concordio get-spec` — spec retrieval from NuGet
 │
 ├── Services/                    # Core business logic and abstractions
+│   ├── SpecKind.cs              # Constants for specification kinds (openapi, proto, asyncapi)
 │   ├── ContractPackageGenerator.cs  # Orchestrates template rendering → file output
 │   ├── TemplateRenderer.cs      # Scriban template engine (reads embedded resources)
 │   ├── ITemplateRenderer.cs     # Interface for template rendering
@@ -53,7 +54,11 @@ ConcordIO.Tool/
 │   ├── NuGetService.cs          # Shells out to `nuget` CLI
 │   ├── INuGetService.cs         # Interface for NuGet operations
 │   ├── IOasDiffRunner.cs        # Interface for OpenAPI diff operations
-│   └── StringHelpers.cs         # Shared utilities (class name sanitization, key=value parsing)
+│   ├── OasDiffResult.cs         # Result type for diff operations (moved from AOComparison)
+│   ├── StringHelpers.cs         # Shared utilities (class name sanitization, key=value parsing)
+│   ├── TempDirectoryScope.cs    # IAsyncDisposable utility for temp directory lifecycle management
+│   ├── IConsoleOutput.cs        # Interface for console output abstraction
+│   └── ConsoleOutput.cs         # Default implementation writing to Console.Out/Console.Error
 │
 ├── AOComparison/                # OpenAPI comparison subsystem
 │   ├── OasDiffRunner.cs         # Wraps bundled oasdiff binary, implements IOasDiffRunner
@@ -113,19 +118,61 @@ Output files (.nuspec + build/{PackageId}.targets)
 
 Templates are Scriban `.nuspec` and `.targets` files embedded as assembly resources (configured in the `.csproj` via `<EmbeddedResource Include="Templates\**\*" />`). The `TemplateRenderer` loads them by convention: the template name maps to the resource name with a `ConcordIO.Tool.Templates.` prefix, using dots as folder separators.
 
+#### Shared Package Generation Logic
+
+Both `GenerateContractPackageAsync` and `GenerateClientPackageAsync` follow the same pattern:
+1. Create output directory
+2. Build a template model (specific to contract or client)
+3. Render nuspec template
+4. Render targets template in `build/` subdirectory
+5. Return `GeneratedPackage` with paths and content
+
+To eliminate duplication, a private method `GeneratePackageAsync(packageId, outputDir, nuspecTemplate, targetsTemplate, model)` encapsulates the shared rendering and file-writing logic:
+
+```csharp
+private async Task<GeneratedPackage> GeneratePackageAsync(
+    string packageId,
+    string outputDir,
+    string nuspecTemplate,
+    string targetsTemplate,
+    Dictionary<string, object> model)
+{
+    // Generate nuspec
+    var nuspecContent = await _templateRenderer.RenderAsync(nuspecTemplate, model);
+    var nuspecPath = Path.Combine(outputDir, $"{packageId}.nuspec");
+    await _fileSystem.WriteAllTextAsync(nuspecPath, nuspecContent);
+
+    // Generate targets
+    var targetsContent = await _templateRenderer.RenderAsync(targetsTemplate, model);
+    var buildDir = Path.Combine(outputDir, "build");
+    _fileSystem.CreateDirectory(buildDir);
+    var targetsPath = Path.Combine(buildDir, $"{packageId}.targets");
+    await _fileSystem.WriteAllTextAsync(targetsPath, targetsContent);
+
+    return new GeneratedPackage { ... };
+}
+```
+
+Both public methods now call this shared helper after building their specific model, reducing code duplication while maintaining separate public interfaces for contract and client package generation.
+
 ### Template Model
 
 The model passed to Scriban templates is a `Dictionary<string, object>`. Key fields:
+
+**Common to all package models (from `PackageOptionsBase`):**
+| Key | Type | Description |
+|-----|------|-------------|
+| `version` | `string` | SemVer version |
+| `authors` | `string` | Package authors |
+| `description` | `string` | Package description |
+| `output_directory` | `string` | Output directory for generated files |
+| `package_properties` | `KeyValuePair<string,string>[]` | Extra NuSpec metadata elements |
+| `specs_by_kind` | `Dictionary<string, List<string>>` | Spec filenames grouped by kind |
 
 **Contract package model:**
 | Key | Type | Description |
 |-----|------|-------------|
 | `package_id` | `string` | NuGet package ID |
-| `version` | `string` | SemVer version |
-| `authors` | `string` | Package authors |
-| `description` | `string` | Package description |
-| `package_properties` | `KeyValuePair<string,string>[]` | Extra NuSpec metadata elements |
-| `specs_by_kind` | `Dictionary<string, List<string>>` | Spec filenames grouped by kind |
 | `has_openapi` | `bool` | Whether the package contains OpenAPI specs |
 | `has_proto` | `bool` | Whether the package contains Proto specs |
 | `has_asyncapi` | `bool` | Whether the package contains AsyncAPI specs |
@@ -223,18 +270,88 @@ The codebase defines interfaces for testability:
 | `ITemplateRenderer` | `TemplateRenderer` | Renders Scriban templates from embedded resources |
 | `INuGetService` | `NuGetService` | Shells out to `nuget` CLI to download packages |
 | `IOasDiffRunner` | `OasDiffRunner` | Wraps the bundled oasdiff binary |
+| `IConsoleOutput` | `ConsoleOutput` | Abstracts console output for testability and redirection |
+
+### Temporary Directory Management
+
+The `TempDirectoryScope` class (implementing `IAsyncDisposable`) manages the lifecycle of temporary directories created for package downloads:
+
+```csharp
+await using var tempDir = new TempDirectoryScope(userProvidedPath);
+var path = tempDir.Path;
+// ... use path ...
+// Automatically cleaned up on dispose if tempDir was created (not if user-provided)
+```
+
+**Design:**
+- If `userProvidedPath` is `null`, creates a new temp directory in `Path.GetTempPath() / "ConcordIO" / {random}`
+- If `userProvidedPath` is provided, uses that directory without automatic cleanup
+- Cleanup happens in `DisposeAsync()` — handles errors gracefully (logs to stderr)
+- Used by `BreakingCommand` and `GetSpecCommand` to eliminate duplicated boilerplate
+
+### Console Output Abstraction
+
+The `IConsoleOutput` interface abstracts console interaction for testability:
+
+```csharp
+public interface IConsoleOutput
+{
+    void WriteLine(string? message = null);    // Writes to stdout
+    void WriteError(string? message = null);   // Writes to stderr
+}
+```
+
+Commands accept an optional `IConsoleOutput` instance via constructor (defaulting to `ConsoleOutput` in production). This enables:
+- Unit testing without capturing real console output
+- Potential future redirection (e.g., logging to file)
+- Consistent error/output separation throughout the tool
+
+### Dependency Injection Pattern for Commands
+
+While DotMake.CommandLine doesn't have built-in DI, commands use lazy-loaded internal properties to allow dependency injection for testing:
+
+```csharp
+public class GenerateCommand
+{
+    private ITemplateRenderer? _templateRenderer;
+    private IFileSystem? _fileSystem;
+
+    /// <summary>
+    /// Gets or sets the template renderer. Used for dependency injection in tests.
+    /// </summary>
+    internal ITemplateRenderer TemplateRenderer => _templateRenderer ??= new TemplateRenderer();
+
+    /// <summary>
+    /// Gets or sets the file system. Used for dependency injection in tests.
+    /// </summary>
+    internal IFileSystem FileSystem => _fileSystem ??= new FileSystem();
+}
+```
+
+**Design benefits:**
+- **Production:** Dependencies are created on-demand (`??=`) with real implementations
+- **Testing:** Tests can set the private fields before calling `RunAsync()` to inject mocks
+- **No runtime overhead:** Lazy-load pattern only incurs one null-check per command execution
+- **No DI framework needed:** Suitable for CLI tools that don't need full DI containers
+
+All commands (`GenerateCommand`, `BreakingCommand`, `GetSpecCommand`) follow this pattern, exposing lazy-loaded `internal` properties for:
+- `ITemplateRenderer`, `IFileSystem` (GenerateCommand)
+- `IConsoleOutput`, `INuGetService`, `IOasDiffRunner` (various commands)
 
 ### Spec Kind System
 
-The tool supports three specification kinds, identified by string constants:
+The tool supports three specification kinds via the `SpecKind` class (in `Services/SpecKind.cs`):
 
-| Kind | Description | Code generator (client) |
-|------|-------------|------------------------|
-| `openapi` | OpenAPI JSON/YAML specs | NSwag (via `NSwag.ApiDescription.Client`) |
-| `proto` | Protocol Buffer `.proto` files | (not yet implemented for client gen) |
-| `asyncapi` | AsyncAPI YAML/JSON specs | `ConcordIO.AsyncApi.Client` |
+| Constant | Value | Description | Code generator (client) |
+|----------|-------|-------------|------------------------|
+| `SpecKind.OpenApi` | `"openapi"` | OpenAPI JSON/YAML specs | NSwag (via `NSwag.ApiDescription.Client`) |
+| `SpecKind.Proto` | `"proto"` | Protocol Buffer `.proto` files | (not yet implemented for client gen) |
+| `SpecKind.AsyncApi` | `"asyncapi"` | AsyncAPI YAML/JSON specs | `ConcordIO.AsyncApi.Client` |
+| `SpecKind.All` | `["openapi", "proto", "asyncapi"]` | Array of all supported kinds | — |
 
-When using `--spec`, the kind can be specified as a suffix: `--spec myfile.yaml:asyncapi`. Without a suffix, it defaults to `openapi`.
+The `SpecKind` class centralizes these constants, replacing magic string literals throughout the codebase. `GenerateCommand` and `ContractPackageGenerator` use these constants when validating spec kinds and building template models.
+
+When using `--spec`, the kind can be specified as a suffix: `--spec myfile.yaml:asyncapi`. Without a suffix, it defaults to `SpecKind.OpenApi`.
 
 ### NSwag Default Options
 

@@ -33,12 +33,13 @@ public static class StringHelpers
 
     /// <summary>
     /// Parses an array of "key=value" strings into key-value pairs.
+    /// Values may contain '=' characters - only the first '=' is used as the separator.
     /// </summary>
     /// <exception cref="ArgumentException">Thrown when a pair is not in valid key=value format.</exception>
     public static KeyValuePair<string, string>[] ParseKeyValuePairs(string[]? pairs) =>
         pairs?.Select(pair =>
         {
-            var parts = pair.Split('=', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var parts = pair.Split('=', 2, StringSplitOptions.TrimEntries);
 
             if (parts.Length != 2)
                 throw new ArgumentException($"Invalid key=value format: '{pair}'");

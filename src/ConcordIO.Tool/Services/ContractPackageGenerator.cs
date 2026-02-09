@@ -23,25 +23,12 @@ public class ContractPackageGenerator
 
         var model = BuildContractModel(options);
 
-        // Generate nuspec
-        var nuspecContent = await _templateRenderer.RenderAsync("Contract.Contract.nuspec", model);
-        var nuspecPath = Path.Combine(options.OutputDirectory, $"{options.PackageId}.nuspec");
-        await _fileSystem.WriteAllTextAsync(nuspecPath, nuspecContent);
-
-        // Generate targets
-        var targetsContent = await _templateRenderer.RenderAsync("Contract.Contracts.targets", model);
-        var buildDir = Path.Combine(options.OutputDirectory, "build");
-        _fileSystem.CreateDirectory(buildDir);
-        var targetsPath = Path.Combine(buildDir, $"{options.PackageId}.targets");
-        await _fileSystem.WriteAllTextAsync(targetsPath, targetsContent);
-
-        return new GeneratedPackage
-        {
-            NuspecPath = nuspecPath,
-            NuspecContent = nuspecContent,
-            TargetsPath = targetsPath,
-            TargetsContent = targetsContent
-        };
+        return await GeneratePackageAsync(
+            options.PackageId,
+            options.OutputDirectory,
+            "Contract.Contract.nuspec",
+            "Contract.Contracts.targets",
+            model);
     }
 
     /// <summary>
@@ -53,16 +40,34 @@ public class ContractPackageGenerator
 
         var model = BuildClientModel(options);
 
-        // Generate client nuspec
-        var nuspecContent = await _templateRenderer.RenderAsync("Contract.Client.Contract.Client.nuspec", model);
-        var nuspecPath = Path.Combine(options.OutputDirectory, $"{options.ClientPackageId}.nuspec");
+        return await GeneratePackageAsync(
+            options.ClientPackageId,
+            options.OutputDirectory,
+            "Contract.Client.Contract.Client.nuspec",
+            "Contract.Client.Contract.Client.targets",
+            model);
+    }
+
+    /// <summary>
+    /// Shared method for generating package files (.nuspec and .targets).
+    /// </summary>
+    private async Task<GeneratedPackage> GeneratePackageAsync(
+        string packageId,
+        string outputDir,
+        string nuspecTemplate,
+        string targetsTemplate,
+        Dictionary<string, object> model)
+    {
+        // Generate nuspec
+        var nuspecContent = await _templateRenderer.RenderAsync(nuspecTemplate, model);
+        var nuspecPath = Path.Combine(outputDir, $"{packageId}.nuspec");
         await _fileSystem.WriteAllTextAsync(nuspecPath, nuspecContent);
 
-        // Generate client targets
-        var targetsContent = await _templateRenderer.RenderAsync("Contract.Client.Contract.Client.targets", model);
-        var buildDir = Path.Combine(options.OutputDirectory, "build");
+        // Generate targets
+        var targetsContent = await _templateRenderer.RenderAsync(targetsTemplate, model);
+        var buildDir = Path.Combine(outputDir, "build");
         _fileSystem.CreateDirectory(buildDir);
-        var targetsPath = Path.Combine(buildDir, $"{options.ClientPackageId}.targets");
+        var targetsPath = Path.Combine(buildDir, $"{packageId}.targets");
         await _fileSystem.WriteAllTextAsync(targetsPath, targetsContent);
 
         return new GeneratedPackage
@@ -86,18 +91,18 @@ public class ContractPackageGenerator
             ["description"] = options.Description,
             ["package_properties"] = options.PackageProperties,
             ["specs_by_kind"] = specsByKind,
-            ["has_openapi"] = specsByKind.ContainsKey("openapi"),
-            ["has_proto"] = specsByKind.ContainsKey("proto"),
-            ["has_asyncapi"] = specsByKind.ContainsKey("asyncapi")
+            ["has_openapi"] = specsByKind.ContainsKey(SpecKind.OpenApi),
+            ["has_proto"] = specsByKind.ContainsKey(SpecKind.Proto),
+            ["has_asyncapi"] = specsByKind.ContainsKey(SpecKind.AsyncApi)
         };
     }
 
     private static Dictionary<string, object> BuildClientModel(ClientPackageOptions options)
     {
         var specsByKind = options.SpecsByKind;
-        var hasOpenApi = specsByKind.ContainsKey("openapi");
-        var hasProto = specsByKind.ContainsKey("proto");
-        var hasAsyncApi = specsByKind.ContainsKey("asyncapi");
+        var hasOpenApi = specsByKind.ContainsKey(SpecKind.OpenApi);
+        var hasProto = specsByKind.ContainsKey(SpecKind.Proto);
+        var hasAsyncApi = specsByKind.ContainsKey(SpecKind.AsyncApi);
 
         return new Dictionary<string, object>
         {
@@ -120,11 +125,10 @@ public class ContractPackageGenerator
 }
 
 /// <summary>
-/// Options for generating a contract package.
+/// Base class for package generation options.
 /// </summary>
-public class ContractPackageOptions
+public abstract class PackageOptionsBase
 {
-    public required string PackageId { get; init; }
     public required string Version { get; init; }
     public required string Authors { get; init; }
     public required string Description { get; init; }
@@ -134,23 +138,25 @@ public class ContractPackageOptions
 }
 
 /// <summary>
+/// Options for generating a contract package.
+/// </summary>
+public class ContractPackageOptions : PackageOptionsBase
+{
+    public required string PackageId { get; init; }
+}
+
+/// <summary>
 /// Options for generating a client package.
 /// </summary>
-public class ClientPackageOptions
+public class ClientPackageOptions : PackageOptionsBase
 {
     public required string ClientPackageId { get; init; }
     public required string ContractPackageId { get; init; }
     public required string ContractVersion { get; init; }
-    public required string Version { get; init; }
-    public required string Authors { get; init; }
-    public required string Description { get; init; }
-    public required string OutputDirectory { get; init; }
     public required string NSwagClientClassName { get; init; }
     public required string NSwagOutputPath { get; init; }
-    public KeyValuePair<string, string>[] PackageProperties { get; init; } = [];
     public List<KeyValuePair<string, string>> NSwagOptions { get; init; } = [];
     public List<KeyValuePair<string, string>> ClientOptions { get; init; } = [];
-    public required Dictionary<string, List<string>> SpecsByKind { get; init; }
 }
 
 /// <summary>

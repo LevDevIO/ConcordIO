@@ -1,14 +1,17 @@
 ﻿namespace ConcordIO.Tool.CliCommands;
 
+using ConcordIO.Tool.Services;
 using DotMake.CommandLine;
 using System;
-using System.Diagnostics;
 
 public partial class RootCommand
 {
     [CliCommand(Name = "get-spec", Description = "Retrieve the OpenAPI/Protobuf specification from a NuGet package")]
     public class GetSpecCommand
     {
+        private INuGetService? _nuGetService;
+        private IConsoleOutput? _console;
+
         [CliOption(Description = "Package ID of the NuGet package to retrieve the specification from", Required = true)]
         public required string PackageId { get; set; }
 
@@ -27,18 +30,36 @@ public partial class RootCommand
         [CliOption(Description = "Working directory for downloading the package, defaults to a temp directory", Required = false)]
         public string? WorkingDirectory { get; set; }
 
+        /// <summary>
+        /// Gets the NuGet service. Used for dependency injection in tests.
+        /// </summary>
+        internal INuGetService NuGetService => _nuGetService ??= new NuGetService();
+
+        /// <summary>
+        /// Gets the console output service. Used for dependency injection in tests.
+        /// </summary>
+        internal IConsoleOutput ConsoleOutput => _console ??= new ConsoleOutput();
+
+        public GetSpecCommand()
+        {
+        }
+
+        /// <summary>
+        /// Constructor for dependency injection (testing).
+        /// </summary>
+        public GetSpecCommand(INuGetService nuGetService, IConsoleOutput? console = null)
+        {
+            _nuGetService = nuGetService;
+            _console = console;
+        }
+
         public async Task<int> RunAsync()
         {
-            var createTempDir = WorkingDirectory == null;
-            string workingDirectory = WorkingDirectory ?? Path.Combine(Path.GetTempPath(), "ConcordIO", Path.GetRandomFileName().Replace(".", ""));
+            await using var tempDir = new TempDirectoryScope(WorkingDirectory, ConsoleOutput);
+            var workingDirectory = tempDir.Path;
 
-            if (createTempDir)
-            {
-                Directory.CreateDirectory(workingDirectory);
-            }
-
-            Console.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");
-            await DownloadNuget(workingDirectory, PackageId, Version, prerelease: Prerelease);
+            ConsoleOutput.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");
+            await NuGetService.DownloadPackageAsync(workingDirectory, PackageId, Version, prerelease: Prerelease);
 
             var packageDir = Directory.EnumerateDirectories(workingDirectory).Single();
             var openApiDir = Path.Combine(packageDir, "openapi");
@@ -47,43 +68,12 @@ public partial class RootCommand
             {
                 var file = Directory.EnumerateFiles(openApiDir).Single(f => f.EndsWith(".yaml") || f.EndsWith(".yml") || f.EndsWith(".json"));
                 var outputPath = OutputPath ?? Path.Combine(Environment.CurrentDirectory, Path.GetFileName(file));
-                Console.WriteLine($"Copying specification file '{file}' to '{outputPath}'...");
+                ConsoleOutput.WriteLine($"Copying specification file '{file}' to '{outputPath}'...");
                 File.Copy(file, outputPath, overwrite: OverwriteOutput);
                 return 0;
             }
 
             throw new NotImplementedException($"No 'openapi' directory found in the NuGet package '{PackageId}', proto not implemented  yet");
-        }
-
-        /// <summary>
-        /// Runs an arbitrary oasdiff command.
-        /// </summary>
-        public async Task<int> DownloadNuget(string outputDir, string packageId, string? version, bool prerelease)
-        {
-            var arguments = $"install {packageId} -OutputDirectory {outputDir}" + (version != null ? $" -Version {version}" : "") + (prerelease ? " -Prerelease" : "");
-
-            using var process = new Process();
-            process.StartInfo = new ProcessStartInfo
-            {
-                FileName = "nuget",
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            process.Start();
-
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-
-            await process.WaitForExitAsync();
-
-            Console.WriteLine(output);
-            Console.Error.WriteLine(error);
-
-            return process.ExitCode;
         }
     }
 }

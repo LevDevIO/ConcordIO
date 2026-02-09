@@ -39,6 +39,7 @@ ConcordIO.AsyncApi is the shared core library that provides two sets of function
 ```
 ConcordIO.AsyncApi/
 ├── ConcordIO.AsyncApi.csproj     # Shared library project
+├── AsyncApiConstants.cs           # Shared extension key constants (x-dotnet-namespace, x-dotnet-type)
 │
 ├── Server/                       # Server-side: .NET types → AsyncAPI
 │   ├── TypeDiscoveryService.cs   # Pattern-based type discovery from assemblies
@@ -98,10 +99,12 @@ V3AsyncApiDocument
 
 **Key extension properties:**
 
-| Extension | Purpose |
-|-----------|---------|
-| `x-dotnet-namespace` | Preserves the original .NET namespace for code generation |
-| `x-dotnet-type` | Preserves the fully-qualified .NET type name |
+Both Server and Client components use the constants defined in `AsyncApiConstants`:
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `AsyncApiConstants.DotNetNamespace` | `x-dotnet-namespace` | Preserves the original .NET namespace for code generation |
+| `AsyncApiConstants.DotNetType` | `x-dotnet-type` | Preserves the fully-qualified .NET type name |
 
 ### AsyncApiDocumentWriter
 

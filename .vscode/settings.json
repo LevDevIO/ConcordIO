@@ -1,3 +1,10 @@
 {
-    "dotnet.defaultSolution": "src/ConcordIO.Tool.sln"
+    "dotnet.defaultSolution": "src/ConcordIO.Tool.sln",
+    "chat.tools.terminal.autoApprove": {
+        "git checkout": true,
+        "git add": true,
+        "git commit": true,
+        "git pull": true,
+        "dotnet clean": true
+    }
 }

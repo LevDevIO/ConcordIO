@@ -48,9 +48,9 @@ concordio generate \
 | `--client` | `true` | Also generate a client package. |
 | `--client-package-id` | `{PackageId}.Client` | Client package ID. |
 | `--client-class-name` | Derived from PackageId | Client class name (OpenAPI only). |
-| `--nswag-options` | — | Additional NSwag options as `key=value` (OpenAPI only, repeatable). |
-| `--client-options` | — | Additional client options as `key=value` (AsyncAPI only, repeatable). |
-| `--package-properties` | — | Additional NuSpec metadata as `key=value` (repeatable). |
+| `--nswag-options` | — | Additional NSwag options as `key=value` (OpenAPI only, repeatable). Values may contain '=' characters. |
+| `--client-options` | — | Additional client options as `key=value` (AsyncAPI only, repeatable). Values may contain '=' characters. |
+| `--package-properties` | — | Additional NuSpec metadata as `key=value` (repeatable). Values may contain '=' characters. |
 
 **Examples:**
 
