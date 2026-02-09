@@ -4,7 +4,7 @@ namespace ConcordIO.Tool.Services;
 /// Manages temporary directory lifecycle - creation, usage, and cleanup.
 /// Automatically cleans up directory on dispose if it was created by this scope.
 /// </summary>
-public class TempDirectoryScope : IAsyncDisposable
+public class TempDirectoryScope : IDisposable
 {
     private readonly string _path;
     private readonly bool _shouldCleanup;
@@ -42,7 +42,7 @@ public class TempDirectoryScope : IAsyncDisposable
     /// <summary>
     /// Disposes the scope and cleans up the temporary directory if it was created by this scope.
     /// </summary>
-    public ValueTask DisposeAsync()
+    public void Dispose()
     {
         if (_shouldCleanup)
         {
@@ -56,6 +56,5 @@ public class TempDirectoryScope : IAsyncDisposable
             }
         }
 
-        return ValueTask.CompletedTask;
     }
 }
