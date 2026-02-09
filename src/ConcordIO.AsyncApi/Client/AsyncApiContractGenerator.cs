@@ -12,8 +12,6 @@ namespace ConcordIO.AsyncApi.Client;
 /// </summary>
 public class AsyncApiContractGenerator
 {
-    private const string DotNetNamespaceExtension = "x-dotnet-namespace";
-    private const string DotNetTypeExtension = "x-dotnet-type";
 
     private readonly ContractGeneratorSettings _settings;
     private readonly ExternalTypeResolver _externalTypeResolver;
@@ -298,7 +296,7 @@ public class AsyncApiContractGenerator
         // Try to extract x-dotnet-namespace from the schema
         if (schema is JsonElement element && element.ValueKind == JsonValueKind.Object)
         {
-            if (element.TryGetProperty(DotNetNamespaceExtension, out var nsElement) &&
+            if (element.TryGetProperty(AsyncApiConstants.DotNetNamespace, out var nsElement) &&
                 nsElement.ValueKind == JsonValueKind.String)
             {
                 return nsElement.GetString() ?? string.Empty;
@@ -307,7 +305,7 @@ public class AsyncApiContractGenerator
 
         if (schema is IDictionary<string, object> dict)
         {
-            if (dict.TryGetValue(DotNetNamespaceExtension, out var ns) && ns is string nsString)
+            if (dict.TryGetValue(AsyncApiConstants.DotNetNamespace, out var ns) && ns is string nsString)
             {
                 return nsString;
             }

@@ -13,8 +13,6 @@ namespace ConcordIO.AsyncApi.Server;
 /// </summary>
 public class AsyncApiDocumentGenerator
 {
-    private const string DotNetNamespaceExtension = "x-dotnet-namespace";
-    private const string DotNetTypeExtension = "x-dotnet-type";
     private const string GeneratorName = "ConcordIO.AsyncApi.Server";
 
     private readonly SystemTextJsonSchemaGeneratorSettings _schemaSettings;
@@ -238,8 +236,8 @@ public class AsyncApiDocumentGenerator
         // Add our custom extension properties
         if (schemaObject is IDictionary<string, object?> dict)
         {
-            dict[DotNetNamespaceExtension] = ns;
-            dict[DotNetTypeExtension] = type.FullName ?? type.Name;
+            dict[AsyncApiConstants.DotNetNamespace] = ns;
+            dict[AsyncApiConstants.DotNetType] = type.FullName ?? type.Name;
 
             // Convert $ref in definitions to components/schemas format
             ConvertReferences(dict);

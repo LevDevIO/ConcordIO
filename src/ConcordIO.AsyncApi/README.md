@@ -16,6 +16,12 @@ A shared .NET library for AsyncAPI document generation (server) and C# contract 
 
 ## Key Types
 
+### Shared Constants
+
+| Type | Description |
+|------|-------------|
+| `AsyncApiConstants` | Static constants for AsyncAPI extension keys (`DotNetNamespace`, `DotNetType`). Used across Server and Client components. |
+
 ### Server (`ConcordIO.AsyncApi.Server` namespace)
 
 | Type | Description |
