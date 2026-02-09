@@ -306,6 +306,38 @@ Commands accept an optional `IConsoleOutput` instance via constructor (defaultin
 - Potential future redirection (e.g., logging to file)
 - Consistent error/output separation throughout the tool
 
+### Dependency Injection Pattern for Commands
+
+While DotMake.CommandLine doesn't have built-in DI, commands use lazy-loaded internal properties to allow dependency injection for testing:
+
+```csharp
+public class GenerateCommand
+{
+    private ITemplateRenderer? _templateRenderer;
+    private IFileSystem? _fileSystem;
+
+    /// <summary>
+    /// Gets or sets the template renderer. Used for dependency injection in tests.
+    /// </summary>
+    internal ITemplateRenderer TemplateRenderer => _templateRenderer ??= new TemplateRenderer();
+
+    /// <summary>
+    /// Gets or sets the file system. Used for dependency injection in tests.
+    /// </summary>
+    internal IFileSystem FileSystem => _fileSystem ??= new FileSystem();
+}
+```
+
+**Design benefits:**
+- **Production:** Dependencies are created on-demand (`??=`) with real implementations
+- **Testing:** Tests can set the private fields before calling `RunAsync()` to inject mocks
+- **No runtime overhead:** Lazy-load pattern only incurs one null-check per command execution
+- **No DI framework needed:** Suitable for CLI tools that don't need full DI containers
+
+All commands (`GenerateCommand`, `BreakingCommand`, `GetSpecCommand`) follow this pattern, exposing lazy-loaded `internal` properties for:
+- `ITemplateRenderer`, `IFileSystem` (GenerateCommand)
+- `IConsoleOutput`, `INuGetService`, `IOasDiffRunner` (various commands)
+
 ### Spec Kind System
 
 The tool supports three specification kinds via the `SpecKind` class (in `Services/SpecKind.cs`):
