@@ -118,19 +118,61 @@ Output files (.nuspec + build/{PackageId}.targets)
 
 Templates are Scriban `.nuspec` and `.targets` files embedded as assembly resources (configured in the `.csproj` via `<EmbeddedResource Include="Templates\**\*" />`). The `TemplateRenderer` loads them by convention: the template name maps to the resource name with a `ConcordIO.Tool.Templates.` prefix, using dots as folder separators.
 
+#### Shared Package Generation Logic
+
+Both `GenerateContractPackageAsync` and `GenerateClientPackageAsync` follow the same pattern:
+1. Create output directory
+2. Build a template model (specific to contract or client)
+3. Render nuspec template
+4. Render targets template in `build/` subdirectory
+5. Return `GeneratedPackage` with paths and content
+
+To eliminate duplication, a private method `GeneratePackageAsync(packageId, outputDir, nuspecTemplate, targetsTemplate, model)` encapsulates the shared rendering and file-writing logic:
+
+```csharp
+private async Task<GeneratedPackage> GeneratePackageAsync(
+    string packageId,
+    string outputDir,
+    string nuspecTemplate,
+    string targetsTemplate,
+    Dictionary<string, object> model)
+{
+    // Generate nuspec
+    var nuspecContent = await _templateRenderer.RenderAsync(nuspecTemplate, model);
+    var nuspecPath = Path.Combine(outputDir, $"{packageId}.nuspec");
+    await _fileSystem.WriteAllTextAsync(nuspecPath, nuspecContent);
+
+    // Generate targets
+    var targetsContent = await _templateRenderer.RenderAsync(targetsTemplate, model);
+    var buildDir = Path.Combine(outputDir, "build");
+    _fileSystem.CreateDirectory(buildDir);
+    var targetsPath = Path.Combine(buildDir, $"{packageId}.targets");
+    await _fileSystem.WriteAllTextAsync(targetsPath, targetsContent);
+
+    return new GeneratedPackage { ... };
+}
+```
+
+Both public methods now call this shared helper after building their specific model, reducing code duplication while maintaining separate public interfaces for contract and client package generation.
+
 ### Template Model
 
 The model passed to Scriban templates is a `Dictionary<string, object>`. Key fields:
+
+**Common to all package models (from `PackageOptionsBase`):**
+| Key | Type | Description |
+|-----|------|-------------|
+| `version` | `string` | SemVer version |
+| `authors` | `string` | Package authors |
+| `description` | `string` | Package description |
+| `output_directory` | `string` | Output directory for generated files |
+| `package_properties` | `KeyValuePair<string,string>[]` | Extra NuSpec metadata elements |
+| `specs_by_kind` | `Dictionary<string, List<string>>` | Spec filenames grouped by kind |
 
 **Contract package model:**
 | Key | Type | Description |
 |-----|------|-------------|
 | `package_id` | `string` | NuGet package ID |
-| `version` | `string` | SemVer version |
-| `authors` | `string` | Package authors |
-| `description` | `string` | Package description |
-| `package_properties` | `KeyValuePair<string,string>[]` | Extra NuSpec metadata elements |
-| `specs_by_kind` | `Dictionary<string, List<string>>` | Spec filenames grouped by kind |
 | `has_openapi` | `bool` | Whether the package contains OpenAPI specs |
 | `has_proto` | `bool` | Whether the package contains Proto specs |
 | `has_asyncapi` | `bool` | Whether the package contains AsyncAPI specs |
