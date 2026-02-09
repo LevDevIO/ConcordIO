@@ -1,11 +1,11 @@
 ﻿namespace ConcordIO.Tool.CliCommands;
 
-using ConcordIO.Tool.AOComparison;
-using ConcordIO.Tool.Services;
-using DotMake.CommandLine;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using ConcordIO.Tool.AOComparison;
+using ConcordIO.Tool.Services;
+using DotMake.CommandLine;
 
 public partial class RootCommand
 {
@@ -55,12 +55,13 @@ public partial class RootCommand
 
         public async Task<int> RunAsync()
         {
-            await using var tempDir = new TempDirectoryScope(WorkingDirectory, Console);
+            using var tempDir = new TempDirectoryScope(WorkingDirectory, Console);
             var workingDirectory = tempDir.Path;
 
             var nugetSpecPath = Path.Combine(workingDirectory, $"spec_in_nuget{Path.GetExtension(Spec)}");
-            
+
             // Create a new GetSpecCommand instance with required properties
+
             var getSpecCommand = new GetSpecCommand(NuGetService, Console)
             {
                 PackageId = PackageId,

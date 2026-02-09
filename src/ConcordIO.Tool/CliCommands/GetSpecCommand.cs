@@ -1,8 +1,8 @@
 ﻿namespace ConcordIO.Tool.CliCommands;
 
+using System;
 using ConcordIO.Tool.Services;
 using DotMake.CommandLine;
-using System;
 
 public partial class RootCommand
 {
@@ -55,7 +55,7 @@ public partial class RootCommand
 
         public async Task<int> RunAsync()
         {
-            await using var tempDir = new TempDirectoryScope(WorkingDirectory, ConsoleOutput);
+            using var tempDir = new TempDirectoryScope(WorkingDirectory, ConsoleOutput);
             var workingDirectory = tempDir.Path;
 
             ConsoleOutput.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");
