@@ -4,6 +4,7 @@
         "git checkout": true,
         "git add": true,
         "git commit": true,
-        "git pull": true
+        "git pull": true,
+        "dotnet clean": true
     }
 }

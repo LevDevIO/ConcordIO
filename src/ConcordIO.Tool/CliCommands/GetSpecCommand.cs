@@ -1,14 +1,16 @@
 ﻿namespace ConcordIO.Tool.CliCommands;
 
+using ConcordIO.Tool.Services;
 using DotMake.CommandLine;
 using System;
-using System.Diagnostics;
 
 public partial class RootCommand
 {
     [CliCommand(Name = "get-spec", Description = "Retrieve the OpenAPI/Protobuf specification from a NuGet package")]
     public class GetSpecCommand
     {
+        private INuGetService? _nuGetService;
+
         [CliOption(Description = "Package ID of the NuGet package to retrieve the specification from", Required = true)]
         public required string PackageId { get; set; }
 
@@ -27,8 +29,22 @@ public partial class RootCommand
         [CliOption(Description = "Working directory for downloading the package, defaults to a temp directory", Required = false)]
         public string? WorkingDirectory { get; set; }
 
+        public GetSpecCommand()
+        {
+        }
+
+        /// <summary>
+        /// Constructor for dependency injection (testing).
+        /// </summary>
+        public GetSpecCommand(INuGetService nuGetService)
+        {
+            _nuGetService = nuGetService;
+        }
+
         public async Task<int> RunAsync()
         {
+            _nuGetService ??= new NuGetService();
+
             var createTempDir = WorkingDirectory == null;
             string workingDirectory = WorkingDirectory ?? Path.Combine(Path.GetTempPath(), "ConcordIO", Path.GetRandomFileName().Replace(".", ""));
 
@@ -38,7 +54,7 @@ public partial class RootCommand
             }
 
             Console.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");
-            await DownloadNuget(workingDirectory, PackageId, Version, prerelease: Prerelease);
+            await _nuGetService.DownloadPackageAsync(workingDirectory, PackageId, Version, prerelease: Prerelease);
 
             var packageDir = Directory.EnumerateDirectories(workingDirectory).Single();
             var openApiDir = Path.Combine(packageDir, "openapi");
@@ -53,37 +69,6 @@ public partial class RootCommand
             }
 
             throw new NotImplementedException($"No 'openapi' directory found in the NuGet package '{PackageId}', proto not implemented  yet");
-        }
-
-        /// <summary>
-        /// Runs an arbitrary oasdiff command.
-        /// </summary>
-        public async Task<int> DownloadNuget(string outputDir, string packageId, string? version, bool prerelease)
-        {
-            var arguments = $"install {packageId} -OutputDirectory {outputDir}" + (version != null ? $" -Version {version}" : "") + (prerelease ? " -Prerelease" : "");
-
-            using var process = new Process();
-            process.StartInfo = new ProcessStartInfo
-            {
-                FileName = "nuget",
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            process.Start();
-
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-
-            await process.WaitForExitAsync();
-
-            Console.WriteLine(output);
-            Console.Error.WriteLine(error);
-
-            return process.ExitCode;
         }
     }
 }
