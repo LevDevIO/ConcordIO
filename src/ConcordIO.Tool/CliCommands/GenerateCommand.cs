@@ -128,7 +128,7 @@ public partial class RootCommand
                 Authors = Authors,
                 Description = description,
                 OutputDirectory = Output,
-                PackageProperties = ParseKeyValuePairs(PackageProperties),
+                PackageProperties = StringHelpers.ParseKeyValuePairs(PackageProperties),
                 SpecsByKind = specsByKind
             };
 
@@ -143,11 +143,11 @@ public partial class RootCommand
             var hasOpenApi = specsByKind.ContainsKey(SpecKind.OpenApi);
             var hasAsyncApi = specsByKind.ContainsKey(SpecKind.AsyncApi);
 
-            var clientClass = ClientClassName ?? $"{SanitizeClassName(PackageId)}Client";
+            var clientClass = ClientClassName ?? $"{StringHelpers.SanitizeClassName(PackageId)}Client";
             var normalizedNswagOptions = GetNormalizedNswagOptions(hasOpenApi);
             var clientOptions = hasAsyncApi
-                ? ParseKeyValuePairs(ClientOptions)
-                    .Select(kvp => new KeyValuePair<string, string>(NormalizePrefix("ConcordIOClient", kvp.Key), kvp.Value))
+                ? StringHelpers.ParseKeyValuePairs(ClientOptions)
+                    .Select(kvp => new KeyValuePair<string, string>(StringHelpers.NormalizePrefix("ConcordIOClient", kvp.Key), kvp.Value))
                     .ToList()
                 : [];
 
@@ -165,7 +165,7 @@ public partial class RootCommand
                 NSwagOutputPath = clientClass,
                 NSwagOptions = normalizedNswagOptions,
                 ClientOptions = clientOptions,
-                PackageProperties = ParseKeyValuePairs(PackageProperties),
+                PackageProperties = StringHelpers.ParseKeyValuePairs(PackageProperties),
                 SpecsByKind = specsByKind
             };
 
@@ -173,34 +173,6 @@ public partial class RootCommand
             Console.WriteLine($"Generated: {result.NuspecPath}");
             Console.WriteLine($"Generated: {result.TargetsPath}");
         }
-
-        private static string SanitizeClassName(string name) =>
-            string.Concat(name.Split('.').Select(part =>
-                    char.ToUpperInvariant(part[0]) + part[1..]));
-
-        private static string NormalizePrefix(string prefix, string value)
-        {
-            if (value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return value;
-            }
-            return prefix + value;
-        }
-
-        /// <summary>
-        /// Not a dictionary because multiple key-values with the same key is expected
-        /// it's the command line argument format for arrays
-        /// </summary>
-        private static KeyValuePair<string, string>[] ParseKeyValuePairs(string[]? pairs) =>
-            pairs?.Select(pair =>
-            {
-                var parts = pair.Split('=', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-                if (parts.Length != 2)
-                    throw new ArgumentException($"Invalid key=value format: '{pair}'");
-
-                return new KeyValuePair<string, string>(parts[0], parts[1]);
-            }).ToArray() ?? [];
 
         private static ContractPackageGenerator CreateGenerator() =>
             new(new TemplateRenderer(), new FileSystem());
@@ -212,9 +184,9 @@ public partial class RootCommand
                 return [];
             }
 
-            var parsedNswagOptions = ParseKeyValuePairs(NswagOptions);
+            var parsedNswagOptions = StringHelpers.ParseKeyValuePairs(NswagOptions);
             var normalizedNswagOptions = parsedNswagOptions
-                .Select(kvp => new KeyValuePair<string, string>(NormalizePrefix("NSwag", kvp.Key), kvp.Value))
+                .Select(kvp => new KeyValuePair<string, string>(StringHelpers.NormalizePrefix("NSwag", kvp.Key), kvp.Value))
                 .ToList();
 
             var stjOptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
