@@ -54,7 +54,11 @@ ConcordIO.Tool/
 │   ├── NuGetService.cs          # Shells out to `nuget` CLI
 │   ├── INuGetService.cs         # Interface for NuGet operations
 │   ├── IOasDiffRunner.cs        # Interface for OpenAPI diff operations
-│   └── StringHelpers.cs         # Shared utilities (class name sanitization, key=value parsing)
+│   ├── OasDiffResult.cs         # Result type for diff operations (moved from AOComparison)
+│   ├── StringHelpers.cs         # Shared utilities (class name sanitization, key=value parsing)
+│   ├── TempDirectoryScope.cs    # IAsyncDisposable utility for temp directory lifecycle management
+│   ├── IConsoleOutput.cs        # Interface for console output abstraction
+│   └── ConsoleOutput.cs         # Default implementation writing to Console.Out/Console.Error
 │
 ├── AOComparison/                # OpenAPI comparison subsystem
 │   ├── OasDiffRunner.cs         # Wraps bundled oasdiff binary, implements IOasDiffRunner
@@ -224,6 +228,41 @@ The codebase defines interfaces for testability:
 | `ITemplateRenderer` | `TemplateRenderer` | Renders Scriban templates from embedded resources |
 | `INuGetService` | `NuGetService` | Shells out to `nuget` CLI to download packages |
 | `IOasDiffRunner` | `OasDiffRunner` | Wraps the bundled oasdiff binary |
+| `IConsoleOutput` | `ConsoleOutput` | Abstracts console output for testability and redirection |
+
+### Temporary Directory Management
+
+The `TempDirectoryScope` class (implementing `IAsyncDisposable`) manages the lifecycle of temporary directories created for package downloads:
+
+```csharp
+await using var tempDir = new TempDirectoryScope(userProvidedPath);
+var path = tempDir.Path;
+// ... use path ...
+// Automatically cleaned up on dispose if tempDir was created (not if user-provided)
+```
+
+**Design:**
+- If `userProvidedPath` is `null`, creates a new temp directory in `Path.GetTempPath() / "ConcordIO" / {random}`
+- If `userProvidedPath` is provided, uses that directory without automatic cleanup
+- Cleanup happens in `DisposeAsync()` — handles errors gracefully (logs to stderr)
+- Used by `BreakingCommand` and `GetSpecCommand` to eliminate duplicated boilerplate
+
+### Console Output Abstraction
+
+The `IConsoleOutput` interface abstracts console interaction for testability:
+
+```csharp
+public interface IConsoleOutput
+{
+    void WriteLine(string? message = null);    // Writes to stdout
+    void WriteError(string? message = null);   // Writes to stderr
+}
+```
+
+Commands accept an optional `IConsoleOutput` instance via constructor (defaulting to `ConsoleOutput` in production). This enables:
+- Unit testing without capturing real console output
+- Potential future redirection (e.g., logging to file)
+- Consistent error/output separation throughout the tool
 
 ### Spec Kind System
 
