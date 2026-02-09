@@ -274,10 +274,10 @@ The codebase defines interfaces for testability:
 
 ### Temporary Directory Management
 
-The `TempDirectoryScope` class (implementing `IAsyncDisposable`) manages the lifecycle of temporary directories created for package downloads:
+The `TempDirectoryScope` class (implementing `IDisposable`) manages the lifecycle of temporary directories created for package downloads:
 
 ```csharp
-await using var tempDir = new TempDirectoryScope(userProvidedPath);
+using var tempDir = new TempDirectoryScope(userProvidedPath);
 var path = tempDir.Path;
 // ... use path ...
 // Automatically cleaned up on dispose if tempDir was created (not if user-provided)
