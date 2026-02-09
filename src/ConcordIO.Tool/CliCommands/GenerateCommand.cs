@@ -11,6 +11,7 @@ public partial class RootCommand
     {
         private ITemplateRenderer? _templateRenderer;
         private IFileSystem? _fileSystem;
+        private IConsoleOutput? _console;
 
         [CliOption(Description = "Specification file(s) with optional kind (format: path[:kind], kind defaults to openapi). Can be specified multiple times.", Required = true)]
         public string[] Spec { get; set; } = [];
@@ -49,21 +50,26 @@ public partial class RootCommand
         public string[]? PackageProperties { get; set; }
 
         /// <summary>
-        /// Gets or sets the template renderer. Used for dependency injection in tests.
+        /// Gets the template renderer. Used for dependency injection in tests.
         /// </summary>
         internal ITemplateRenderer TemplateRenderer => _templateRenderer ??= new TemplateRenderer();
 
         /// <summary>
-        /// Gets or sets the file system. Used for dependency injection in tests.
+        /// Gets the file system. Used for dependency injection in tests.
         /// </summary>
         internal IFileSystem FileSystem => _fileSystem ??= new FileSystem();
+
+        /// <summary>
+        /// Gets the console output service. Used for dependency injection in tests.
+        /// </summary>
+        internal IConsoleOutput Console => _console ??= new ConsoleOutput();
 
         /// <summary>
         /// Represents a parsed specification entry with file name and kind.
         /// </summary>
         private record SpecEntry(string FileName, string Kind);
 
-        private static readonly string[] ValidKinds = SpecKind.All;
+        private static readonly IReadOnlyList<string> ValidKinds = SpecKind.All;
 
         public async Task<int> RunAsync()
         {
@@ -71,7 +77,7 @@ public partial class RootCommand
             var specs = ParseSpecEntries(Spec);
             if (specs.Count == 0)
             {
-                Console.Error.WriteLine("Error: At least one specification file is required.");
+                Console.WriteError("Error: At least one specification file is required.");
                 return 1;
             }
 
@@ -79,7 +85,7 @@ public partial class RootCommand
             var invalidKinds = specs.Select(s => s.Kind).Distinct().Except(ValidKinds).ToList();
             if (invalidKinds.Count > 0)
             {
-                Console.Error.WriteLine($"Error: Invalid kind(s): {string.Join(", ", invalidKinds)}. Must be 'openapi', 'proto', or 'asyncapi'.");
+                Console.WriteError($"Error: Invalid kind(s): {string.Join(", ", invalidKinds)}. Must be 'openapi', 'proto', or 'asyncapi'.");
                 return 1;
             }
 

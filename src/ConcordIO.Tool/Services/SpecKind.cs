@@ -21,7 +21,7 @@ public static class SpecKind
     public const string AsyncApi = "asyncapi";
 
     /// <summary>
-    /// Array of all supported specification kinds.
+    /// All supported specification kinds (immutable).
     /// </summary>
-    public static readonly string[] All = [OpenApi, Proto, AsyncApi];
+    public static readonly IReadOnlyList<string> All = [OpenApi, Proto, AsyncApi];
 }

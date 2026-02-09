@@ -31,12 +31,12 @@ public partial class RootCommand
         public string? WorkingDirectory { get; set; }
 
         /// <summary>
-        /// Gets or sets the NuGet service. Used for dependency injection in tests.
+        /// Gets the NuGet service. Used for dependency injection in tests.
         /// </summary>
         internal INuGetService NuGetService => _nuGetService ??= new NuGetService();
 
         /// <summary>
-        /// Gets or sets the console output service. Used for dependency injection in tests.
+        /// Gets the console output service. Used for dependency injection in tests.
         /// </summary>
         internal IConsoleOutput ConsoleOutput => _console ??= new ConsoleOutput();
 
@@ -55,7 +55,7 @@ public partial class RootCommand
 
         public async Task<int> RunAsync()
         {
-            await using var tempDir = new TempDirectoryScope(WorkingDirectory);
+            await using var tempDir = new TempDirectoryScope(WorkingDirectory, ConsoleOutput);
             var workingDirectory = tempDir.Path;
 
             ConsoleOutput.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");

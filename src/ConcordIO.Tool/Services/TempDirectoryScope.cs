@@ -8,6 +8,7 @@ public class TempDirectoryScope : IAsyncDisposable
 {
     private readonly string _path;
     private readonly bool _shouldCleanup;
+    private readonly IConsoleOutput? _console;
 
     /// <summary>
     /// Gets the path to the temporary directory.
@@ -19,8 +20,10 @@ public class TempDirectoryScope : IAsyncDisposable
     /// If workingDirectory is provided, uses that directory without auto-cleanup.
     /// </summary>
     /// <param name="workingDirectory">Optional working directory path. If null, a temp directory is created.</param>
-    public TempDirectoryScope(string? workingDirectory)
+    /// <param name="console">Optional console output for error reporting during cleanup.</param>
+    public TempDirectoryScope(string? workingDirectory, IConsoleOutput? console = null)
     {
+        _console = console;
         _shouldCleanup = workingDirectory == null;
         if (_shouldCleanup)
         {
@@ -39,7 +42,7 @@ public class TempDirectoryScope : IAsyncDisposable
     /// <summary>
     /// Disposes the scope and cleans up the temporary directory if it was created by this scope.
     /// </summary>
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         if (_shouldCleanup)
         {
@@ -49,10 +52,10 @@ public class TempDirectoryScope : IAsyncDisposable
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Failed to clean up temp directory '{_path}': {ex.Message}");
+                _console?.WriteError($"Failed to clean up temp directory '{_path}': {ex.Message}");
             }
         }
 
-        await ValueTask.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

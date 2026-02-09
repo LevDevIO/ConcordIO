@@ -39,23 +39,23 @@ public partial class RootCommand
         public string[]? CliOptions { get; set; }
 
         /// <summary>
-        /// Gets or sets the console output service. Used for dependency injection in tests.
+        /// Gets the console output service. Used for dependency injection in tests.
         /// </summary>
         internal IConsoleOutput Console => _console ??= new ConsoleOutput();
 
         /// <summary>
-        /// Gets or sets the NuGet service. Used for dependency injection in tests.
+        /// Gets the NuGet service. Used for dependency injection in tests.
         /// </summary>
         internal INuGetService NuGetService => _nuGetService ??= new NuGetService();
 
         /// <summary>
-        /// Gets or sets the oasdiff runner. Used for dependency injection in tests.
+        /// Gets the oasdiff runner. Used for dependency injection in tests.
         /// </summary>
         internal IOasDiffRunner OasDiffRunner => _oasDiffRunner ??= new OasDiffRunner();
 
         public async Task<int> RunAsync()
         {
-            await using var tempDir = new TempDirectoryScope(WorkingDirectory);
+            await using var tempDir = new TempDirectoryScope(WorkingDirectory, Console);
             var workingDirectory = tempDir.Path;
 
             var nugetSpecPath = Path.Combine(workingDirectory, $"spec_in_nuget{Path.GetExtension(Spec)}");
