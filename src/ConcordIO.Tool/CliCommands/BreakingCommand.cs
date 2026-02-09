@@ -38,67 +38,45 @@ public partial class RootCommand
         {
             var oasDiffRunner = new OasDiffRunner();
 
-            var createTempDir = WorkingDirectory == null;
-            var workingDirectory = WorkingDirectory ?? Path.Combine(Path.GetTempPath(), "ConcordIO", Path.GetRandomFileName().Replace(".", ""));
+            await using var tempDir = new TempDirectoryScope(WorkingDirectory);
+            var workingDirectory = tempDir.Path;
 
-            if (createTempDir)
+            var nugetSpecPath = Path.Combine(workingDirectory, $"spec_in_nuget{Path.GetExtension(Spec)}");
+            
+            // Create a new GetSpecCommand instance with required properties
+            var getSpecCommand = new GetSpecCommand(new NuGetService())
             {
-                Directory.CreateDirectory(workingDirectory);
+                PackageId = PackageId,
+                Version = Version,
+                Prerelease = Prerelease,
+                OutputPath = nugetSpecPath,
+                WorkingDirectory = workingDirectory,
+                OverwriteOutput = true,
+            };
+
+            var getSpecResult = await getSpecCommand.RunAsync();
+            if (getSpecResult != 0)
+            {
+                Console.Error.WriteLine("Error: Failed to retrieve specification from NuGet package.");
+                return getSpecResult;
             }
 
-            try
+            var cliOptionsString = BuildCliOptionsString();
+            var result = await oasDiffRunner.Breaking(Spec, nugetSpecPath, "-o WARN" + (string.IsNullOrEmpty(cliOptionsString) ? "" : " " + cliOptionsString));
+
+            Console.WriteLine(result.Output);
+            Console.Error.WriteLine(result.Error);
+
+            if (result.Breaking)
             {
-                var nugetSpecPath = Path.Combine(workingDirectory, $"spec_in_nuget{Path.GetExtension(Spec)}");
-                
-                // Create a new GetSpecCommand instance with required properties
-                var getSpecCommand = new GetSpecCommand(new NuGetService())
-                {
-                    PackageId = PackageId,
-                    Version = Version,
-                    Prerelease = Prerelease,
-                    OutputPath = nugetSpecPath,
-                    WorkingDirectory = workingDirectory,
-                    OverwriteOutput = true,
-                };
-
-                var getSpecResult = await getSpecCommand.RunAsync();
-                if (getSpecResult != 0)
-                {
-                    Console.Error.WriteLine("Error: Failed to retrieve specification from NuGet package.");
-                    return getSpecResult;
-                }
-
-                var cliOptionsString = BuildCliOptionsString();
-                var result = await oasDiffRunner.Breaking(Spec, nugetSpecPath, "-o WARN" + (string.IsNullOrEmpty(cliOptionsString) ? "" : " " + cliOptionsString));
-
-                Console.WriteLine(result.Output);
-                Console.Error.WriteLine(result.Error);
-
-                if (result.Breaking)
-                {
-                    Console.Error.WriteLine("Breaking changes detected.");
-                }
-                else
-                {
-                    Console.WriteLine("No breaking changes detected.");
-                }
-
-                return result.ExitCode;
+                Console.Error.WriteLine("Breaking changes detected.");
             }
-            finally
+            else
             {
-                if (createTempDir)
-                {
-                    try
-                    {
-                        Directory.Delete(workingDirectory, true);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.Error.WriteLine($"Warning: Failed to delete temporary working directory '{workingDirectory}': {ex.Message}");
-                    }
-                }
+                Console.WriteLine("No breaking changes detected.");
             }
+
+            return result.ExitCode;
         }
 
         private string BuildCliOptionsString()

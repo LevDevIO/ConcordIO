@@ -45,13 +45,8 @@ public partial class RootCommand
         {
             _nuGetService ??= new NuGetService();
 
-            var createTempDir = WorkingDirectory == null;
-            string workingDirectory = WorkingDirectory ?? Path.Combine(Path.GetTempPath(), "ConcordIO", Path.GetRandomFileName().Replace(".", ""));
-
-            if (createTempDir)
-            {
-                Directory.CreateDirectory(workingDirectory);
-            }
+            await using var tempDir = new TempDirectoryScope(WorkingDirectory);
+            var workingDirectory = tempDir.Path;
 
             Console.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");
             await _nuGetService.DownloadPackageAsync(workingDirectory, PackageId, Version, prerelease: Prerelease);
