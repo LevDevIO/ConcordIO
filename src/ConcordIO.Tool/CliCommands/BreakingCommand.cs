@@ -14,6 +14,8 @@ public partial class RootCommand
     public class BreakingCommand
     {
         private IConsoleOutput? _console;
+        private INuGetService? _nuGetService;
+        private IOasDiffRunner? _oasDiffRunner;
 
         [CliOption(Description = "Path to the OpenAPI/Protobuf specification file", Required = true)]
         public required string Spec { get; set; }
@@ -36,18 +38,30 @@ public partial class RootCommand
         [CliOption(Description = "Additional command line options for diffing tool in key=value format (can be specified multiple times)", Required = false)]
         public string[]? CliOptions { get; set; }
 
+        /// <summary>
+        /// Gets or sets the console output service. Used for dependency injection in tests.
+        /// </summary>
+        internal IConsoleOutput Console => _console ??= new ConsoleOutput();
+
+        /// <summary>
+        /// Gets or sets the NuGet service. Used for dependency injection in tests.
+        /// </summary>
+        internal INuGetService NuGetService => _nuGetService ??= new NuGetService();
+
+        /// <summary>
+        /// Gets or sets the oasdiff runner. Used for dependency injection in tests.
+        /// </summary>
+        internal IOasDiffRunner OasDiffRunner => _oasDiffRunner ??= new OasDiffRunner();
+
         public async Task<int> RunAsync()
         {
-            _console ??= new ConsoleOutput();
-            var oasDiffRunner = new OasDiffRunner();
-
             await using var tempDir = new TempDirectoryScope(WorkingDirectory);
             var workingDirectory = tempDir.Path;
 
             var nugetSpecPath = Path.Combine(workingDirectory, $"spec_in_nuget{Path.GetExtension(Spec)}");
             
             // Create a new GetSpecCommand instance with required properties
-            var getSpecCommand = new GetSpecCommand(new NuGetService(), _console)
+            var getSpecCommand = new GetSpecCommand(NuGetService, Console)
             {
                 PackageId = PackageId,
                 Version = Version,
@@ -60,23 +74,23 @@ public partial class RootCommand
             var getSpecResult = await getSpecCommand.RunAsync();
             if (getSpecResult != 0)
             {
-                _console.WriteError("Error: Failed to retrieve specification from NuGet package.");
+                Console.WriteError("Error: Failed to retrieve specification from NuGet package.");
                 return getSpecResult;
             }
 
             var cliOptionsString = BuildCliOptionsString();
-            var result = await oasDiffRunner.Breaking(Spec, nugetSpecPath, "-o WARN" + (string.IsNullOrEmpty(cliOptionsString) ? "" : " " + cliOptionsString));
+            var result = await OasDiffRunner.Breaking(Spec, nugetSpecPath, "-o WARN" + (string.IsNullOrEmpty(cliOptionsString) ? "" : " " + cliOptionsString));
 
-            _console.WriteLine(result.Output);
-            _console.WriteError(result.Error);
+            Console.WriteLine(result.Output);
+            Console.WriteError(result.Error);
 
             if (result.Breaking)
             {
-                _console.WriteError("Breaking changes detected.");
+                Console.WriteError("Breaking changes detected.");
             }
             else
             {
-                _console.WriteLine("No breaking changes detected.");
+                Console.WriteLine("No breaking changes detected.");
             }
 
             return result.ExitCode;

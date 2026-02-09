@@ -9,6 +9,9 @@ public partial class RootCommand
     [CliCommand(Name = "generate", Description = "Generate contract NuGet packages from OpenAPI, Protobuf, or AsyncAPI specifications")]
     public class GenerateCommand
     {
+        private ITemplateRenderer? _templateRenderer;
+        private IFileSystem? _fileSystem;
+
         [CliOption(Description = "Specification file(s) with optional kind (format: path[:kind], kind defaults to openapi). Can be specified multiple times.", Required = true)]
         public string[] Spec { get; set; } = [];
 
@@ -44,6 +47,16 @@ public partial class RootCommand
 
         [CliOption(Description = "Additional package properties in key=value format", Required = false)]
         public string[]? PackageProperties { get; set; }
+
+        /// <summary>
+        /// Gets or sets the template renderer. Used for dependency injection in tests.
+        /// </summary>
+        internal ITemplateRenderer TemplateRenderer => _templateRenderer ??= new TemplateRenderer();
+
+        /// <summary>
+        /// Gets or sets the file system. Used for dependency injection in tests.
+        /// </summary>
+        internal IFileSystem FileSystem => _fileSystem ??= new FileSystem();
 
         /// <summary>
         /// Represents a parsed specification entry with file name and kind.
@@ -174,8 +187,8 @@ public partial class RootCommand
             Console.WriteLine($"Generated: {result.TargetsPath}");
         }
 
-        private static ContractPackageGenerator CreateGenerator() =>
-            new(new TemplateRenderer(), new FileSystem());
+        private ContractPackageGenerator CreateGenerator() =>
+            new(TemplateRenderer, FileSystem);
 
         private List<KeyValuePair<string, string>> GetNormalizedNswagOptions(bool hasOpenApi)
         {

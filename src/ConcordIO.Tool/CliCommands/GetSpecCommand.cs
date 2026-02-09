@@ -30,6 +30,16 @@ public partial class RootCommand
         [CliOption(Description = "Working directory for downloading the package, defaults to a temp directory", Required = false)]
         public string? WorkingDirectory { get; set; }
 
+        /// <summary>
+        /// Gets or sets the NuGet service. Used for dependency injection in tests.
+        /// </summary>
+        internal INuGetService NuGetService => _nuGetService ??= new NuGetService();
+
+        /// <summary>
+        /// Gets or sets the console output service. Used for dependency injection in tests.
+        /// </summary>
+        internal IConsoleOutput ConsoleOutput => _console ??= new ConsoleOutput();
+
         public GetSpecCommand()
         {
         }
@@ -45,14 +55,11 @@ public partial class RootCommand
 
         public async Task<int> RunAsync()
         {
-            _nuGetService ??= new NuGetService();
-            _console ??= new ConsoleOutput();
-
             await using var tempDir = new TempDirectoryScope(WorkingDirectory);
             var workingDirectory = tempDir.Path;
 
-            _console.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");
-            await _nuGetService.DownloadPackageAsync(workingDirectory, PackageId, Version, prerelease: Prerelease);
+            ConsoleOutput.WriteLine($"Downloading NuGet package '{PackageId}' to '{workingDirectory}'...");
+            await NuGetService.DownloadPackageAsync(workingDirectory, PackageId, Version, prerelease: Prerelease);
 
             var packageDir = Directory.EnumerateDirectories(workingDirectory).Single();
             var openApiDir = Path.Combine(packageDir, "openapi");
@@ -61,7 +68,7 @@ public partial class RootCommand
             {
                 var file = Directory.EnumerateFiles(openApiDir).Single(f => f.EndsWith(".yaml") || f.EndsWith(".yml") || f.EndsWith(".json"));
                 var outputPath = OutputPath ?? Path.Combine(Environment.CurrentDirectory, Path.GetFileName(file));
-                _console.WriteLine($"Copying specification file '{file}' to '{outputPath}'...");
+                ConsoleOutput.WriteLine($"Copying specification file '{file}' to '{outputPath}'...");
                 File.Copy(file, outputPath, overwrite: OverwriteOutput);
                 return 0;
             }
