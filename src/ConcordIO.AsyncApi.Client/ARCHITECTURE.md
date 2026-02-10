@@ -153,4 +153,4 @@ Dispose() → AssemblyLoadContext.Unload()
 **Memory Management:**
 The resolver implements `IDisposable` and uses a collectible `AssemblyLoadContext`. The task disposes the resolver after generation, ensuring loaded assemblies are unloaded and don't accumulate in long-running MSBuild processes.
 
-The task registers an `AppDomain.CurrentDomain.AssemblyResolve` handler to resolve dependencies from the consuming project's output directory. This is necessary because the task assembly runs from the `tools/` folder inside the NuGet package, but needs to load types from the consumer's referenced assemblies.
+Dependencies are automatically resolved within the collectible `AssemblyLoadContext`, eliminating the need for custom `AppDomain.CurrentDomain.AssemblyResolve` handlers. The task assembly runs from the NuGet package's `tools/` folder, but the `AssemblyLoadContext` resolves consumer-referenced assemblies from the output directory.
