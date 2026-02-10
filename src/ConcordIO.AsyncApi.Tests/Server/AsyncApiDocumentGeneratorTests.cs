@@ -202,7 +202,7 @@ public class AsyncApiDocumentGeneratorTests
         // Assert
         var message = result.Components!.Messages![nameof(OrderCreatedEvent)];
         message.Payload.Should().NotBeNull();
-        message.Payload!.Reference.Should().Be($"#/components/schemas/{Uri.EscapeDataString(typeof(OrderCreatedEvent).FullName!)}");
+        message.Payload!.Reference.Should().Be($"#/components/schemas/{typeof(OrderCreatedEvent).FullName!}");
     }
 
     #endregion

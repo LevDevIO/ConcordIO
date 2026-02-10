@@ -154,6 +154,7 @@ public class ExternalTypeResolver : IDisposable
         {
             _alc.Unload();
             _disposed = true;
+            GC.SuppressFinalize(this);
         }
     }
 }

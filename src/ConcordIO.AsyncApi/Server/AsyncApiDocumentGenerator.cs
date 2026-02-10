@@ -92,7 +92,7 @@ public class AsyncApiDocumentGenerator
                 ContentType = "application/json",
                 Payload = new V3SchemaDefinition
                 {
-                    Reference = $"#/components/schemas/{Uri.EscapeDataString(fullTypeName)}"
+                    Reference = $"#/components/schemas/{fullTypeName}"
                 }
             };
                     document.Components.Messages![typeName] = message;
@@ -122,13 +122,13 @@ public class AsyncApiDocumentGenerator
                         Action = operationAction,
                         Channel = new V3ReferenceDefinition
                         {
-                            Reference = $"#/channels/{Uri.EscapeDataString(fullTypeName)}"
+                            Reference = $"#/channels/{fullTypeName}"
                         },
                         Messages =
                         [
                             new V3ReferenceDefinition
                             {
-                                Reference = $"#/channels/{Uri.EscapeDataString(fullTypeName)}/messages/{typeName}"
+                                Reference = $"#/channels/{fullTypeName}/messages/{typeName}"
                             }
                         ]
                     };

@@ -61,8 +61,11 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
                 return false;
             }
 
-            // Use a collectible AssemblyLoadContext to prevent memory leaks in long-running MSBuild processes
-            var alc = new AssemblyLoadContext("ConcordIO-GenerateAsyncApi", isCollectible: true);
+            // Use a collectible AssemblyLoadContext to prevent memory leaks in long-running MSBuild processes.
+            // The custom context resolves dependencies from the assembly's output directory, replacing
+            // the old AppDomain.CurrentDomain.AssemblyResolve handler approach.
+            var assemblyDir = Path.GetDirectoryName(AssemblyPath) ?? ".";
+            var alc = new ConcordIOAssemblyLoadContext(assemblyDir);
             try
             {
                 var assembly = alc.LoadFromAssemblyPath(AssemblyPath);
@@ -133,6 +136,20 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
         {
             Log.LogErrorFromException(ex, showStackTrace: true);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Collectible AssemblyLoadContext that resolves dependencies from a base directory,
+    /// equivalent to the previous AppDomain.AssemblyResolve approach but without the memory leak.
+    /// </summary>
+    private sealed class ConcordIOAssemblyLoadContext(string basePath)
+        : AssemblyLoadContext("ConcordIO-GenerateAsyncApi", isCollectible: true)
+    {
+        protected override Assembly? Load(AssemblyName assemblyName)
+        {
+            var path = Path.Combine(basePath, assemblyName.Name + ".dll");
+            return File.Exists(path) ? LoadFromAssemblyPath(path) : null;
         }
     }
 
