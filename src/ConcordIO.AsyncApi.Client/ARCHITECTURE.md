@@ -132,7 +132,8 @@ AsyncApiContractGenerator.Generate()  [in ConcordIO.AsyncApi]
     │
     ▼
 LoadAssemblies()
-    │  Assembly.LoadFrom() per path
+    │  AssemblyLoadContext.LoadFromAssemblyPath() per path
+    │  Uses collectible context to prevent memory leaks
     │  Cache GetExportedTypes() by FullName
     │  Skip assemblies that fail to load (native, etc.)
     │
@@ -144,8 +145,12 @@ For each schema type:
     │
     ▼
 External types get using statements instead of generated code
+    │
+    ▼
+Dispose() → AssemblyLoadContext.Unload()
 ```
 
-### Assembly Resolution
+**Memory Management:**
+The resolver implements `IDisposable` and uses a collectible `AssemblyLoadContext`. The task disposes the resolver after generation, ensuring loaded assemblies are unloaded and don't accumulate in long-running MSBuild processes.
 
 The task registers an `AppDomain.CurrentDomain.AssemblyResolve` handler to resolve dependencies from the consuming project's output directory. This is necessary because the task assembly runs from the `tools/` folder inside the NuGet package, but needs to load types from the consumer's referenced assemblies.

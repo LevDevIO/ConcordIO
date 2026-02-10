@@ -92,7 +92,7 @@ public class AsyncApiDocumentGenerator
                 ContentType = "application/json",
                 Payload = new V3SchemaDefinition
                 {
-                    Reference = $"#/components/schemas/{typeName}"
+                    Reference = $"#/components/schemas/{Uri.EscapeDataString(fullTypeName)}"
                 }
             };
                     document.Components.Messages![typeName] = message;
@@ -141,23 +141,49 @@ public class AsyncApiDocumentGenerator
     private void CollectTypeAndDependencies(Type type, Dictionary<string, (Type Type, string Namespace)> schemas)
     {
         var typeName = type.Name;
+        var fullTypeName = type.FullName ?? typeName;
         var ns = type.Namespace ?? string.Empty;
 
         // Skip if already processed or if it's a primitive/system type
-        if (schemas.ContainsKey(typeName) || IsSimpleType(type))
+        // Use fully-qualified type name to prevent collisions across namespaces
+        if (schemas.ContainsKey(fullTypeName) || IsSimpleType(type))
         {
             return;
         }
 
-        schemas[typeName] = (type, ns);
+        schemas[fullTypeName] = (type, ns);
 
         // Collect dependencies from properties
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            var propertyType = GetUnderlyingType(property.PropertyType);
-            if (!IsSimpleType(propertyType) && propertyType.Namespace?.StartsWith("System") != true)
+            var propertyType = property.PropertyType;
+            
+            // Handle Dictionary<K,V> specially to collect both key and value types
+            if (propertyType.IsGenericType)
             {
-                CollectTypeAndDependencies(propertyType, schemas);
+                var genericDef = propertyType.GetGenericTypeDefinition();
+                if ((genericDef == typeof(Dictionary<,>) || genericDef == typeof(IDictionary<,>)) &&
+                    propertyType.GenericTypeArguments.Length == 2)
+                {
+                    var keyType = propertyType.GenericTypeArguments[0];
+                    var valueType = propertyType.GenericTypeArguments[1];
+                    
+                    if (!IsSimpleType(keyType) && keyType.Namespace?.StartsWith("System") != true)
+                    {
+                        CollectTypeAndDependencies(keyType, schemas);
+                    }
+                    if (!IsSimpleType(valueType) && valueType.Namespace?.StartsWith("System") != true)
+                    {
+                        CollectTypeAndDependencies(valueType, schemas);
+                    }
+                    continue;
+                }
+            }
+            
+            var underlyingType = GetUnderlyingType(propertyType);
+            if (!IsSimpleType(underlyingType) && underlyingType.Namespace?.StartsWith("System") != true)
+            {
+                CollectTypeAndDependencies(underlyingType, schemas);
             }
         }
     }
@@ -187,14 +213,15 @@ public class AsyncApiDocumentGenerator
                     return genericArgs[0];
                 }
             }
-            // Handle Dictionary<K,V>
+            // Handle Dictionary<K,V> - note: GetInnerTypes only returns one type
+            // but we collect both key and value in the caller via recursive calls
             if (genericArgs.Length == 2)
             {
                 var genericDef = type.GetGenericTypeDefinition();
                 if (genericDef == typeof(Dictionary<,>) ||
                     genericDef == typeof(IDictionary<,>))
                 {
-                    // For dictionaries, we care about the value type
+                    // Return value type here, but we'll also process key type separately
                     return genericArgs[1];
                 }
             }
@@ -217,9 +244,14 @@ public class AsyncApiDocumentGenerator
                type == typeof(decimal) ||
                type == typeof(DateTime) ||
                type == typeof(DateTimeOffset) ||
+               type == typeof(DateOnly) ||
+               type == typeof(TimeOnly) ||
                type == typeof(TimeSpan) ||
                type == typeof(Guid) ||
                type == typeof(Uri) ||
+               type == typeof(byte[]) ||
+               type == typeof(Half) ||
+               type == typeof(Int128) ||
                type == typeof(object);
     }
 

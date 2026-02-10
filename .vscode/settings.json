@@ -5,6 +5,7 @@
         "git add": true,
         "git commit": true,
         "git pull": true,
-        "dotnet clean": true
+        "dotnet clean": true,
+        "git switch": true
     }
 }
