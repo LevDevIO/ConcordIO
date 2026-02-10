@@ -146,7 +146,8 @@ concordio breaking \
 | Code | Meaning |
 |------|---------|
 | `0` | No breaking changes detected. |
-| Non-zero | Breaking changes detected (or tool error). |
+| `1` | Breaking changes detected. |
+| `> 1` | Tool error (e.g., invalid arguments, missing files). |
 
 ---
 

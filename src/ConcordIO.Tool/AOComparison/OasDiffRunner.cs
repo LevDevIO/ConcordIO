@@ -55,7 +55,8 @@ public class OasDiffRunner : IOasDiffRunner
             ExitCode = process.ExitCode,
             Output = output,
             Error = error,
-            Breaking = process.ExitCode != 0
+            Breaking = process.ExitCode == 1,
+            Success = process.ExitCode == 0 || process.ExitCode == 1
         };
     }
 

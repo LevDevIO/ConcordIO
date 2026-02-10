@@ -246,7 +246,10 @@ concordio breaking --spec local.yaml --package-id Contoso.Api
     │  Runs: oasdiff breaking "{base}" "{revision}" -o WARN {extraArgs}
     │
     ▼
-4. Returns OasDiffResult { ExitCode, Output, Error, Breaking }
+4. Returns OasDiffResult { ExitCode, Output, Error, Breaking, Success }
+    │  Breaking: true only for exit code 1 (breaking changes detected)
+    │  Success: true for exit codes 0 or 1 (tool executed successfully)
+    │  Exit codes > 1 indicate tool errors (invalid arguments, missing files, etc.)
 5. Cleanup temp directory
 ```
 

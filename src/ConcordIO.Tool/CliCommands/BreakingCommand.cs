@@ -86,6 +86,12 @@ public partial class RootCommand
             Console.WriteLine(result.Output);
             Console.WriteError(result.Error);
 
+            if (!result.Success)
+            {
+                Console.WriteError("Error: oasdiff command failed.");
+                return result.ExitCode;
+            }
+
             if (result.Breaking)
             {
                 Console.WriteError("Breaking changes detected.");
