@@ -56,3 +56,20 @@ public class NestedMessageContainer
         public int Count { get; set; }
     }
 }
+
+// Issue #49: Support all generic types with arbitrary number of type parameters
+public class GenericTypesEvent
+{
+    // KeyValuePair<K,V>
+    public KeyValuePair<CustomKey, CustomValue> SinglePair { get; set; }
+    
+    // Tuple types
+    public Tuple<CustomKey, CustomValue> TupleOfCustomTypes { get; set; } = null!;
+    public ValueTuple<CustomKey, CustomValue> ValueTupleOfCustomTypes { get; set; }
+    
+    // Tuple with 3+ parameters
+    public Tuple<CustomKey, CustomValue, string> TripleTuple { get; set; } = null!;
+    
+    // Custom multi-parameter generic (simulated with common System type)
+    public Dictionary<CustomKey, CustomValue> CustomGeneric { get; set; } = new();
+}
