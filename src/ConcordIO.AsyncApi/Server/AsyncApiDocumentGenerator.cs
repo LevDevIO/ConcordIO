@@ -11,6 +11,43 @@ namespace ConcordIO.AsyncApi.Server;
 /// <summary>
 /// Generates AsyncAPI 3.x documents from discovered .NET types.
 /// </summary>
+/// <remarks>
+/// <para>
+/// This generator creates AsyncAPI specifications from .NET message types, enabling
+/// contract-first or code-first development with messaging systems like MassTransit.
+/// </para>
+/// <para>
+/// The generated document includes:
+/// </para>
+/// <list type="bullet">
+/// <item><description><c>info</c> - Document metadata (title, version)</description></item>
+/// <item><description><c>channels</c> - MassTransit URN-format addresses</description></item>
+/// <item><description><c>operations</c> - Publish/subscribe operations</description></item>
+/// <item><description><c>components/schemas</c> - JSON Schema definitions with <c>x-dotnet-namespace</c> extension</description></item>
+/// <item><description><c>components/messages</c> - Message definitions with payload references</description></item>
+/// </list>
+/// <para>
+/// Custom extensions added to schemas:
+/// </para>
+/// <list type="bullet">
+/// <item><description><c>x-dotnet-namespace</c> - Original .NET namespace for proper code generation</description></item>
+/// <item><description><c>x-dotnet-type</c> - Fully qualified .NET type name for external type detection</description></item>
+/// </list>
+/// </remarks>
+/// <example>
+/// <para>Basic usage:</para>
+/// <code>
+/// var discoveryService = new TypeDiscoveryService();
+/// var types = discoveryService.DiscoverTypes(assembly, patterns);
+/// 
+/// var generator = new AsyncApiDocumentGenerator();
+/// var document = generator.Generate("OrderService.Contracts", "1.0.0", types);
+/// 
+/// // Serialize to YAML
+/// var writer = new AsyncApiDocumentWriter();
+/// var yaml = await writer.WriteAsync(document, "yaml");
+/// </code>
+/// </example>
 public class AsyncApiDocumentGenerator
 {
     private const string GeneratorName = "ConcordIO.AsyncApi.Server";
@@ -19,6 +56,16 @@ public class AsyncApiDocumentGenerator
 
     private readonly SystemTextJsonSchemaGeneratorSettings _schemaSettings;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AsyncApiDocumentGenerator"/> class.
+    /// </summary>
+    /// <remarks>
+    /// Uses NJsonSchema with the following settings:
+    /// <list type="bullet">
+    /// <item><description>Schema type: JSON Schema</description></item>
+    /// <item><description>Flattened inheritance hierarchy</description></item>
+    /// </list>
+    /// </remarks>
     public AsyncApiDocumentGenerator()
     {
         _schemaSettings = new SystemTextJsonSchemaGeneratorSettings
@@ -29,12 +76,46 @@ public class AsyncApiDocumentGenerator
     }
 
     /// <summary>
-    /// Generates an AsyncAPI document from discovered types.
+    /// Generates an AsyncAPI 3.x document from discovered .NET types.
     /// </summary>
-    /// <param name="title">The document title (typically the assembly/package name).</param>
-    /// <param name="version">The document version.</param>
-    /// <param name="types">The discovered types to include.</param>
-    /// <returns>An AsyncAPI 3.x document.</returns>
+    /// <param name="title">The document title (typically the assembly or package name).</param>
+    /// <param name="version">The document version (e.g., "1.0.0").</param>
+    /// <param name="types">The discovered message types to include in the document.</param>
+    /// <returns>A fully populated <see cref="V3AsyncApiDocument"/>.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="title"/> or <paramref name="version"/> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="types"/> is null.</exception>
+    /// <remarks>
+    /// <para>
+    /// The generation process:
+    /// </para>
+    /// <list type="number">
+    /// <item><description>Collects all types and their dependencies (nested types, property types)</description></item>
+    /// <item><description>Generates JSON Schema for each type with namespace extensions</description></item>
+    /// <item><description>Creates message definitions referencing the schemas</description></item>
+    /// <item><description>Creates channels with MassTransit URN addresses (<c>urn:message:{namespace}:{type}</c>)</description></item>
+    /// <item><description>Creates operations based on message kind (Event = Receive, Command = Send)</description></item>
+    /// </list>
+    /// <para>
+    /// Type dependencies are automatically discovered by scanning public properties.
+    /// Primitive types and System types are excluded from schema generation.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var types = new[]
+    /// {
+    ///     new DiscoveredType(typeof(OrderCreatedEvent), MessageKind.Event),
+    ///     new DiscoveredType(typeof(CreateOrderCommand), MessageKind.Command)
+    /// };
+    /// 
+    /// var generator = new AsyncApiDocumentGenerator();
+    /// var document = generator.Generate("OrderService", "1.0.0", types);
+    /// 
+    /// // Access generated content
+    /// Console.WriteLine($"Schemas: {document.Components?.Schemas?.Count}");
+    /// Console.WriteLine($"Channels: {document.Channels.Count}");
+    /// </code>
+    /// </example>
     public V3AsyncApiDocument Generate(string title, string version, IEnumerable<DiscoveredType> types)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);

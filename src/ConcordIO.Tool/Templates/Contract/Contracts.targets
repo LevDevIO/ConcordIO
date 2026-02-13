@@ -1,10 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Contract Package .targets Template
+  ==================================
+  This MSBuild targets file is included in contract packages to expose
+  spec files as MSBuild items that can be consumed by client packages.
+  
+  MODEL KEYS:
+  - package_id:    The contract package ID
+  - version:       The contract package version
+  - has_openapi:   Boolean - true if package contains OpenAPI specs
+  - has_proto:     Boolean - true if package contains Protocol Buffer specs  
+  - has_asyncapi:  Boolean - true if package contains AsyncAPI specs
+  - specs_by_kind: Dictionary of spec files grouped by kind
+  
+  GENERATED ITEMS:
+  - ConcordIOContract:         For OpenAPI and Proto specs
+  - ConcordIOAsyncApiContract: For AsyncAPI specs (separate for client generation)
+  
+  ITEM METADATA:
+  - PackageId: Source contract package ID
+  - Kind:      Spec type ("openapi", "proto", "asyncapi")
+  - Version:   Source contract package version
+  
+  USAGE IN CONSUMING PROJECTS:
+  These items are automatically available when the contract package is referenced.
+  Client packages use them to generate code:
+  
+    [In consuming .csproj]
+    <ItemGroup>
+      <PackageReference Include="MyService.Contracts" Version="1.0.0" />
+    </ItemGroup>
+    
+    [After package restore, these items are available:]
+    @(ConcordIOContract) for OpenAPI/Proto files
+    @(ConcordIOAsyncApiContract) for AsyncAPI files
+-->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 {{~ if has_openapi || has_proto ~}}
-    <!-- OpenAPI/Proto contracts - expose as ConcordIOContract -->
+    <!--
+      OpenAPI/Proto Contracts
+      =======================
+      Exposed as ConcordIOContract items for NSwag or gRPC code generation.
+      Each item includes full path, package info, and spec type.
+    -->
     <ItemGroup>
 {{~ if has_openapi ~}}
 {{~ for spec in specs_by_kind["openapi"] ~}}
+        <!-- OpenAPI spec: {{ spec }} -->
         <ConcordIOContract Include="$(MSBuildThisFileDirectory)..\openapi\{{ spec }}">
             <PackageId>{{ package_id }}</PackageId>
             <Kind>openapi</Kind>
@@ -14,6 +56,7 @@
 {{~ end ~}}
 {{~ if has_proto ~}}
 {{~ for spec in specs_by_kind["proto"] ~}}
+        <!-- Proto spec: {{ spec }} -->
         <ConcordIOContract Include="$(MSBuildThisFileDirectory)..\proto\{{ spec }}">
             <PackageId>{{ package_id }}</PackageId>
             <Kind>proto</Kind>
@@ -24,9 +67,15 @@
     </ItemGroup>
 {{~ end ~}}
 {{~ if has_asyncapi ~}}
-    <!-- AsyncAPI contracts - expose as ConcordIOAsyncApiContract for client generation -->
+    <!--
+      AsyncAPI Contracts
+      ==================
+      Exposed as ConcordIOAsyncApiContract items for C# contract generation.
+      These are consumed by ConcordIO.AsyncApi.Client MSBuild task.
+    -->
     <ItemGroup>
 {{~ for spec in specs_by_kind["asyncapi"] ~}}
+        <!-- AsyncAPI spec: {{ spec }} -->
         <ConcordIOAsyncApiContract Include="$(MSBuildThisFileDirectory)..\asyncapi\{{ spec }}">
             <PackageId>{{ package_id }}</PackageId>
             <Kind>asyncapi</Kind>

@@ -5,7 +5,28 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>ConcordIO.AsyncApi</RootNamespace>
+
+    <!-- NuGet Package settings -->
+    <PackageId>ConcordIO.AsyncApi</PackageId>
+    <Authors>LevDev</Authors>
+    <Description>Core library for AsyncAPI document parsing, code generation, and contract management.</Description>
+    <RepositoryUrl>https://github.com/LevDevIO/ConcordIO</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <!-- XML Documentation for IntelliSense and Copilot assistance -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    
+    <!-- SourceLink for source navigation in debugging and IDE support -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SourceLink for GitHub repository -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- AsyncAPI document handling -->

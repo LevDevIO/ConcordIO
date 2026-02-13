@@ -1,20 +1,73 @@
-<!-- ConcordIO.AsyncApi.Client.props - Default properties -->
+<!--
+  ConcordIO.AsyncApi.Client.props
+  ===============================
+  Default properties for AsyncAPI contract generation from AsyncAPI specifications.
+  
+  This file is automatically imported when referencing the ConcordIO.AsyncApi.Client package.
+  Properties can be overridden in your .csproj file before the PackageReference.
+  
+  CONFIGURATION PROPERTIES:
+  ========================
+  
+  ConcordIOClientGenerateDataAnnotations (default: true)
+    When true, generates System.ComponentModel.DataAnnotations attributes
+    on properties (e.g., [Required], [StringLength]).
+    
+  ConcordIOClientGenerateNullableReferenceTypes (default: true)
+    When true, generates nullable reference type annotations (string?, int?).
+    Requires C# 8.0+ and <Nullable>enable</Nullable> in your project.
+    
+  ConcordIOClientClassStyle (default: Poco)
+    Controls the generated class style:
+    - "Poco": Traditional classes with get/set properties
+    - "Record": Immutable record types (C# 9.0+)
+  
+  ConcordIOClientOutputPath (default: obj/{Configuration}/{TargetFramework}/ConcordIO.AsyncApi.Generated/)
+    Override to specify a custom output directory for generated files.
+  
+  USAGE EXAMPLE:
+  ==============
+  <PropertyGroup>
+    <ConcordIOClientClassStyle>Record</ConcordIOClientClassStyle>
+    <ConcordIOClientGenerateDataAnnotations>false</ConcordIOClientGenerateDataAnnotations>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="ConcordIO.AsyncApi.Client" Version="0.1.0" />
+  </ItemGroup>
+  
+  TROUBLESHOOTING:
+  ================
+  - If generation doesn't run: Ensure ConcordIOAsyncApiContract items exist (from contract package)
+  - Check build output: dotnet build -v n (normal verbosity) to see ConcordIO messages
+  - Verify package restore: dotnet restore before build
+-->
 <Project>
 
   <PropertyGroup>
     <!-- 
       Output directory for generated C# files.
-      Default: obj/{Configuration}/{TargetFramework}/ConcordIO.AsyncApi.Generated/
-      Computed at target time when IntermediateOutputPath is available.
+      Default is computed at target time: obj/{Configuration}/{TargetFramework}/ConcordIO.AsyncApi.Generated/
+      Override this to use a custom location (e.g., for source control inclusion).
     -->
     
-    <!-- Whether to generate System.ComponentModel.DataAnnotations attributes -->
+    <!-- 
+      Generate System.ComponentModel.DataAnnotations attributes on properties.
+      Set to "false" to skip [Required], [StringLength], etc. attributes.
+    -->
     <ConcordIOClientGenerateDataAnnotations Condition="'$(ConcordIOClientGenerateDataAnnotations)' == ''">true</ConcordIOClientGenerateDataAnnotations>
     
-    <!-- Whether to generate nullable reference type annotations -->
+    <!-- 
+      Generate nullable reference type annotations (string?, List<T>?).
+      Requires <Nullable>enable</Nullable> in your project for full benefit.
+    -->
     <ConcordIOClientGenerateNullableReferenceTypes Condition="'$(ConcordIOClientGenerateNullableReferenceTypes)' == ''">true</ConcordIOClientGenerateNullableReferenceTypes>
     
-    <!-- The class style: Poco or Record -->
+    <!-- 
+      Generated class style:
+      - "Poco": public class with { get; set; } properties (mutable)
+      - "Record": public record with init-only properties (immutable, C# 9.0+)
+    -->
     <ConcordIOClientClassStyle Condition="'$(ConcordIOClientClassStyle)' == ''">Poco</ConcordIOClientClassStyle>
   </PropertyGroup>
 

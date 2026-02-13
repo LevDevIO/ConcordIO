@@ -4,6 +4,57 @@
 
 ConcordIO is a .NET CLI tool and NuGet-based contract management toolchain. It generates NuGet package scaffolds from OpenAPI, Protocol Buffer, and AsyncAPI specifications — with automatic MSBuild integration for client code generation and breaking-change detection.
 
+## ⚠️ MANDATORY: Documentation Requirements
+
+**EVERY code change MUST include corresponding documentation updates. No exceptions.**
+
+### Rules for ALL Changes
+
+1. **XML Documentation**: Every public class, method, property, and interface MUST have XML doc comments with:
+   - `<summary>` — What it does
+   - `<param>` — For each parameter
+   - `<returns>` — What it returns
+   - `<remarks>` — Implementation details, constraints, or usage notes
+   - `<example>` — At least one usage example for complex APIs
+
+2. **README Updates**: If a change affects user-facing behavior, update the relevant README.md:
+   - New CLI options → `src/ConcordIO.Tool/README.md`
+   - New MSBuild properties → Package README files
+   - New features → Add to feature lists and examples
+
+3. **ARCHITECTURE Updates**: If a change affects internal design, update the relevant ARCHITECTURE.md:
+   - New services/interfaces → Document in component section
+   - Changed data flow → Update flow diagrams
+   - New dependencies → Document integration points
+
+4. **MSBuild Comments**: All `.props` and `.targets` files MUST have XML comments explaining:
+   - Each property's purpose, type, and default value
+   - Each target's trigger conditions and side effects
+   - Troubleshooting guidance for common issues
+
+5. **Template Comments**: All Scriban templates MUST have header comments documenting:
+   - MODEL KEYS — All variables the template expects
+   - GENERATED STRUCTURE — What the output looks like
+   - USAGE — How consumers use the generated output
+
+### Pre-Commit Checklist
+
+Before completing any task, verify:
+
+- [ ] All new public APIs have complete XML documentation with `<example>` tags
+- [ ] Affected README files are updated with new features/options
+- [ ] Affected ARCHITECTURE files reflect structural changes
+- [ ] MSBuild files have inline comments for all properties and targets
+- [ ] Scriban templates have header documentation blocks
+- [ ] No `CS1591` warnings for missing XML comments on public members
+
+### Documentation Quality Standards
+
+- **Be specific**: Include exact values, paths, and type names
+- **Show examples**: Real-world usage patterns, not abstract descriptions
+- **Explain "why"**: Not just what something does, but why it exists
+- **Keep current**: Outdated docs are worse than no docs
+
 ## Key Documentation — Keep Updated
 
 When making changes to the codebase, **always update the relevant documentation files** listed below. These files must stay in sync with the code at all times.
