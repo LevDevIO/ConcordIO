@@ -83,8 +83,8 @@ The tool uses [DotMake.CommandLine](https://github.com/dotmake-build/command-lin
 
 - **`RootCommand`** — top-level command definition (partial class spanning all command files).
 - **`GenerateCommand`** — parses `--spec path[:kind]` arguments, groups specs by kind, then delegates to `ContractPackageGenerator`.
-- **`BreakingCommand`** — downloads the published NuGet package via `GetSpecCommand`, extracts the spec, then runs `OasDiffRunner` to compare.
-- **`GetSpecCommand`** — downloads a NuGet package using the `nuget` CLI and extracts the spec file from it.
+- **`BreakingCommand`** — downloads the published NuGet package via `GetSpecCommand`, extracts the spec, then runs `OasDiffRunner` to compare. Supports `--kind` option to specify the spec kind (openapi, proto, or asyncapi).
+- **`GetSpecCommand`** — downloads a NuGet package using the `nuget` CLI and extracts the spec file from it. Supports `--kind` option to specify which spec kind to retrieve (openapi, proto, or asyncapi). Includes explicit error handling for missing or duplicate files.
 
 Each command's `RunAsync()` method returns an `int` exit code (0 = success).
 
@@ -234,9 +234,11 @@ concordio breaking --spec local.yaml --package-id Contoso.Api
     ▼
 1. Create temp directory
 2. GetSpecCommand.RunAsync()
+    │  Validates the --kind option (openapi, proto, or asyncapi)
     │  Shells out to `nuget install {PackageId} -OutputDirectory {tempDir}`
-    │  Finds the spec file inside the downloaded package's openapi/ folder
-    │  Copies it to a known path
+    │  Finds the spec file inside the downloaded package's {kind}/ folder
+    │  Performs explicit count checks (0 or >1 files) with user-friendly errors
+    │  Copies the spec to a known path
     │
     ▼
 3. OasDiffRunner.Breaking(localSpec, nugetSpec, args)
@@ -244,7 +246,10 @@ concordio breaking --spec local.yaml --package-id Contoso.Api
     │  Runs: oasdiff breaking "{base}" "{revision}" -o WARN {extraArgs}
     │
     ▼
-4. Returns OasDiffResult { ExitCode, Output, Error, Breaking }
+4. Returns OasDiffResult { ExitCode, Output, Error, Breaking, Success }
+    │  Breaking: true only for exit code 1 (breaking changes detected)
+    │  Success: true for exit codes 0 or 1 (tool executed successfully)
+    │  Exit codes > 1 indicate tool errors (invalid arguments, missing files, etc.)
 5. Cleanup temp directory
 ```
 

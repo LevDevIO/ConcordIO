@@ -202,7 +202,7 @@ public class AsyncApiDocumentGeneratorTests
         // Assert
         var message = result.Components!.Messages![nameof(OrderCreatedEvent)];
         message.Payload.Should().NotBeNull();
-        message.Payload!.Reference.Should().Be($"#/components/schemas/{nameof(OrderCreatedEvent)}");
+        message.Payload!.Reference.Should().Be($"#/components/schemas/{typeof(OrderCreatedEvent).FullName!}");
     }
 
     #endregion
@@ -222,7 +222,7 @@ public class AsyncApiDocumentGeneratorTests
         var result = _sut.Generate("TestApi", "1.0.0", types);
 
         // Assert
-        result.Components!.Schemas.Should().ContainKey(nameof(OrderCreatedEvent));
+        result.Components!.Schemas.Should().ContainKey(typeof(OrderCreatedEvent).FullName!);
     }
 
     [Fact]
@@ -238,8 +238,8 @@ public class AsyncApiDocumentGeneratorTests
         var result = _sut.Generate("TestApi", "1.0.0", types);
 
         // Assert
-        result.Components!.Schemas.Should().ContainKey(nameof(CreateOrderCommand));
-        result.Components!.Schemas.Should().ContainKey(nameof(OrderItem));
+        result.Components!.Schemas.Should().ContainKey(typeof(CreateOrderCommand).FullName!);
+        result.Components!.Schemas.Should().ContainKey(typeof(OrderItem).FullName!);
     }
 
     [Fact]
@@ -255,7 +255,7 @@ public class AsyncApiDocumentGeneratorTests
         var result = _sut.Generate("TestApi", "1.0.0", types);
 
         // Assert
-        var schema = result.Components!.Schemas![nameof(OrderCreatedEvent)];
+        var schema = result.Components!.Schemas![typeof(OrderCreatedEvent).FullName!];
         schema.SchemaFormat.Should().Contain("json");
     }
 

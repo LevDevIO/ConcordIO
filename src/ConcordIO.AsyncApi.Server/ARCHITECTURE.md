@@ -18,10 +18,11 @@ ConcordIO.AsyncApi.Server is a NuGet tool package that runs after build in produ
 │     │  into MessageTypePattern[] with Kind metadata          │
 │     │                                                        │
 │     ├─ GenerateAsyncApiTask.Execute()                        │
-│     │  ├─ Assembly.LoadFrom(TargetPath)                      │
+│     │  ├─ AssemblyLoadContext.LoadFromAssemblyPath()         │
 │     │  ├─ TypeDiscoveryService.DiscoverTypes()               │
 │     │  ├─ AsyncApiDocumentGenerator.Generate()               │
-│     │  └─ AsyncApiDocumentWriter.WriteYaml/JsonAsync()       │
+│     │  ├─ AsyncApiDocumentWriter.WriteYaml/JsonAsync()       │
+│     │  └─ AssemblyLoadContext.Unload() (cleanup)             │
 │     │                                                        │
 │     └─ Output: _ConcordIOGeneratedFile                       │
 │     ▼                                                        │
@@ -85,9 +86,11 @@ ConcordIOGenerateAsyncApi target
     ▼
 GenerateAsyncApiTask.Execute()
     │
-    ├─ Set up AssemblyResolve handler for dependency resolution
+    ├─ Create collectible AssemblyLoadContext
+    │  Prevents memory leaks in long-running MSBuild processes
     │
-    ├─ Assembly.LoadFrom(AssemblyPath)
+    ├─ AssemblyLoadContext.LoadFromAssemblyPath(AssemblyPath)
+    │  Dependencies resolved within the collectible context
     │
     ├─ ParsePatterns()
     │  Convert ITaskItem[] → List<MessageTypePattern>
@@ -142,9 +145,30 @@ Three targets form the pipeline:
 **Transitive** (`buildTransitive/ConcordIO.AsyncApi.Server.props`):
 - Imports the main props file for projects that transitively reference this package
 
-### Assembly Resolution
+### Assembly Loading and Memory Management
 
-The task sets up an `AppDomain.CurrentDomain.AssemblyResolve` handler to resolve type dependencies from the assembly's output directory. This is necessary because the consumer's contract types may reference types from other assemblies (e.g., shared DTOs), and the task assembly runs from the NuGet package's `tools/` folder.
+The task uses a **collectible AssemblyLoadContext** to load the target assembly and its dependencies. This is critical for preventing memory leaks in long-running MSBuild processes (e.g., Visual Studio builds).
+
+**Why collectible contexts?**
+- `Assembly.LoadFrom()` loads assemblies into the default AppDomain where they cannot be unloaded
+- In long-running processes, this causes memory to accumulate with each build
+- Collectible `AssemblyLoadContext` allows the assemblies to be unloaded via `Unload()` after generation is complete
+
+**Implementation:**
+```csharp
+var alc = new AssemblyLoadContext("ConcordIO-GenerateAsyncApi", isCollectible: true);
+try
+{
+    var assembly = alc.LoadFromAssemblyPath(AssemblyPath);
+    // ... generate document ...
+}
+finally
+{
+    alc.Unload();
+}
+```
+
+Dependency assemblies are automatically resolved within the same context by the runtime, eliminating the need for custom `AssemblyResolve` handlers.
 
 ### Generated Consumer Targets
 

@@ -26,10 +26,13 @@ public class NuGetService : INuGetService
 
         process.Start();
 
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
 
         await process.WaitForExitAsync();
+
+        var output = await outputTask;
+        var error = await errorTask;
 
         Console.WriteLine(output);
         Console.Error.WriteLine(error);

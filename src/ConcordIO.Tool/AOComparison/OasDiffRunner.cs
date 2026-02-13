@@ -42,17 +42,21 @@ public class OasDiffRunner : IOasDiffRunner
 
         process.Start();
 
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
 
         await process.WaitForExitAsync();
+
+        var output = await outputTask;
+        var error = await errorTask;
 
         return new OasDiffResult
         {
             ExitCode = process.ExitCode,
             Output = output,
             Error = error,
-            Breaking = process.ExitCode != 0
+            Breaking = process.ExitCode == 1,
+            Success = process.ExitCode == 0 || process.ExitCode == 1
         };
     }
 

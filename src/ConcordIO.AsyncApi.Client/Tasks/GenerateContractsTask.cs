@@ -68,7 +68,7 @@ public class GenerateContractsTask : MSBuildTask
             Directory.CreateDirectory(OutputDirectory);
 
             // Set up external type resolver with referenced assemblies
-            var resolver = new ExternalTypeResolver();
+            using var resolver = new ExternalTypeResolver();
             var assemblyPaths = ReferencedAssemblies.Select(r => r.ItemSpec).Where(File.Exists);
             resolver.LoadAssemblies(assemblyPaths);
 

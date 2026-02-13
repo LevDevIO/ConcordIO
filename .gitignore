@@ -55,3 +55,4 @@ nunit-*.xml
 
 .vs/
 .env
+.claude/settings.local.json

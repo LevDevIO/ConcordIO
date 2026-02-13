@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.Loader;
 
 namespace ConcordIO.AsyncApi.Client;
 
@@ -6,10 +7,12 @@ namespace ConcordIO.AsyncApi.Client;
 /// Resolves types from external assemblies to determine if they should be generated
 /// or referenced from existing assemblies.
 /// </summary>
-public class ExternalTypeResolver
+public class ExternalTypeResolver : IDisposable
 {
     private readonly Dictionary<string, Type> _typeCache = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Assembly> _loadedAssemblies = new(StringComparer.OrdinalIgnoreCase);
+    private readonly AssemblyLoadContext _alc = new("ConcordIO-ExternalTypeResolver", isCollectible: true);
+    private bool _disposed;
 
     /// <summary>
     /// Creates a new instance of the external type resolver.
@@ -42,14 +45,24 @@ public class ExternalTypeResolver
             {
                 if (File.Exists(path) && !_loadedAssemblies.ContainsKey(path))
                 {
-                    var assembly = Assembly.LoadFrom(path);
+                    var assembly = _alc.LoadFromAssemblyPath(path);
                     LoadAssembly(assembly);
                     _loadedAssemblies[path] = assembly;
                 }
             }
-            catch (Exception)
+            catch (BadImageFormatException)
             {
-                // Ignore assemblies that can't be loaded (native, etc.)
+                // Expected for native DLLs - silently ignore
+            }
+            catch (FileLoadException)
+            {
+                // Expected for version mismatches or locked files - silently ignore
+            }
+            catch (Exception ex)
+            {
+                // Unexpected exception - this might indicate a real problem
+                // but we don't have access to Log here, so we re-throw for caller to handle
+                throw new InvalidOperationException($"Unexpected error loading assembly {path}: {ex.Message}", ex);
             }
         }
     }
@@ -66,9 +79,25 @@ public class ExternalTypeResolver
                 }
             }
         }
+        catch (ReflectionTypeLoadException ex)
+        {
+            // Partial type load - process the types that did load successfully
+            foreach (var type in ex.Types)
+            {
+                if (type?.FullName is not null && !_typeCache.ContainsKey(type.FullName))
+                {
+                    _typeCache[type.FullName] = type;
+                }
+            }
+        }
+        catch (FileNotFoundException)
+        {
+            // Expected when assembly has missing dependencies - silently ignore
+        }
         catch (Exception)
         {
-            // Ignore errors from reflection (missing dependencies, etc.)
+            // Other reflection errors (e.g., security exceptions) - silently ignore
+            // The assembly simply won't contribute types to the resolver
         }
     }
 
@@ -115,4 +144,17 @@ public class ExternalTypeResolver
     /// Gets all loaded type full names.
     /// </summary>
     public IEnumerable<string> GetLoadedTypeNames() => _typeCache.Keys;
+
+    /// <summary>
+    /// Disposes the resolver and unloads the AssemblyLoadContext.
+    /// </summary>
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _alc.Unload();
+            _disposed = true;
+            GC.SuppressFinalize(this);
+        }
+    }
 }

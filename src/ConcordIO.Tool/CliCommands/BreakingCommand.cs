@@ -10,7 +10,7 @@ using DotMake.CommandLine;
 public partial class RootCommand
 {
 
-    [CliCommand(Name = "breaking", Description = "Compare OpenAPI/Protobuf specifications to latest version packed in nuget and report breaking changes")]
+    [CliCommand(Name = "breaking", Description = "Compare OpenAPI/Protobuf/AsyncAPI specifications to latest version packed in nuget and report breaking changes")]
     public class BreakingCommand
     {
         private IConsoleOutput? _console;
@@ -29,7 +29,7 @@ public partial class RootCommand
         [CliOption(Description = "Whether to include prerelease versions when retrieving the package", Required = false)]
         public bool Prerelease { get; set; } = false;
 
-        [CliOption(Description = "Contract kind: openapi or proto", Required = false)]
+        [CliOption(Description = "Contract kind: openapi, proto, or asyncapi", Required = false)]
         public string Kind { get; set; } = SpecKind.OpenApi;
 
         [CliOption(Description = "Working directory for downloading the package, defaults to a temp directory", Required = false)]
@@ -70,6 +70,7 @@ public partial class RootCommand
                 OutputPath = nugetSpecPath,
                 WorkingDirectory = workingDirectory,
                 OverwriteOutput = true,
+                Kind = Kind,
             };
 
             var getSpecResult = await getSpecCommand.RunAsync();
@@ -84,6 +85,12 @@ public partial class RootCommand
 
             Console.WriteLine(result.Output);
             Console.WriteError(result.Error);
+
+            if (!result.Success)
+            {
+                Console.WriteError("Error: oasdiff command failed.");
+                return result.ExitCode;
+            }
 
             if (result.Breaking)
             {

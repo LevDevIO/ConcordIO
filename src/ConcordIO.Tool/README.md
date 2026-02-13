@@ -146,7 +146,8 @@ concordio breaking \
 | Code | Meaning |
 |------|---------|
 | `0` | No breaking changes detected. |
-| Non-zero | Breaking changes detected (or tool error). |
+| `1` | Breaking changes detected. |
+| `> 1` | Tool error (e.g., invalid arguments, missing files). |
 
 ---
 
@@ -171,6 +172,7 @@ concordio get-spec \
 |--------|---------|-------------|
 | `--version` | Latest | Version of the NuGet package. |
 | `--prerelease` | `false` | Include prerelease versions. |
+| `--kind` | `openapi` | Contract kind: `openapi`, `proto`, or `asyncapi`. |
 | `--output-path` | Current directory | Output path for the retrieved file. |
 | `--overwrite-output` | `true` | Overwrite the output file if it exists. |
 | `--working-directory` | Temp directory | Working directory for downloading the package. |
@@ -186,6 +188,16 @@ concordio get-spec \
   --package-id Contoso.PetStore.Api \
   --version 1.2.0 \
   --output-path ./specs/petstore.yaml
+
+# Get a Proto specification
+concordio get-spec \
+  --package-id Contoso.Grpc.Api \
+  --kind proto
+
+# Get an AsyncAPI specification
+concordio get-spec \
+  --package-id Contoso.Events.Api \
+  --kind asyncapi
 ```
 
 ## How It Works

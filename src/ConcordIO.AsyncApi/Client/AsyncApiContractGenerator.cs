@@ -216,6 +216,9 @@ public class AsyncApiContractGenerator
             jsonString = JsonSerializer.Serialize(schema);
         }
 
+        // NJsonSchema provides FromJsonAsync but not a sync version
+        // Since we're in a sync context and this is a CPU-bound parsing operation,
+        // we use GetAwaiter().GetResult() which is acceptable here
         return JsonSchema.FromJsonAsync(jsonString).GetAwaiter().GetResult();
     }
 
