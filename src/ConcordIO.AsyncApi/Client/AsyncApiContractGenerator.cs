@@ -265,6 +265,13 @@ public class AsyncApiContractGenerator
             {
                 sb.AppendLine(line.TrimEnd());
 
+                // Check for single-line record without braces (e.g., "public record Foo(int X);")
+                if (trimmed.Contains("record") && trimmed.TrimEnd().EndsWith(";") && !trimmed.Contains("{"))
+                {
+                    // This is a single-line record definition, we're done
+                    break;
+                }
+
                 // Track braces to know when the class ends
                 braceCount += line.Count(c => c == '{');
                 braceCount -= line.Count(c => c == '}');
@@ -286,7 +293,7 @@ public class AsyncApiContractGenerator
         var result = sb.ToString().Trim();
 
         // If extraction failed or we have an incomplete class, generate a simple POCO
-        if (string.IsNullOrEmpty(result) || !result.Contains('{') || !result.Contains('}'))
+        if (string.IsNullOrEmpty(result) || (!result.Contains('{') && !result.Contains("record")) || (!result.Contains('}') && !result.TrimEnd().EndsWith(";")))
         {
             return $"public partial class {typeName}\n{{\n}}";
         }
