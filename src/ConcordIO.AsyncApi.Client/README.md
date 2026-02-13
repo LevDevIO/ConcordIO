@@ -105,6 +105,87 @@ This avoids duplicate type definitions when contract types are shared via a comm
 | `ConcordIOGenerateContracts` | `BeforeTargets="CoreCompile"` | Generates C# from `ConcordIOAsyncApiContract` items. |
 | `ConcordIOCleanGeneratedContracts` | `AfterTargets="Clean"` | Removes the generated output directory. |
 
+## Troubleshooting
+
+### Generation doesn't run
+
+**Symptom**: Build succeeds but no `.g.cs` files are generated.
+
+**Causes and solutions**:
+
+1. **No contract items**: Verify `@(ConcordIOAsyncApiContract)` items exist:
+
+   ```bash
+   dotnet build -v n  # Look for "ConcordIO.Client: AsyncAPI files:" in output
+   ```
+
+2. **Contract package not restored**: Run `dotnet restore` before building
+
+3. **Missing package reference**: Ensure both contract package and `ConcordIO.AsyncApi.Client` are referenced
+
+### Build errors in generated code
+
+**Symptom**: Compilation errors in `*.g.cs` files.
+
+**Solutions**:
+
+1. **Invalid AsyncAPI schema**: Validate your AsyncAPI document
+
+2. **Namespace conflicts**: Ensure `x-dotnet-namespace` values don't conflict with existing types
+
+3. **Missing dependencies**: Check that shared types are properly referenced
+
+### External types not detected
+
+**Symptom**: Types are regenerated instead of being referenced from existing assemblies.
+
+**Solutions**:
+
+1. **Assembly not in references**: Ensure the assembly with existing types is referenced
+
+2. **Type name mismatch**: The `x-dotnet-type` extension must match the full type name exactly
+
+3. **Build order**: Ensure dependent projects build before the consuming project
+
+### Verbose logging
+
+For detailed MSBuild logging:
+
+```bash
+dotnet build -v diag > build.log
+# Search for "ConcordIO" in build.log
+```
+
+## Advanced Usage
+
+### Custom Output Location
+
+Generate files to a source-controlled directory:
+
+```xml
+<PropertyGroup>
+  <ConcordIOClientOutputPath>$(MSBuildProjectDirectory)\Generated\</ConcordIOClientOutputPath>
+</PropertyGroup>
+```
+
+### Conditional Generation
+
+Skip generation in specific configurations:
+
+```xml
+<Target Name="ConcordIOGenerateContracts" Condition="'$(Configuration)' != 'Release'" />
+```
+
+### Manual AsyncAPI Files
+
+Specify AsyncAPI files directly (without contract packages):
+
+```xml
+<ItemGroup>
+  <ConcordIOAsyncApiContract Include="specs\api.yaml" />
+</ItemGroup>
+```
+
 ## Related Projects
 
 - [ConcordIO.AsyncApi](../ConcordIO.AsyncApi/) — Shared library with core generation logic

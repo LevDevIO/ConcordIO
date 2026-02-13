@@ -7,9 +7,59 @@ using System.Text.Json;
 namespace ConcordIO.AsyncApi.Client;
 
 /// <summary>
-/// Generates C# contract types from AsyncAPI specifications.
-/// Handles proper namespaces, cross-references, and external type detection.
+/// Generates C# contract types from AsyncAPI 3.x specifications.
 /// </summary>
+/// <remarks>
+/// <para>
+/// This generator processes AsyncAPI documents and produces strongly-typed C# classes
+/// that can be used with messaging frameworks like MassTransit. It handles:
+/// </para>
+/// <list type="bullet">
+/// <item><description>Proper namespace organization based on <c>x-dotnet-namespace</c> extension</description></item>
+/// <item><description>Cross-references between types in different namespaces</description></item>
+/// <item><description>Detection of external types to avoid duplicate generation</description></item>
+/// <item><description>Configurable output styles (POCO vs Record)</description></item>
+/// <item><description>Data annotation attributes for validation</description></item>
+/// <item><description>Nullable reference type annotations</description></item>
+/// </list>
+/// <para>
+/// The generator uses NJsonSchema under the hood for schema-to-C# conversion.
+/// </para>
+/// </remarks>
+/// <example>
+/// <para>Basic usage:</para>
+/// <code>
+/// // Parse an AsyncAPI document
+/// var document = await AsyncApiDocumentParser.ParseAsync("api.yaml");
+/// 
+/// // Generate contracts with default settings
+/// var generator = new AsyncApiContractGenerator();
+/// var result = generator.Generate(document);
+/// 
+/// // Write generated files
+/// foreach (var file in result.SourceFiles)
+/// {
+///     File.WriteAllText(file.FileName, file.Content);
+/// }
+/// </code>
+/// <para>With custom settings and external type detection:</para>
+/// <code>
+/// var settings = new ContractGeneratorSettings(
+///     GenerateDataAnnotations: true,
+///     ClassStyle: GeneratedClassStyle.Record
+/// );
+/// 
+/// var resolver = new ExternalTypeResolver();
+/// resolver.LoadAssemblies(new[] { "SharedContracts.dll" });
+/// 
+/// var generator = new AsyncApiContractGenerator(settings, resolver);
+/// var result = generator.Generate(document);
+/// 
+/// // Types from SharedContracts.dll will be referenced, not regenerated
+/// Console.WriteLine($"External types: {result.ExternalTypes.Count}");
+/// Console.WriteLine($"Generated types: {result.GeneratedTypes.Count}");
+/// </code>
+/// </example>
 public class AsyncApiContractGenerator
 {
 
@@ -19,16 +69,45 @@ public class AsyncApiContractGenerator
     /// <summary>
     /// Creates a new contract generator with default settings.
     /// </summary>
+    /// <remarks>
+    /// Default settings include:
+    /// <list type="bullet">
+    /// <item><description>Data annotations enabled</description></item>
+    /// <item><description>Nullable reference types enabled</description></item>
+    /// <item><description>POCO class style</description></item>
+    /// </list>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var generator = new AsyncApiContractGenerator();
+    /// var result = generator.Generate(asyncApiDocument);
+    /// </code>
+    /// </example>
     public AsyncApiContractGenerator()
         : this(new ContractGeneratorSettings(), new ExternalTypeResolver())
     {
     }
 
     /// <summary>
-    /// Creates a new contract generator with the specified settings.
+    /// Creates a new contract generator with the specified settings and external type resolver.
     /// </summary>
-    /// <param name="settings">Generator settings.</param>
-    /// <param name="externalTypeResolver">Resolver for external types.</param>
+    /// <param name="settings">Generator settings controlling output format, annotations, and type mappings.</param>
+    /// <param name="externalTypeResolver">Resolver for detecting types that exist in referenced assemblies.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="settings"/> or <paramref name="externalTypeResolver"/> is null.</exception>
+    /// <example>
+    /// <code>
+    /// var settings = new ContractGeneratorSettings(
+    ///     GenerateDataAnnotations: true,
+    ///     GenerateNullableReferenceTypes: true,
+    ///     ClassStyle: GeneratedClassStyle.Record
+    /// );
+    /// 
+    /// var resolver = new ExternalTypeResolver();
+    /// resolver.LoadAssemblies(Directory.GetFiles("libs", "*.dll"));
+    /// 
+    /// var generator = new AsyncApiContractGenerator(settings, resolver);
+    /// </code>
+    /// </example>
     public AsyncApiContractGenerator(ContractGeneratorSettings settings, ExternalTypeResolver externalTypeResolver)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -38,8 +117,50 @@ public class AsyncApiContractGenerator
     /// <summary>
     /// Generates C# contract types from an AsyncAPI document.
     /// </summary>
-    /// <param name="document">The AsyncAPI document.</param>
-    /// <returns>The generation result with source files.</returns>
+    /// <param name="document">The AsyncAPI 3.x document containing schemas to generate.</param>
+    /// <returns>
+    /// A <see cref="ContractGenerationResult"/> containing:
+    /// <list type="bullet">
+    /// <item><description><see cref="ContractGenerationResult.SourceFiles"/> - Generated C# source files grouped by namespace</description></item>
+    /// <item><description><see cref="ContractGenerationResult.ExternalTypes"/> - Types found in referenced assemblies (not generated)</description></item>
+    /// <item><description><see cref="ContractGenerationResult.GeneratedTypes"/> - All types that were generated</description></item>
+    /// </list>
+    /// </returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="document"/> is null.</exception>
+    /// <remarks>
+    /// <para>
+    /// The generation process:
+    /// </para>
+    /// <list type="number">
+    /// <item><description>Extracts all schemas from <c>components/schemas</c></description></item>
+    /// <item><description>Reads <c>x-dotnet-namespace</c> extension for namespace assignment</description></item>
+    /// <item><description>Checks each type against the external type resolver</description></item>
+    /// <item><description>Generates C# code for types not found externally</description></item>
+    /// <item><description>Groups output by namespace into separate <c>.g.cs</c> files</description></item>
+    /// </list>
+    /// <para>
+    /// Generated files include:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description><c>&lt;auto-generated&gt;</c> header comment</description></item>
+    /// <item><description><c>#nullable enable</c> directive</description></item>
+    /// <item><description>Appropriate using statements</description></item>
+    /// <item><description>File-scoped namespace declaration</description></item>
+    /// </list>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var generator = new AsyncApiContractGenerator();
+    /// var result = generator.Generate(document);
+    /// 
+    /// foreach (var sourceFile in result.SourceFiles)
+    /// {
+    ///     Console.WriteLine($"Generated {sourceFile.FileName}:");
+    ///     Console.WriteLine($"  Namespace: {sourceFile.Namespace}");
+    ///     Console.WriteLine($"  Types: {string.Join(", ", sourceFile.Types.Select(t => t.TypeName))}");
+    /// }
+    /// </code>
+    /// </example>
     public ContractGenerationResult Generate(V3AsyncApiDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);

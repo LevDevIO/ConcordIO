@@ -5,7 +5,21 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>ConcordIO.AsyncApi</RootNamespace>
+
+    <!-- XML Documentation for IntelliSense and Copilot assistance -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    
+    <!-- SourceLink for source navigation in debugging and IDE support -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SourceLink for GitHub repository -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- AsyncAPI document handling -->

@@ -148,14 +148,46 @@ public class ContractPackageOptions : PackageOptionsBase
 /// <summary>
 /// Options for generating a client package.
 /// </summary>
+/// <remarks>
+/// Client packages are development dependencies that wire contract specs to code generators.
+/// They depend on a contract package and configure tools like NSwag (OpenAPI) or
+/// ConcordIO.AsyncApi.Client (AsyncAPI) to generate code at build time.
+/// </remarks>
 public class ClientPackageOptions : PackageOptionsBase
 {
+    /// <summary>
+    /// The NuGet package ID for the client package (e.g., "MyService.Contracts.Client").
+    /// </summary>
     public required string ClientPackageId { get; init; }
+
+    /// <summary>
+    /// The NuGet package ID of the contract package this client depends on.
+    /// </summary>
     public required string ContractPackageId { get; init; }
+
+    /// <summary>
+    /// The version of the contract package to depend on.
+    /// </summary>
     public required string ContractVersion { get; init; }
+
+    /// <summary>
+    /// The class name for NSwag-generated HTTP clients (e.g., "PetStoreClient").
+    /// </summary>
     public required string NSwagClientClassName { get; init; }
+
+    /// <summary>
+    /// The output path for NSwag-generated files (e.g., "Generated/").
+    /// </summary>
     public required string NSwagOutputPath { get; init; }
+
+    /// <summary>
+    /// Additional NSwag configuration options as key-value pairs.
+    /// </summary>
     public List<KeyValuePair<string, string>> NSwagOptions { get; init; } = [];
+
+    /// <summary>
+    /// Additional client package options as key-value pairs for custom template values.
+    /// </summary>
     public List<KeyValuePair<string, string>> ClientOptions { get; init; } = [];
 }
 

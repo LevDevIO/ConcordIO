@@ -5,6 +5,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>ConcordIO.AsyncApi.Server</RootNamespace>
+
+    <!-- XML Documentation for IntelliSense and Copilot assistance -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    
+    <!-- SourceLink for source navigation in debugging and IDE support -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     
     <!-- NuGet Package settings -->
     <PackageId>ConcordIO.AsyncApi.Server</PackageId>
@@ -24,6 +33,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" PrivateAssets="all" ExcludeAssets="Runtime" />
+    <!-- SourceLink for GitHub repository -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

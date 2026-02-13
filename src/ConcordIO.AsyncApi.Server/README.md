@@ -141,6 +141,98 @@ The auto-generated `.targets` file exposes the spec as a `ConcordIOAsyncApiContr
 | `ConcordIOIncludeAsyncApiInPackage` | `BeforeTargets="GenerateNuspec"` | Includes the spec in the NuGet package. |
 | `ConcordIOGenerateContractTargets` | `AfterTargets="ConcordIOGenerateAsyncApi"` | Auto-generates consumer `.targets` file. |
 
+## Troubleshooting
+
+### No types discovered
+
+**Symptom**: Generated AsyncAPI document contains no channels or schemas.
+
+**Causes and solutions**:
+
+1. **Type patterns don't match**: Check your `ConcordIOAsyncApiTypePatterns` values:
+
+   ```bash
+   dotnet build -v d  # Look for "ConcordIO.Server: Discovered channels:" in output
+   ```
+
+2. **Types not public**: Only public types are discovered. Ensure your contract classes are `public`.
+
+3. **Missing message markers**: Types must have public properties and follow contract patterns.
+
+### Missing channel addresses
+
+**Symptom**: Channels have empty or default addresses.
+
+**Solution**: Specify URN addresses following MassTransit conventions:
+
+```text
+urn:message:{Namespace}:{TypeName}
+```
+
+For example: `urn:message:MyApp.Contracts:OrderSubmittedEvent`
+
+### Namespace not applied
+
+**Symptom**: Generated schemas don't have `x-dotnet-namespace`.
+
+**Solution**: Set the property before build:
+
+```xml
+<PropertyGroup>
+  <ConcordIOAsyncApiNamespace>MyCompany.Contracts</ConcordIOAsyncApiNamespace>
+</PropertyGroup>
+```
+
+### Consumer targets not working
+
+**Symptom**: Projects referencing the contract package don't see `ConcordIOAsyncApiContract` items.
+
+**Causes**:
+
+1. **Package not packed**: Run `dotnet pack` on the producer project
+
+2. **Missing buildTransitive folder**: The consumer targets file must be in `buildTransitive/`
+
+3. **NuGet cache**: Clear the NuGet cache: `dotnet nuget locals all --clear`
+
+### Verbose logging
+
+For detailed MSBuild logging:
+
+```bash
+dotnet build -v diag > build.log
+# Search for "ConcordIO.Server" in build.log
+```
+
+## Advanced Usage
+
+### Custom Channel Address Format
+
+Channel addresses follow MassTransit URN conventions: `urn:message:{Namespace}:{TypeName}`
+
+### Multi-Project Setup
+
+For solutions with separate contracts and producer projects:
+
+```text
+MyApp/
+├── MyApp.Contracts/        # Shared type definitions
+├── MyApp.Producer/         # References Contracts, generates AsyncAPI
+│   └── MyApp.Producer.csproj
+│       <PackageReference Include="ConcordIO.AsyncApi.Server" />
+└── MyApp.Consumer/         # References generated contract package
+```
+
+### Conditional Generation
+
+Generate only in specific configurations:
+
+```xml
+<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+  <GenerateAsyncApiDocument>true</GenerateAsyncApiDocument>
+</PropertyGroup>
+```
+
 ## Related Projects
 
 - [ConcordIO.AsyncApi](../ConcordIO.AsyncApi/) — Shared library with core generation logic

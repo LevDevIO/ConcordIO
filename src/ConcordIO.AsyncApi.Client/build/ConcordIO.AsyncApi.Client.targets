@@ -1,31 +1,76 @@
-<!-- ConcordIO.AsyncApi.Client.targets - Build integration -->
+<!--
+  ConcordIO.AsyncApi.Client.targets
+  =================================
+  MSBuild integration for generating C# contract types from AsyncAPI specifications.
+  
+  This file is automatically imported when referencing the ConcordIO.AsyncApi.Client package.
+  It registers and invokes the GenerateContractsTask MSBuild task.
+  
+  EXECUTION FLOW:
+  ==============
+  1. Package restore creates ConcordIOAsyncApiContract items (from contract packages)
+  2. BeforeTargets="CoreCompile" triggers ConcordIOGenerateContracts target
+  3. GenerateContractsTask parses AsyncAPI files and generates C# classes
+  4. Generated .g.cs files are added to Compile items
+  5. Normal C# compilation proceeds with generated types included
+  
+  INPUTS:
+  =======
+  - @(ConcordIOAsyncApiContract): AsyncAPI specification files to process
+  - @(ReferencePath): Referenced assemblies for external type detection
+  - $(ConcordIOClientGenerateDataAnnotations): Generate validation attributes
+  - $(ConcordIOClientGenerateNullableReferenceTypes): Generate nullable annotations  
+  - $(ConcordIOClientClassStyle): Poco or Record
+  
+  OUTPUTS:
+  ========
+  - {Namespace}.g.cs files in obj/{Config}/{TFM}/ConcordIO.AsyncApi.Generated/
+  - Files are included in Compile and tracked by FileWrites for incremental builds
+  
+  EXTERNAL TYPE DETECTION:
+  ========================
+  The generator scans @(ReferencePath) assemblies for types matching
+  x-dotnet-type extensions in the AsyncAPI schemas. Matching types
+  are referenced (not regenerated), enabling shared contract libraries.
+  
+  TROUBLESHOOTING:
+  ================
+  - "No contracts generated": Check @(ConcordIOAsyncApiContract) has items
+  - External types not detected: Verify assembly is in @(ReferencePath)
+  - Build errors in generated code: Check AsyncAPI schema validity
+  - Use "dotnet build -v diag" for detailed MSBuild logging
+-->
 <Project>
 
+  <!-- Internal: Locate the task assembly in the package tools folder -->
   <PropertyGroup>
     <_ConcordIOClientToolsDir>$(MSBuildThisFileDirectory)..\tools\net10.0\</_ConcordIOClientToolsDir>
     <_ConcordIOClientTaskAssembly>$(_ConcordIOClientToolsDir)ConcordIO.AsyncApi.Client.dll</_ConcordIOClientTaskAssembly>
   </PropertyGroup>
 
-  <!-- Register the MSBuild task -->
+  <!-- Register the MSBuild task from the package -->
   <UsingTask TaskName="ConcordIO.AsyncApi.Client.Tasks.GenerateContractsTask" 
              AssemblyFile="$(_ConcordIOClientTaskAssembly)" />
 
-  <!-- 
-    Generate contracts before compilation.
-    This target runs when:
-    1. There are ConcordIOAsyncApiContract items defined (from referenced contract packages)
-    2. Or the user has manually specified AsyncAPI files
+  <!--
+    Target: ConcordIOGenerateContracts
+    ==================================
+    Generates C# contract types from AsyncAPI specifications before compilation.
+    
+    Runs when: @(ConcordIOAsyncApiContract) is not empty
+    Timing: Before CoreCompile (so generated types are available for compilation)
   -->
   <Target Name="ConcordIOGenerateContracts"
           BeforeTargets="CoreCompile"
           Condition="'@(ConcordIOAsyncApiContract)' != ''">
 
-    <!-- Compute output directory at target time when IntermediateOutputPath is available -->
+    <!-- Compute output directory (IntermediateOutputPath is available at target time) -->
     <PropertyGroup>
       <_ConcordIOClientOutputDir>$(ConcordIOClientOutputPath)</_ConcordIOClientOutputDir>
       <_ConcordIOClientOutputDir Condition="'$(_ConcordIOClientOutputDir)' == ''">$(IntermediateOutputPath)ConcordIO.AsyncApi.Generated\</_ConcordIOClientOutputDir>
     </PropertyGroup>
 
+    <!-- Log progress (visible at normal verbosity) -->
     <Message Text="ConcordIO.Client: Generating contracts..." Importance="high" />
     <Message Text="ConcordIO.Client:   AsyncAPI files: @(ConcordIOAsyncApiContract)" Importance="normal" />
     <Message Text="ConcordIO.Client:   Output: $(_ConcordIOClientOutputDir)" Importance="normal" />
@@ -35,7 +80,12 @@
       <_ConcordIOClientReferencedAssemblies Include="@(ReferencePath)" />
     </ItemGroup>
 
-    <!-- Run the generation task -->
+    <!-- 
+      Execute the generation task
+      ===========================
+      Task reads AsyncAPI files, generates C# code, writes to OutputDirectory.
+      Returns list of generated files via GeneratedFiles output parameter.
+    -->
     <GenerateContractsTask
         AsyncApiFiles="@(ConcordIOAsyncApiContract)"
         OutputDirectory="$(_ConcordIOClientOutputDir)"
@@ -46,7 +96,7 @@
       <Output TaskParameter="GeneratedFiles" ItemName="_ConcordIOClientGeneratedFiles" />
     </GenerateContractsTask>
 
-    <!-- Add generated files to compilation -->
+    <!-- Add generated files to compilation and incremental build tracking -->
     <ItemGroup>
       <Compile Include="@(_ConcordIOClientGeneratedFiles)" />
       <FileWrites Include="@(_ConcordIOClientGeneratedFiles)" />
@@ -56,7 +106,11 @@
 
   </Target>
 
-  <!-- Clean up generated files -->
+  <!--
+    Target: ConcordIOCleanGeneratedContracts
+    ========================================
+    Removes generated files when running "dotnet clean".
+  -->
   <Target Name="ConcordIOCleanGeneratedContracts"
           AfterTargets="Clean">
     <PropertyGroup>

@@ -6,6 +6,13 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
+		<!-- XML Documentation for IntelliSense and Copilot assistance -->
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		
+		<!-- SourceLink for source navigation in debugging and IDE support -->
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+
 		<!-- dotnet tool settings -->
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>concordio</ToolCommandName>
@@ -21,6 +28,8 @@
 	<ItemGroup>
 		<PackageReference Include="DotMake.CommandLine" Version="3.1.0" />
 		<PackageReference Include="Scriban" Version="6.5.2" />
+		<!-- SourceLink for GitHub repository -->
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 	</ItemGroup>
 
 	<ItemGroup>
