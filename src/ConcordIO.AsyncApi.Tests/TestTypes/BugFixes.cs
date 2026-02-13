@@ -42,3 +42,17 @@ public class OrderEvent
     public Product Product1 { get; set; } = null!;
     public Namespace2Product Product2 { get; set; } = null!;
 }
+
+// Fix (PR review): Schema reference vs. key encoding mismatch
+// A message type that is itself a nested class has '+' in its FullName.
+// e.g., "ConcordIO.AsyncApi.Tests.TestTypes.BugFixes.NestedMessageContainer+NestedEvent"
+// Before the fix, the payload $ref used Uri.EscapeDataString → '+' became '%2B',
+// creating a mismatch with the schema dictionary key which used the raw FullName.
+public class NestedMessageContainer
+{
+    public class NestedEvent
+    {
+        public string Data { get; set; } = string.Empty;
+        public int Count { get; set; }
+    }
+}

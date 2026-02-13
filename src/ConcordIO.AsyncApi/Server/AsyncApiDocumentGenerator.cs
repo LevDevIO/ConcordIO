@@ -1,10 +1,10 @@
+using System.Dynamic;
+using System.Reflection;
+using System.Text.Json;
 using Neuroglia.AsyncApi;
 using Neuroglia.AsyncApi.v3;
 using NJsonSchema;
 using NJsonSchema.Generation;
-using System.Dynamic;
-using System.Reflection;
-using System.Text.Json;
 
 namespace ConcordIO.AsyncApi.Server;
 
@@ -14,6 +14,8 @@ namespace ConcordIO.AsyncApi.Server;
 public class AsyncApiDocumentGenerator
 {
     private const string GeneratorName = "ConcordIO.AsyncApi.Server";
+
+    private static readonly Assembly CoreAssembly = typeof(object).Assembly;
 
     private readonly SystemTextJsonSchemaGeneratorSettings _schemaSettings;
 
@@ -95,48 +97,48 @@ public class AsyncApiDocumentGenerator
                     Reference = $"#/components/schemas/{fullTypeName}"
                 }
             };
-                    document.Components.Messages![typeName] = message;
+            document.Components.Messages![typeName] = message;
 
-                    // Create channel (MassTransit URN format)
-                    var channelAddress = $"urn:message:{ns}:{typeName}";
-                    var channel = new V3ChannelDefinition
+            // Create channel (MassTransit URN format)
+            var channelAddress = $"urn:message:{ns}:{typeName}";
+            var channel = new V3ChannelDefinition
+            {
+                Address = channelAddress,
+                Messages = new()
+                {
+                    [typeName] = new V3MessageDefinition
                     {
-                        Address = channelAddress,
-                        Messages = new()
-                        {
-                            [typeName] = new V3MessageDefinition
-                            {
-                                Reference = $"#/components/messages/{typeName}"
-                            }
-                        }
-                    };
-                    document.Channels[fullTypeName] = channel;
+                        Reference = $"#/components/messages/{typeName}"
+                    }
+                }
+            };
+            document.Channels[fullTypeName] = channel;
 
-                    // Create operation based on message kind
-                    var operationAction = kind == MessageKind.Event
-                        ? V3OperationAction.Receive  // Events are received by subscribers
-                        : V3OperationAction.Send;    // Commands are sent to handlers
+            // Create operation based on message kind
+            var operationAction = kind == MessageKind.Event
+                ? V3OperationAction.Receive  // Events are received by subscribers
+                : V3OperationAction.Send;    // Commands are sent to handlers
 
-                    var operation = new V3OperationDefinition
-                    {
-                        Action = operationAction,
-                        Channel = new V3ReferenceDefinition
-                        {
-                            Reference = $"#/channels/{fullTypeName}"
-                        },
-                        Messages =
-                        [
-                            new V3ReferenceDefinition
+            var operation = new V3OperationDefinition
+            {
+                Action = operationAction,
+                Channel = new V3ReferenceDefinition
+                {
+                    Reference = $"#/channels/{fullTypeName}"
+                },
+                Messages =
+                [
+                    new V3ReferenceDefinition
                             {
                                 Reference = $"#/channels/{fullTypeName}/messages/{typeName}"
                             }
-                        ]
-                    };
-                    document.Operations[$"{typeName}Operation"] = operation;
-                }
+                ]
+            };
+            document.Operations[$"{typeName}Operation"] = operation;
+        }
 
-                return document;
-            }
+        return document;
+    }
 
     private void CollectTypeAndDependencies(Type type, Dictionary<string, (Type Type, string Namespace)> schemas)
     {
@@ -157,7 +159,7 @@ public class AsyncApiDocumentGenerator
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             var propertyType = property.PropertyType;
-            
+
             // Handle Dictionary<K,V> specially to collect both key and value types
             if (propertyType.IsGenericType)
             {
@@ -167,7 +169,7 @@ public class AsyncApiDocumentGenerator
                 {
                     var keyType = propertyType.GenericTypeArguments[0];
                     var valueType = propertyType.GenericTypeArguments[1];
-                    
+
                     if (!IsSimpleType(keyType) && keyType.Namespace?.StartsWith("System") != true)
                     {
                         CollectTypeAndDependencies(keyType, schemas);
@@ -179,7 +181,7 @@ public class AsyncApiDocumentGenerator
                     continue;
                 }
             }
-            
+
             var underlyingType = GetUnderlyingType(propertyType);
             if (!IsSimpleType(underlyingType) && underlyingType.Namespace?.StartsWith("System") != true)
             {
@@ -236,24 +238,8 @@ public class AsyncApiDocumentGenerator
         return type;
     }
 
-    private static bool IsSimpleType(Type type)
-    {
-        return type.IsPrimitive ||
-               type.IsEnum ||
-               type == typeof(string) ||
-               type == typeof(decimal) ||
-               type == typeof(DateTime) ||
-               type == typeof(DateTimeOffset) ||
-               type == typeof(DateOnly) ||
-               type == typeof(TimeOnly) ||
-               type == typeof(TimeSpan) ||
-               type == typeof(Guid) ||
-               type == typeof(Uri) ||
-               type == typeof(byte[]) ||
-               type == typeof(Half) ||
-               type == typeof(Int128) ||
-               type == typeof(object);
-    }
+    private static bool IsSimpleType(Type type) => type.Assembly == CoreAssembly || type.IsEnum;
+
 
     private V3SchemaDefinition GenerateSchema(Type type, string ns)
     {

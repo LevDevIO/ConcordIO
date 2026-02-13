@@ -2,6 +2,7 @@
 
 using ConcordIO.AsyncApi.Server;
 using ConcordIO.AsyncApi.Tests.TestTypes.BugFixes;
+using ConcordIO.AsyncApi.Tests.TestTypes.Events;
 
 namespace ConcordIO.AsyncApi.Tests.Server;
 
@@ -147,6 +148,83 @@ public class BugFixTests
 
         // Assert - Should have exactly 3 schemas: DictionaryEvent, CustomKey, CustomValue
         result.Components!.Schemas.Should().HaveCount(3);
+    }
+
+    #endregion
+
+    #region Fix (PR review): Schema reference vs. key encoding consistency
+
+    [Fact]
+    public void Generate_PayloadReference_MatchesExistingSchemaKeyExactly()
+    {
+        // Regression test: before the fix, payload $ref used Uri.EscapeDataString(fullTypeName)
+        // while schema keys used the raw fullTypeName — creating a mismatch for type names
+        // that contain characters encoded by Uri.EscapeDataString (e.g., '+' → '%2B').
+        var types = new[]
+        {
+            new DiscoveredType(typeof(OrderCreatedEvent), MessageKind.Event)
+        };
+
+        var result = _sut.Generate("TestApi", "1.0.0", types);
+
+        var message = result.Components!.Messages![nameof(OrderCreatedEvent)];
+        var payloadRef = message.Payload!.Reference!;
+        // Strip the JSON Pointer prefix to get the bare schema key
+        var referencedKey = payloadRef.Replace("#/components/schemas/", "");
+
+        result.Components!.Schemas.Should().ContainKey(referencedKey,
+            because: "the payload $ref must resolve to an existing entry in components/schemas; " +
+                     "URL-encoding the ref (e.g., '+' → '%2B') while using the raw FQN as the key breaks this");
+    }
+
+    [Fact]
+    public void Generate_WithNestedMessageType_SchemaKeyUsesRawFullName()
+    {
+        // Nested message types have '+' in their FullName (e.g., "Outer+Inner").
+        // Before the fix, the schema key was raw but the $ref was URL-encoded → mismatch.
+        var nestedType = typeof(NestedMessageContainer.NestedEvent);
+        nestedType.FullName.Should().Contain("+",
+            because: "nested type FullName must contain '+' for this test to be meaningful");
+
+        var types = new[]
+        {
+            new DiscoveredType(nestedType, MessageKind.Event)
+        };
+
+        var result = _sut.Generate("TestApi", "1.0.0", types);
+
+        // The schema key must be the raw FullName — no '%2B' encoding of '+'
+        result.Components!.Schemas.Should().ContainKey(nestedType.FullName!,
+            because: "schema key must use the raw FullName (with '+', not '%2B') " +
+                     "to stay consistent with payload $ref values");
+    }
+
+    [Fact]
+    public void Generate_WithNestedMessageType_PayloadReferenceMatchesSchemaKey()
+    {
+        // Verifies the exact string equality between the $ref target and the schema key,
+        // catching any URL-encoding divergence introduced in the payload reference.
+        var nestedType = typeof(NestedMessageContainer.NestedEvent);
+
+        var types = new[]
+        {
+            new DiscoveredType(nestedType, MessageKind.Event)
+        };
+
+        var result = _sut.Generate("TestApi", "1.0.0", types);
+
+        var message = result.Components!.Messages!["NestedEvent"];
+        var payloadRef = message.Payload!.Reference!;
+        var referencedKey = payloadRef.Replace("#/components/schemas/", "");
+
+        // The referenced key must exist verbatim in the schemas dictionary
+        result.Components!.Schemas.Should().ContainKey(referencedKey,
+            because: "payload $ref and schema key must be identical strings; " +
+                     "applying Uri.EscapeDataString only to the $ref (not the key) breaks resolution");
+
+        // Explicitly verify no '%2B' encoding was applied
+        referencedKey.Should().Be(nestedType.FullName!,
+            because: "the schema key and $ref target should be the raw FullName with no URL encoding");
     }
 
     #endregion

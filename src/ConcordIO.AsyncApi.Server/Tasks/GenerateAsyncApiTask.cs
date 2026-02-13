@@ -2,7 +2,10 @@ using ConcordIO.AsyncApi.Server;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+
+[assembly: InternalsVisibleTo("ConcordIO.AsyncApi.Tests")]
 
 namespace ConcordIO.AsyncApi.Server.Tasks;
 
@@ -139,20 +142,6 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
         }
     }
 
-    /// <summary>
-    /// Collectible AssemblyLoadContext that resolves dependencies from a base directory,
-    /// equivalent to the previous AppDomain.AssemblyResolve approach but without the memory leak.
-    /// </summary>
-    private sealed class ConcordIOAssemblyLoadContext(string basePath)
-        : AssemblyLoadContext("ConcordIO-GenerateAsyncApi", isCollectible: true)
-    {
-        protected override Assembly? Load(AssemblyName assemblyName)
-        {
-            var path = Path.Combine(basePath, assemblyName.Name + ".dll");
-            return File.Exists(path) ? LoadFromAssemblyPath(path) : null;
-        }
-    }
-
     private List<MessageTypePattern> ParsePatterns()
     {
         var patterns = new List<MessageTypePattern>();
@@ -171,5 +160,20 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
         }
 
         return patterns;
+    }
+}
+
+/// <summary>
+/// Collectible AssemblyLoadContext that resolves dependencies from a base directory.
+/// This replaces the old AppDomain.CurrentDomain.AssemblyResolve approach, providing
+/// the same dependency resolution without the memory leak.
+/// </summary>
+internal sealed class ConcordIOAssemblyLoadContext(string basePath)
+    : AssemblyLoadContext("ConcordIO-GenerateAsyncApi", isCollectible: true)
+{
+    protected override Assembly? Load(AssemblyName assemblyName)
+    {
+        var path = Path.Combine(basePath, assemblyName.Name + ".dll");
+        return File.Exists(path) ? LoadFromAssemblyPath(path) : null;
     }
 }
