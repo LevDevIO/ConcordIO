@@ -320,5 +320,36 @@ public class BugFixTests
         result.Components!.Schemas.Should().ContainKey(typeof(CustomValue).FullName!);
     }
 
+    [Fact]
+    public void Generate_WithGenericTypesEvent_SchemaContainsAllPropertiesWithCorrectTypes()
+    {
+        // Arrange - GenericTypesEvent has various multi-parameter generic properties
+        var types = new[]
+        {
+            new DiscoveredType(typeof(GenericTypesEvent), MessageKind.Event)
+        };
+
+        // Act
+        var result = _sut.Generate("TestApi", "1.0.0", types);
+
+        // Assert - GenericTypesEvent schema should exist and contain all expected properties
+        var eventSchema = result.Components!.Schemas![typeof(GenericTypesEvent).FullName!];
+        eventSchema.Should().NotBeNull();
+
+        // Verify the schema was generated with the expected structure
+        var schemaJson = System.Text.Json.JsonSerializer.Serialize(eventSchema.Schema);
+        
+        // Schema should contain properties for all the generic type fields
+        schemaJson.Should().Contain("SinglePair", because: "KeyValuePair property should be in schema");
+        schemaJson.Should().Contain("TupleOfCustomTypes", because: "Tuple property should be in schema");
+        schemaJson.Should().Contain("ValueTupleOfCustomTypes", because: "ValueTuple property should be in schema");
+        schemaJson.Should().Contain("TripleTuple", because: "Tuple with 3 parameters should be in schema");
+        schemaJson.Should().Contain("CustomGeneric", because: "Dictionary property should be in schema");
+
+        // Verify that references to dependency schemas exist
+        schemaJson.Should().Contain("CustomKey", because: "schema should reference CustomKey type");
+        schemaJson.Should().Contain("CustomValue", because: "schema should reference CustomValue type");
+    }
+
     #endregion
 }
