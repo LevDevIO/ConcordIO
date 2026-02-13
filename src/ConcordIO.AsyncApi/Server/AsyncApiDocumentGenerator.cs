@@ -160,32 +160,34 @@ public class AsyncApiDocumentGenerator
         {
             var propertyType = property.PropertyType;
 
-            // Handle Dictionary<K,V> specially to collect both key and value types
+            // Handle all generic types - collect all type arguments as potential dependencies
             if (propertyType.IsGenericType)
             {
-                var genericDef = propertyType.GetGenericTypeDefinition();
-                if ((genericDef == typeof(Dictionary<,>) || genericDef == typeof(IDictionary<,>)) &&
-                    propertyType.GenericTypeArguments.Length == 2)
+                var genericArgs = propertyType.GetGenericArguments();
+                foreach (var argType in genericArgs)
                 {
-                    var keyType = propertyType.GenericTypeArguments[0];
-                    var valueType = propertyType.GenericTypeArguments[1];
-
-                    if (!IsSimpleType(keyType) && keyType.Namespace?.StartsWith("System") != true)
+                    if (!IsSimpleType(argType) && argType.Namespace?.StartsWith("System") != true)
                     {
-                        CollectTypeAndDependencies(keyType, schemas);
+                        CollectTypeAndDependencies(argType, schemas);
                     }
-                    if (!IsSimpleType(valueType) && valueType.Namespace?.StartsWith("System") != true)
-                    {
-                        CollectTypeAndDependencies(valueType, schemas);
-                    }
-                    continue;
                 }
+                
+                // Also handle nested collection types (e.g., List<CustomType>)
+                // by calling GetUnderlyingType for the outer generic
+                var underlyingType = GetUnderlyingType(propertyType);
+                if (underlyingType != propertyType && 
+                    !IsSimpleType(underlyingType) && 
+                    underlyingType.Namespace?.StartsWith("System") != true)
+                {
+                    CollectTypeAndDependencies(underlyingType, schemas);
+                }
+                continue;
             }
 
-            var underlyingType = GetUnderlyingType(propertyType);
-            if (!IsSimpleType(underlyingType) && underlyingType.Namespace?.StartsWith("System") != true)
+            var underlyingType2 = GetUnderlyingType(propertyType);
+            if (!IsSimpleType(underlyingType2) && underlyingType2.Namespace?.StartsWith("System") != true)
             {
-                CollectTypeAndDependencies(underlyingType, schemas);
+                CollectTypeAndDependencies(underlyingType2, schemas);
             }
         }
     }
@@ -199,7 +201,7 @@ public class AsyncApiDocumentGenerator
             return nullableUnderlyingType;
         }
 
-        // Handle collections (List<T>, IEnumerable<T>, etc.)
+        // Handle single-parameter collection types (List<T>, IEnumerable<T>, etc.)
         if (type.IsGenericType)
         {
             var genericArgs = type.GetGenericArguments();
@@ -213,18 +215,6 @@ public class AsyncApiDocumentGenerator
                     genericDef == typeof(HashSet<>))
                 {
                     return genericArgs[0];
-                }
-            }
-            // Handle Dictionary<K,V> - note: GetInnerTypes only returns one type
-            // but we collect both key and value in the caller via recursive calls
-            if (genericArgs.Length == 2)
-            {
-                var genericDef = type.GetGenericTypeDefinition();
-                if (genericDef == typeof(Dictionary<,>) ||
-                    genericDef == typeof(IDictionary<,>))
-                {
-                    // Return value type here, but we'll also process key type separately
-                    return genericArgs[1];
                 }
             }
         }

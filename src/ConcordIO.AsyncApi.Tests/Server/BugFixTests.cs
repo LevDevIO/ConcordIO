@@ -228,4 +228,97 @@ public class BugFixTests
     }
 
     #endregion
+
+    #region Issue #49: Support all generic types with arbitrary number of type parameters
+
+    [Fact]
+    public void Generate_WithKeyValuePair_IncludesKeyAndValueSchemas()
+    {
+        // Arrange - GenericTypesEvent has KeyValuePair<CustomKey, CustomValue>
+        var types = new[]
+        {
+            new DiscoveredType(typeof(GenericTypesEvent), MessageKind.Event)
+        };
+
+        // Act
+        var result = _sut.Generate("TestApi", "1.0.0", types);
+
+        // Assert - Should have schemas for both key and value types
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomKey).FullName!);
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomValue).FullName!);
+    }
+
+    [Fact]
+    public void Generate_WithTupleOfCustomTypes_IncludesAllTypeParameterSchemas()
+    {
+        // Arrange - GenericTypesEvent has Tuple<CustomKey, CustomValue>
+        var types = new[]
+        {
+            new DiscoveredType(typeof(GenericTypesEvent), MessageKind.Event)
+        };
+
+        // Act
+        var result = _sut.Generate("TestApi", "1.0.0", types);
+
+        // Assert - Should have schemas for all tuple type parameters
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomKey).FullName!);
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomValue).FullName!);
+    }
+
+    [Fact]
+    public void Generate_WithValueTupleOfCustomTypes_IncludesAllTypeParameterSchemas()
+    {
+        // Arrange - GenericTypesEvent has ValueTuple<CustomKey, CustomValue>
+        var types = new[]
+        {
+            new DiscoveredType(typeof(GenericTypesEvent), MessageKind.Event)
+        };
+
+        // Act
+        var result = _sut.Generate("TestApi", "1.0.0", types);
+
+        // Assert - Should have schemas for all value tuple type parameters
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomKey).FullName!);
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomValue).FullName!);
+    }
+
+    [Fact]
+    public void Generate_WithTupleOfThreeParameters_IncludesAllNonSimpleTypeParameters()
+    {
+        // Arrange - GenericTypesEvent has Tuple<CustomKey, CustomValue, string>
+        var types = new[]
+        {
+            new DiscoveredType(typeof(GenericTypesEvent), MessageKind.Event)
+        };
+
+        // Act
+        var result = _sut.Generate("TestApi", "1.0.0", types);
+
+        // Assert - Should have schemas for custom types but not for string
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomKey).FullName!);
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomValue).FullName!);
+        result.Components!.Schemas.Should().NotContainKey("System.String");
+    }
+
+    [Fact]
+    public void Generate_WithMultipleGenericTypes_CollectsAllCustomTypeDependencies()
+    {
+        // Arrange - GenericTypesEvent uses CustomKey and CustomValue in multiple generic contexts
+        var types = new[]
+        {
+            new DiscoveredType(typeof(GenericTypesEvent), MessageKind.Event)
+        };
+
+        // Act
+        var result = _sut.Generate("TestApi", "1.0.0", types);
+
+        // Assert - Should have exactly 3 schemas: GenericTypesEvent, CustomKey, CustomValue
+        // (no duplicates even though types appear in multiple generics)
+        result.Components!.Schemas.Should().HaveCount(3);
+        result.Components!.Schemas.Should().ContainKey(typeof(GenericTypesEvent).FullName!);
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomKey).FullName!);
+        result.Components!.Schemas.Should().ContainKey(typeof(CustomValue).FullName!);
+    }
+
+    #endregion
 }

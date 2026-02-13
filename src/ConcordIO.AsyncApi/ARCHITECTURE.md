@@ -79,8 +79,10 @@ DiscoveredType[]
     ▼
 CollectTypeAndDependencies()
     │  Walks properties recursively
-    │  Handles Nullable<T>, List<T>, Dictionary<K,V>, arrays
-    │  Filters out simple types (primitives, string, Guid, DateTime, etc.)
+    │  Handles Nullable<T>, single-parameter collections (List<T>, IEnumerable<T>, etc.)
+    │  Handles all multi-parameter generic types (Dictionary<K,V>, KeyValuePair<K,V>, Tuple<...>, etc.)
+    │  Filters out simple types (primitives, string, Guid, DateTime, etc.) and System types
+    │  Processes all generic type arguments as potential dependencies
     │
     ▼
 GenerateSchema() per type
