@@ -1,18 +1,57 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Client Package .targets Template
+  ================================
+  This MSBuild targets file connects contract specs to code generators.
+  It runs after package resolution to add metadata to contract items.
+  
+  MODEL KEYS:
+  - contract_package_id:    ID of the contract package to filter items
+  - contract_version:       Version of the contract package
+  - has_openapi:            Boolean - include OpenAPI/NSwag integration
+  - has_asyncapi:           Boolean - include AsyncAPI/ConcordIO integration
+  - nswag_client_class_name: Class name for generated NSwag client
+  - nswag_output_path:      Output file path (without .cs extension)
+  - nswag_options:          Additional NSwag options as key-value pairs
+  - client_options:         Additional AsyncAPI client options as key-value pairs
+  
+  TARGET EXECUTION ORDER:
+  1. Package restore creates ConcordIOContract/ConcordIOAsyncApiContract items
+  2. AfterTargets="ResolvePackageAssets" - these targets run
+  3. Items are enriched with code generation metadata
+  4. Code generators (NSwag, ConcordIO.AsyncApi.Client) consume the items
+  
+  TROUBLESHOOTING:
+  - If code generation doesn't run, check that contract package is restored
+  - Verify @(ConcordIOContract) or @(ConcordIOAsyncApiContract) items exist
+  - Check MSBuild verbosity: dotnet build -v diag
+-->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <!-- OpenAPI client: Links OpenAPI contract to NSwag for code generation -->
+    <!--
+      OpenAPI → NSwag Integration
+      ===========================
+      Transforms ConcordIOContract items into OpenApiReference items
+      that NSwag.ApiDescription.Client consumes for HTTP client generation.
+      
+      OUTPUT: {nswag_output_path}.cs containing typed HTTP client
+    -->
     <Target Name="ConcordIOAddOpenApiReferenceForNSwag" 
             AfterTargets="ResolvePackageAssets"
             Condition="'@(ConcordIOContract)' != ''">
         <ItemGroup>
+            <!-- Filter to specs from this contract package with openapi kind -->
             <OpenApiReference Include="@(ConcordIOContract)" 
                               Condition="'%(ConcordIOContract.PackageId)' == 'Acme.PetStore.Contracts' And '%(ConcordIOContract.Kind)' == 'openapi'">
                 <CodeGenerator>NSwagCSharp</CodeGenerator>
                 <ClassName>PetStoreClient</ClassName>
                 <OutputPath>PetStoreClient.cs</OutputPath>
+                <!-- Custom NSwag option: NSwagJsonLibrary -->
                 <NSwagJsonLibrary>SystemTextJson</NSwagJsonLibrary>
+                <!-- Custom NSwag option: NSwagJsonPolymorphicSerializationStyle -->
                 <NSwagJsonPolymorphicSerializationStyle>SystemTextJson</NSwagJsonPolymorphicSerializationStyle>
+                <!-- Custom NSwag option: NSwagGenerateExceptionClasses -->
                 <NSwagGenerateExceptionClasses>true</NSwagGenerateExceptionClasses>
+                <!-- Custom NSwag option: NSwagInjectHttpClient -->
                 <NSwagInjectHttpClient>true</NSwagInjectHttpClient>
             </OpenApiReference>
         </ItemGroup>

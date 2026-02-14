@@ -3,7 +3,7 @@
   Client Package .nuspec Template
   ===============================
   This template generates the .nuspec file for client packages that wire
-  contract specs to code generators (NSwag for OpenAPI, ConcordIO for AsyncAPI).
+  contract specs to appropriate code generators.
   
   MODEL KEYS:
   - client_package_id:    The client package ID (e.g., "MyService.Contracts.Client")
@@ -21,11 +21,8 @@
   - Depends on contract package to get spec files
   - Conditionally depends on code generators based on spec types
   
-  DEPENDENCY STRATEGY:
-  - NSwag.ApiDescription.Client: For OpenAPI → C# HTTP clients
-  - ConcordIO.AsyncApi.Client:   For AsyncAPI → C# message contracts
-  
-  Both use exclude="compile,runtime" to prevent shipping generator assemblies.
+  Code generator dependencies use exclude="compile,runtime" to prevent shipping
+  generator assemblies with the consuming application.
 -->
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>

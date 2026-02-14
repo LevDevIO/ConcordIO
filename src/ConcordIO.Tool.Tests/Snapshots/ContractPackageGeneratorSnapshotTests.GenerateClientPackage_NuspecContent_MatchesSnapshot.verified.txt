@@ -1,18 +1,47 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Client Package .nuspec Template
+  ===============================
+  This template generates the .nuspec file for client packages that wire
+  contract specs to appropriate code generators.
+  
+  MODEL KEYS:
+  - client_package_id:    The client package ID (e.g., "MyService.Contracts.Client")
+  - contract_package_id:  The referenced contract package ID
+  - contract_version:     The contract package version to depend on
+  - version:              The client package version
+  - authors:              Package author(s)
+  - description:          Package description
+  - package_properties:   Additional metadata (license, repository, etc.)
+  - has_openapi:          Boolean - true if OpenAPI specs exist
+  - has_asyncapi:         Boolean - true if AsyncAPI specs exist
+  
+  PACKAGE CHARACTERISTICS:
+  - developmentDependency: true - Only used at build time, not shipped
+  - Depends on contract package to get spec files
+  - Conditionally depends on code generators based on spec types
+  
+  Code generator dependencies use exclude="compile,runtime" to prevent shipping
+  generator assemblies with the consuming application.
+-->
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
         <id>Acme.PetStore.Client</id>
         <version>2.1.0</version>
         <authors>Acme Corporation</authors>
         <description>Generated client for Pet Store API</description>
+        <!-- Build-time only package - not included in output assemblies -->
         <developmentDependency>true</developmentDependency>
         <projectUrl>https://github.com/acme/petstore</projectUrl>
         <dependencies>
+            <!-- Contract package provides spec files -->
             <dependency id="Acme.PetStore.Contracts" version="2.1.0" />
+            <!-- NSwag generates HTTP clients from OpenAPI specs -->
             <dependency id="NSwag.ApiDescription.Client" version="14.*" include="build,contentFiles" exclude="compile,runtime"/>
         </dependencies>
     </metadata>
     <files>
+        <!-- MSBuild targets wires contracts to code generators -->
         <file src="build/Acme.PetStore.Client.targets" target="build/Acme.PetStore.Client.targets" />
     </files>
 </package>
