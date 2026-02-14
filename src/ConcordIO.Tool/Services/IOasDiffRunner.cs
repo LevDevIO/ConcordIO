@@ -42,67 +42,67 @@ namespace ConcordIO.Tool.Services;
 /// </example>
 public interface IOasDiffRunner
 {
-    /// <summary>
-    /// Detects breaking changes between two OpenAPI specifications.
-    /// </summary>
-    /// <param name="baseSpec">Path to the base (original) OpenAPI specification file.</param>
-    /// <param name="revisionSpec">Path to the revision (new) OpenAPI specification file.</param>
-    /// <param name="arguments">Additional command line arguments to pass to oasdiff (e.g., <c>"--format json"</c>).</param>
-    /// <returns>
-    /// An <see cref="OasDiffResult"/> containing:
-    /// <list type="bullet">
-    /// <item><description><see cref="OasDiffResult.ExitCode"/> - 0 if no breaking changes, non-zero otherwise</description></item>
-    /// <item><description><see cref="OasDiffResult.Output"/> - Standard output from oasdiff</description></item>
-    /// <item><description><see cref="OasDiffResult.Error"/> - Standard error from oasdiff</description></item>
-    /// </list>
-    /// </returns>
-    /// <remarks>
-    /// <para>
-    /// This method runs: <c>oasdiff breaking "{baseSpec}" "{revisionSpec}" -o WARN {arguments}</c>
-    /// </para>
-    /// <para>
-    /// Exit codes:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description><c>0</c> - No breaking changes detected</description></item>
-    /// <item><description><c>1</c> - Breaking changes detected (at WARN level or above)</description></item>
-    /// </list>
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// var result = await runner.Breaking(
-    ///     "published/api.yaml",
-    ///     "current/api.yaml",
-    ///     "--format text"
-    /// );
-    /// Console.WriteLine(result.Output);
-    /// </code>
-    /// </example>
-    Task<OasDiffResult> Breaking(string baseSpec, string revisionSpec, string arguments);
+	/// <summary>
+	/// Detects breaking changes between two OpenAPI specifications.
+	/// </summary>
+	/// <param name="baseSpec">Path to the base (original) OpenAPI specification file.</param>
+	/// <param name="revisionSpec">Path to the revision (new) OpenAPI specification file.</param>
+	/// <param name="arguments">Additional command line arguments to pass to oasdiff (e.g., <c>"--format json"</c>).</param>
+	/// <returns>
+	/// An <see cref="OasDiffResult"/> containing:
+	/// <list type="bullet">
+	/// <item><description><see cref="OasDiffResult.ExitCode"/> - 0 if no breaking changes, non-zero otherwise</description></item>
+	/// <item><description><see cref="OasDiffResult.Output"/> - Standard output from oasdiff</description></item>
+	/// <item><description><see cref="OasDiffResult.Error"/> - Standard error from oasdiff</description></item>
+	/// </list>
+	/// </returns>
+	/// <remarks>
+	/// <para>
+	/// This method runs: <c>oasdiff breaking "{baseSpec}" "{revisionSpec}" -o WARN {arguments}</c>
+	/// </para>
+	/// <para>
+	/// Exit codes:
+	/// </para>
+	/// <list type="bullet">
+	/// <item><description><c>0</c> - No breaking changes detected</description></item>
+	/// <item><description><c>1</c> - Breaking changes detected (at WARN level or above)</description></item>
+	/// </list>
+	/// </remarks>
+	/// <example>
+	/// <code>
+	/// var result = await runner.Breaking(
+	///     "published/api.yaml",
+	///     "current/api.yaml",
+	///     "--format text"
+	/// );
+	/// Console.WriteLine(result.Output);
+	/// </code>
+	/// </example>
+	Task<OasDiffResult> Breaking(string baseSpec, string revisionSpec, string arguments);
 
-    /// <summary>
-    /// Runs an arbitrary oasdiff command with the specified arguments.
-    /// </summary>
-    /// <param name="arguments">The complete command line arguments for oasdiff.</param>
-    /// <returns>An <see cref="OasDiffResult"/> containing exit code, output, and error streams.</returns>
-    /// <remarks>
-    /// <para>
-    /// Use this method for oasdiff commands other than <c>breaking</c>, such as:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description><c>diff</c> - Show all changes (not just breaking)</description></item>
-    /// <item><description><c>changelog</c> - Generate a changelog</description></item>
-    /// <item><description><c>flatten</c> - Flatten OpenAPI spec</description></item>
-    /// </list>
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// // Generate a diff report
-    /// var result = await runner.Run("diff v1.yaml v2.yaml --format yaml");
-    /// 
-    /// // Generate changelog
-    /// var changelog = await runner.Run("changelog v1.yaml v2.yaml");
-    /// </code>
-    /// </example>
-    Task<OasDiffResult> Run(string arguments);
+	/// <summary>
+	/// Runs an arbitrary oasdiff command with the specified arguments.
+	/// </summary>
+	/// <param name="arguments">The complete command line arguments for oasdiff.</param>
+	/// <returns>An <see cref="OasDiffResult"/> containing exit code, output, and error streams.</returns>
+	/// <remarks>
+	/// <para>
+	/// Use this method for oasdiff commands other than <c>breaking</c>, such as:
+	/// </para>
+	/// <list type="bullet">
+	/// <item><description><c>diff</c> - Show all changes (not just breaking)</description></item>
+	/// <item><description><c>changelog</c> - Generate a changelog</description></item>
+	/// <item><description><c>flatten</c> - Flatten OpenAPI spec</description></item>
+	/// </list>
+	/// </remarks>
+	/// <example>
+	/// <code>
+	/// // Generate a diff report
+	/// var result = await runner.Run("diff v1.yaml v2.yaml --format yaml");
+	/// 
+	/// // Generate changelog
+	/// var changelog = await runner.Run("changelog v1.yaml v2.yaml");
+	/// </code>
+	/// </example>
+	Task<OasDiffResult> Run(string arguments);
 }

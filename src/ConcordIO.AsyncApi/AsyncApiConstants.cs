@@ -29,66 +29,66 @@ namespace ConcordIO.AsyncApi;
 /// </example>
 public static class AsyncApiConstants
 {
-    /// <summary>
-    /// Extension key for storing the .NET namespace of a type.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Value: <c>"x-dotnet-namespace"</c>
-    /// </para>
-    /// <para>
-    /// Used by:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description><b>Server</b>: Added to schemas during document generation to preserve the original namespace</description></item>
-    /// <item><description><b>Client</b>: Read during code generation to place types in correct namespaces</description></item>
-    /// </list>
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// // Server: Reading namespace for schema generation
-    /// var ns = type.Namespace ?? string.Empty;
-    /// schema[AsyncApiConstants.DotNetNamespace] = ns;
-    /// 
-    /// // Client: Reading namespace during code generation
-    /// if (schema.TryGetProperty(AsyncApiConstants.DotNetNamespace, out var nsElement))
-    /// {
-    ///     var targetNamespace = nsElement.GetString();
-    /// }
-    /// </code>
-    /// </example>
-    public const string DotNetNamespace = "x-dotnet-namespace";
+	/// <summary>
+	/// Extension key for storing the .NET namespace of a type.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Value: <c>"x-dotnet-namespace"</c>
+	/// </para>
+	/// <para>
+	/// Used by:
+	/// </para>
+	/// <list type="bullet">
+	/// <item><description><b>Server</b>: Added to schemas during document generation to preserve the original namespace</description></item>
+	/// <item><description><b>Client</b>: Read during code generation to place types in correct namespaces</description></item>
+	/// </list>
+	/// </remarks>
+	/// <example>
+	/// <code>
+	/// // Server: Reading namespace for schema generation
+	/// var ns = type.Namespace ?? string.Empty;
+	/// schema[AsyncApiConstants.DotNetNamespace] = ns;
+	/// 
+	/// // Client: Reading namespace during code generation
+	/// if (schema.TryGetProperty(AsyncApiConstants.DotNetNamespace, out var nsElement))
+	/// {
+	///     var targetNamespace = nsElement.GetString();
+	/// }
+	/// </code>
+	/// </example>
+	public const string DotNetNamespace = "x-dotnet-namespace";
 
-    /// <summary>
-    /// Extension key for storing the fully-qualified .NET type name.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Value: <c>"x-dotnet-type"</c>
-    /// </para>
-    /// <para>
-    /// Used by:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description><b>Server</b>: Added to schemas to enable external type detection</description></item>
-    /// <item><description><b>Client</b>: Used to check if a type already exists in referenced assemblies</description></item>
-    /// </list>
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// // Server: Adding type info to schema
-    /// schema[AsyncApiConstants.DotNetType] = type.FullName ?? type.Name;
-    /// 
-    /// // Client: Checking for external type
-    /// if (schema.TryGetProperty(AsyncApiConstants.DotNetType, out var typeElement))
-    /// {
-    ///     var fullTypeName = typeElement.GetString();
-    ///     if (externalTypeResolver.TypeExists(fullTypeName))
-    ///     {
-    ///         // Skip generation - type exists externally
-    ///     }
-    /// }
-    /// </code>
-    /// </example>
-    public const string DotNetType = "x-dotnet-type";
+	/// <summary>
+	/// Extension key for storing the fully-qualified .NET type name.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Value: <c>"x-dotnet-type"</c>
+	/// </para>
+	/// <para>
+	/// Used by:
+	/// </para>
+	/// <list type="bullet">
+	/// <item><description><b>Server</b>: Added to schemas to enable external type detection</description></item>
+	/// <item><description><b>Client</b>: Used to check if a type already exists in referenced assemblies</description></item>
+	/// </list>
+	/// </remarks>
+	/// <example>
+	/// <code>
+	/// // Server: Adding type info to schema
+	/// schema[AsyncApiConstants.DotNetType] = type.FullName ?? type.Name;
+	/// 
+	/// // Client: Checking for external type
+	/// if (schema.TryGetProperty(AsyncApiConstants.DotNetType, out var typeElement))
+	/// {
+	///     var fullTypeName = typeElement.GetString();
+	///     if (externalTypeResolver.TypeExists(fullTypeName))
+	///     {
+	///         // Skip generation - type exists externally
+	///     }
+	/// }
+	/// </code>
+	/// </example>
+	public const string DotNetType = "x-dotnet-type";
 }

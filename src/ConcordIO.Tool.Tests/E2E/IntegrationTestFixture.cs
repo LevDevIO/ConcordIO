@@ -8,90 +8,96 @@ namespace ConcordIO.Tool.Tests.E2E;
 /// </summary>
 public class IntegrationTestFixture : IAsyncLifetime
 {
-    private readonly string _baseTestDir;
+	private readonly string _baseTestDir;
 
-    /// <summary>
-    /// Path to the ConcordIO.Tool project file.
-    /// </summary>
-    public string ToolProjectPath { get; }
+	/// <summary>
+	/// Path to the ConcordIO.Tool project file.
+	/// </summary>
+	public string ToolProjectPath
+	{
+		get;
+	}
 
-    /// <summary>
-    /// Path to the ConcordIO.AsyncApi.Client project file.
-    /// </summary>
-    public string AsyncApiClientProjectPath { get; }
+	/// <summary>
+	/// Path to the ConcordIO.AsyncApi.Client project file.
+	/// </summary>
+	public string AsyncApiClientProjectPath
+	{
+		get;
+	}
 
-    public IntegrationTestFixture()
-    {
-        _baseTestDir = Path.Combine(Path.GetTempPath(), "ConcordIO.IntegrationTests");
-        Directory.CreateDirectory(_baseTestDir);
+	public IntegrationTestFixture()
+	{
+		_baseTestDir = Path.Combine(Path.GetTempPath(), "ConcordIO.IntegrationTests");
+		Directory.CreateDirectory(_baseTestDir);
 
-        // Find project paths relative to the test assembly
-        var testAssemblyDir = Path.GetDirectoryName(typeof(IntegrationTestFixture).Assembly.Location)!;
-        ToolProjectPath = Path.GetFullPath(Path.Combine(testAssemblyDir, "..", "..", "..", "..", "ConcordIO.Tool", "ConcordIO.Tool.csproj"));
-        AsyncApiClientProjectPath = Path.GetFullPath(Path.Combine(testAssemblyDir, "..", "..", "..", "..", "ConcordIO.AsyncApi.Client", "ConcordIO.AsyncApi.Client.csproj"));
-    }
+		// Find project paths relative to the test assembly
+		var testAssemblyDir = Path.GetDirectoryName(typeof(IntegrationTestFixture).Assembly.Location)!;
+		ToolProjectPath = Path.GetFullPath(Path.Combine(testAssemblyDir, "..", "..", "..", "..", "ConcordIO.Tool", "ConcordIO.Tool.csproj"));
+		AsyncApiClientProjectPath = Path.GetFullPath(Path.Combine(testAssemblyDir, "..", "..", "..", "..", "ConcordIO.AsyncApi.Client", "ConcordIO.AsyncApi.Client.csproj"));
+	}
 
-    public async Task InitializeAsync()
-    {
-        // Pre-build the tool project to avoid build time in each test
-        var (exitCode, output) = await RunDotNetAsync("build", Path.GetDirectoryName(ToolProjectPath)!, "-c Debug");
-        if (exitCode != 0)
-        {
-            throw new Exception($"Failed to pre-build ConcordIO.Tool: {output}");
-        }
-    }
+	public async Task InitializeAsync()
+	{
+		// Pre-build the tool project to avoid build time in each test
+		var (exitCode, output) = await RunDotNetAsync("build", Path.GetDirectoryName(ToolProjectPath)!, "-c Debug");
+		if (exitCode != 0)
+		{
+			throw new Exception($"Failed to pre-build ConcordIO.Tool: {output}");
+		}
+	}
 
-    public Task DisposeAsync()
-    {
-        // Cleanup is handled by individual test contexts
-        return Task.CompletedTask;
-    }
+	public Task DisposeAsync()
+	{
+		// Cleanup is handled by individual test contexts
+		return Task.CompletedTask;
+	}
 
-    /// <summary>
-    /// Creates a new isolated test context for a single test.
-    /// Each test gets its own directory to avoid conflicts.
-    /// </summary>
-    public TestContext CreateTestContext(string testName)
-    {
-        return new TestContext(this, _baseTestDir, testName);
-    }
+	/// <summary>
+	/// Creates a new isolated test context for a single test.
+	/// Each test gets its own directory to avoid conflicts.
+	/// </summary>
+	public TestContext CreateTestContext(string testName)
+	{
+		return new TestContext(this, _baseTestDir, testName);
+	}
 
-    internal async Task<(int ExitCode, string Output)> RunDotNetAsync(string command, string workingDir, string args = "")
-    {
-        using var process = new Process();
-        process.StartInfo = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            Arguments = $"{command} {CommandVerbosity.AddDotNetVerbosity(command, args)}",
-            WorkingDirectory = workingDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+	internal async Task<(int ExitCode, string Output)> RunDotNetAsync(string command, string workingDir, string args = "")
+	{
+		using var process = new Process();
+		process.StartInfo = new ProcessStartInfo
+		{
+			FileName = "dotnet",
+			Arguments = $"{command} {CommandVerbosity.AddDotNetVerbosity(command, args)}",
+			WorkingDirectory = workingDir,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+			CreateNoWindow = true
+		};
 
-        process.Start();
-        
-        // Start reading streams concurrently to avoid pipe buffer deadlock
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-        
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
-        try
-        {
-            await process.WaitForExitAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            process.Kill(entireProcessTree: true);
-            throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
-        }
-        
-        var output = await outputTask;
-        var error = await errorTask;
+		process.Start();
 
-        return (process.ExitCode, output + error);
-    }
+		// Start reading streams concurrently to avoid pipe buffer deadlock
+		var outputTask = process.StandardOutput.ReadToEndAsync();
+		var errorTask = process.StandardError.ReadToEndAsync();
+
+		using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+		try
+		{
+			await process.WaitForExitAsync(cts.Token);
+		}
+		catch (OperationCanceledException)
+		{
+			process.Kill(entireProcessTree: true);
+			throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
+		}
+
+		var output = await outputTask;
+		var error = await errorTask;
+
+		return (process.ExitCode, output + error);
+	}
 }
 
 /// <summary>
@@ -100,156 +106,165 @@ public class IntegrationTestFixture : IAsyncLifetime
 /// </summary>
 public class TestContext : IDisposable
 {
-    private readonly IntegrationTestFixture _fixture;
+	private readonly IntegrationTestFixture _fixture;
 
-    public string TestDir { get; }
-    public string PackagesDir { get; }
-    public string NuGetCacheDir { get; }
-    public string ToolProjectPath => _fixture.ToolProjectPath;
-    public string AsyncApiClientProjectPath => _fixture.AsyncApiClientProjectPath;
+	public string TestDir
+	{
+		get;
+	}
+	public string PackagesDir
+	{
+		get;
+	}
+	public string NuGetCacheDir
+	{
+		get;
+	}
+	public string ToolProjectPath => _fixture.ToolProjectPath;
+	public string AsyncApiClientProjectPath => _fixture.AsyncApiClientProjectPath;
 
-    internal TestContext(IntegrationTestFixture fixture, string baseTestDir, string testName)
-    {
-        _fixture = fixture;
-        var uniqueId = Path.GetRandomFileName().Replace(".", "");
-        TestDir = Path.Combine(baseTestDir, $"{testName}_{uniqueId}");
-        PackagesDir = Path.Combine(TestDir, "packages");
-        NuGetCacheDir = Path.Combine(TestDir, "nuget-cache");
+	internal TestContext(IntegrationTestFixture fixture, string baseTestDir, string testName)
+	{
+		_fixture = fixture;
+		var uniqueId = Path.GetRandomFileName().Replace(".", "");
+		TestDir = Path.Combine(baseTestDir, $"{testName}_{uniqueId}");
+		PackagesDir = Path.Combine(TestDir, "packages");
+		NuGetCacheDir = Path.Combine(TestDir, "nuget-cache");
 
-        Directory.CreateDirectory(TestDir);
-        Directory.CreateDirectory(PackagesDir);
-        Directory.CreateDirectory(NuGetCacheDir);
-    }
+		Directory.CreateDirectory(TestDir);
+		Directory.CreateDirectory(PackagesDir);
+		Directory.CreateDirectory(NuGetCacheDir);
+	}
 
-    public void Dispose()
-    {
-        try
-        {
-            Directory.Delete(TestDir, recursive: true);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
-    }
+	public void Dispose()
+	{
+		try
+		{
+			Directory.Delete(TestDir, recursive: true);
+		}
+		catch
+		{
+			// Ignore cleanup errors
+		}
+	}
 
-    /// <summary>
-    /// Runs the ConcordIO tool with the specified arguments.
-    /// </summary>
-    public async Task<(int ExitCode, string Output)> RunToolAsync(string args)
-    {
-        // Use net10.0 framework since ConcordIO.Tool targets multiple frameworks (net8.0, net9.0, net10.0)
-        return await RunDotNetAsync("run", Path.GetDirectoryName(ToolProjectPath)!, $"--framework net10.0 -- {args}");
-    }
+	/// <summary>
+	/// Runs the ConcordIO tool with the specified arguments.
+	/// </summary>
+	public async Task<(int ExitCode, string Output)> RunToolAsync(string args)
+	{
+		// Use net10.0 framework since ConcordIO.Tool targets multiple frameworks (net8.0, net9.0, net10.0)
+		return await RunDotNetAsync("run", Path.GetDirectoryName(ToolProjectPath)!, $"--framework net10.0 -- {args}");
+	}
 
-    /// <summary>
-    /// Runs a dotnet command in the specified directory.
-    /// </summary>
-    public async Task<(int ExitCode, string Output)> RunDotNetAsync(string command, string workingDir, string args = "")
-    {
-        using var process = new Process();
-        process.StartInfo = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            Arguments = $"{command} {CommandVerbosity.AddDotNetVerbosity(command, args)}",
-            WorkingDirectory = workingDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+	/// <summary>
+	/// Runs a dotnet command in the specified directory.
+	/// </summary>
+	public async Task<(int ExitCode, string Output)> RunDotNetAsync(string command, string workingDir, string args = "")
+	{
+		using var process = new Process();
+		process.StartInfo = new ProcessStartInfo
+		{
+			FileName = "dotnet",
+			Arguments = $"{command} {CommandVerbosity.AddDotNetVerbosity(command, args)}",
+			WorkingDirectory = workingDir,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+			CreateNoWindow = true
+		};
 
-        process.StartInfo.Environment["NUGET_PACKAGES"] = NuGetCacheDir;
+		process.StartInfo.Environment["NUGET_PACKAGES"] = NuGetCacheDir;
 
-        process.Start();
-        
-        // Start reading streams concurrently to avoid pipe buffer deadlock
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-        
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
-        try
-        {
-            await process.WaitForExitAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            process.Kill(entireProcessTree: true);
-            throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
-        }
-        
-        var output = await outputTask;
-        var error = await errorTask;
+		process.Start();
 
-        return (process.ExitCode, output + error);
-    }
+		// Start reading streams concurrently to avoid pipe buffer deadlock
+		var outputTask = process.StandardOutput.ReadToEndAsync();
+		var errorTask = process.StandardError.ReadToEndAsync();
 
-    /// <summary>
-    /// Runs a process with the specified arguments.
-    /// </summary>
-    public async Task<(int ExitCode, string Output)> RunProcessAsync(string fileName, string arguments, string workingDir)
-    {
-        using var process = new Process();
-        process.StartInfo = new ProcessStartInfo
-        {
-            FileName = fileName,
-            Arguments = CommandVerbosity.AddNuGetVerbosityIfNeeded(fileName, arguments),
-            WorkingDirectory = workingDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+		using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+		try
+		{
+			await process.WaitForExitAsync(cts.Token);
+		}
+		catch (OperationCanceledException)
+		{
+			process.Kill(entireProcessTree: true);
+			throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
+		}
 
-        process.StartInfo.Environment["NUGET_PACKAGES"] = NuGetCacheDir;
+		var output = await outputTask;
+		var error = await errorTask;
 
-        process.Start();
-        
-        // Start reading streams concurrently to avoid pipe buffer deadlock
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-        
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
-        try
-        {
-            await process.WaitForExitAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            process.Kill(entireProcessTree: true);
-            throw new TimeoutException($"{fileName} timed out after 3 minutes in {workingDir}");
-        }
-        
-        var output = await outputTask;
-        var error = await errorTask;
+		return (process.ExitCode, output + error);
+	}
 
-        return (process.ExitCode, output + error);
-    }
+	/// <summary>
+	/// Runs a process with the specified arguments.
+	/// </summary>
+	public async Task<(int ExitCode, string Output)> RunProcessAsync(string fileName, string arguments, string workingDir)
+	{
+		using var process = new Process();
+		process.StartInfo = new ProcessStartInfo
+		{
+			FileName = fileName,
+			Arguments = CommandVerbosity.AddNuGetVerbosityIfNeeded(fileName, arguments),
+			WorkingDirectory = workingDir,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+			CreateNoWindow = true
+		};
 
-    /// <summary>
-    /// Creates a NuGet package from a nuspec file.
-    /// </summary>
-    public async Task CreateNuGetPackageAsync(string packageDir, string packageId)
-    {
-        var nuspecPath = Directory.GetFiles(packageDir, "*.nuspec")
-            .First(f => Path.GetFileName(f).StartsWith(packageId, StringComparison.OrdinalIgnoreCase));
-        var (exitCode, output) = await RunProcessAsync(
-            "nuget",
-            $"pack \"{nuspecPath}\" -OutputDirectory \"{PackagesDir}\"",
-            packageDir);
+		process.StartInfo.Environment["NUGET_PACKAGES"] = NuGetCacheDir;
 
-        if (exitCode != 0)
-        {
-            throw new Exception($"Failed to create NuGet package: {output}");
-        }
-    }
+		process.Start();
 
-    /// <summary>
-    /// Creates a nuget.config file pointing to the local packages directory.
-    /// </summary>
-    public async Task CreateNuGetConfigAsync(string projectDir)
-    {
-        var nugetConfig = $"""
+		// Start reading streams concurrently to avoid pipe buffer deadlock
+		var outputTask = process.StandardOutput.ReadToEndAsync();
+		var errorTask = process.StandardError.ReadToEndAsync();
+
+		using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+		try
+		{
+			await process.WaitForExitAsync(cts.Token);
+		}
+		catch (OperationCanceledException)
+		{
+			process.Kill(entireProcessTree: true);
+			throw new TimeoutException($"{fileName} timed out after 3 minutes in {workingDir}");
+		}
+
+		var output = await outputTask;
+		var error = await errorTask;
+
+		return (process.ExitCode, output + error);
+	}
+
+	/// <summary>
+	/// Creates a NuGet package from a nuspec file.
+	/// </summary>
+	public async Task CreateNuGetPackageAsync(string packageDir, string packageId)
+	{
+		var nuspecPath = Directory.GetFiles(packageDir, "*.nuspec")
+			.First(f => Path.GetFileName(f).StartsWith(packageId, StringComparison.OrdinalIgnoreCase));
+		var (exitCode, output) = await RunProcessAsync(
+			"nuget",
+			$"pack \"{nuspecPath}\" -OutputDirectory \"{PackagesDir}\"",
+			packageDir);
+
+		if (exitCode != 0)
+		{
+			throw new Exception($"Failed to create NuGet package: {output}");
+		}
+	}
+
+	/// <summary>
+	/// Creates a nuget.config file pointing to the local packages directory.
+	/// </summary>
+	public async Task CreateNuGetConfigAsync(string projectDir)
+	{
+		var nugetConfig = $"""
             <?xml version="1.0" encoding="utf-8"?>
             <configuration>
               <packageSources>
@@ -259,8 +274,8 @@ public class TestContext : IDisposable
               </packageSources>
             </configuration>
             """;
-        await File.WriteAllTextAsync(Path.Combine(projectDir, "nuget.config"), nugetConfig);
-    }
+		await File.WriteAllTextAsync(Path.Combine(projectDir, "nuget.config"), nugetConfig);
+	}
 }
 
 /// <summary>
@@ -269,89 +284,89 @@ public class TestContext : IDisposable
 [CollectionDefinition(Name)]
 public class IntegrationTestCollection : ICollectionFixture<IntegrationTestFixture>
 {
-    public const string Name = "Integration Tests";
+	public const string Name = "Integration Tests";
 }
 
 internal static class CommandVerbosity
 {
-    // Use 'normal' verbosity in CI to reduce output volume and prevent pipe buffer deadlocks.
-    // Local debugging can override via environment variable if needed.
-    private const string DotNetVerbosity = "-v normal";
+	// Use 'normal' verbosity in CI to reduce output volume and prevent pipe buffer deadlocks.
+	// Local debugging can override via environment variable if needed.
+	private const string DotNetVerbosity = "-v normal";
 
-    public static string AddDotNetVerbosity(string command, string args)
-    {
-        if (string.Equals(command, "add", StringComparison.OrdinalIgnoreCase))
-        {
-            return args;
-        }
+	public static string AddDotNetVerbosity(string command, string args)
+	{
+		if (string.Equals(command, "add", StringComparison.OrdinalIgnoreCase))
+		{
+			return args;
+		}
 
-        if (string.IsNullOrWhiteSpace(args))
-        {
-            return DotNetVerbosity;
-        }
+		if (string.IsNullOrWhiteSpace(args))
+		{
+			return DotNetVerbosity;
+		}
 
-        if (args.TrimStart().StartsWith("--", StringComparison.Ordinal))
-        {
-            return $"{DotNetVerbosity} {args}";
-        }
+		if (args.TrimStart().StartsWith("--", StringComparison.Ordinal))
+		{
+			return $"{DotNetVerbosity} {args}";
+		}
 
-        var separatorIndex = args.IndexOf(" -- ", StringComparison.Ordinal);
-        var commandArgs = separatorIndex < 0 ? args : args[..separatorIndex];
-        var passThroughArgs = separatorIndex < 0 ? string.Empty : args[separatorIndex..];
+		var separatorIndex = args.IndexOf(" -- ", StringComparison.Ordinal);
+		var commandArgs = separatorIndex < 0 ? args : args[..separatorIndex];
+		var passThroughArgs = separatorIndex < 0 ? string.Empty : args[separatorIndex..];
 
-        var normalizedArgs = NormalizeDotNetVerbosityArgs(commandArgs);
-        if (string.IsNullOrWhiteSpace(normalizedArgs))
-        {
-            return string.IsNullOrWhiteSpace(passThroughArgs)
-                ? DotNetVerbosity
-                : $"{DotNetVerbosity}{passThroughArgs}";
-        }
+		var normalizedArgs = NormalizeDotNetVerbosityArgs(commandArgs);
+		if (string.IsNullOrWhiteSpace(normalizedArgs))
+		{
+			return string.IsNullOrWhiteSpace(passThroughArgs)
+				? DotNetVerbosity
+				: $"{DotNetVerbosity}{passThroughArgs}";
+		}
 
-        return string.IsNullOrWhiteSpace(passThroughArgs)
-            ? $"{normalizedArgs} {DotNetVerbosity}"
-            : $"{normalizedArgs} {DotNetVerbosity}{passThroughArgs}";
-    }
+		return string.IsNullOrWhiteSpace(passThroughArgs)
+			? $"{normalizedArgs} {DotNetVerbosity}"
+			: $"{normalizedArgs} {DotNetVerbosity}{passThroughArgs}";
+	}
 
-    private static string NormalizeDotNetVerbosityArgs(string args)
-    {
-        if (string.IsNullOrWhiteSpace(args))
-        {
-            return string.Empty;
-        }
+	private static string NormalizeDotNetVerbosityArgs(string args)
+	{
+		if (string.IsNullOrWhiteSpace(args))
+		{
+			return string.Empty;
+		}
 
-        var parts = args.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var filtered = new List<string>(parts.Length);
+		var parts = args.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var filtered = new List<string>(parts.Length);
 
-        for (var i = 0; i < parts.Length; i++)
-        {
-            var part = parts[i];
-            if (string.Equals(part, "-v", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(part, "--verbosity", StringComparison.OrdinalIgnoreCase))
-            {
-                i++;
-                continue;
-            }
+		for (var i = 0; i < parts.Length; i++)
+		{
+			var part = parts[i];
+			if (string.Equals(part, "-v", StringComparison.OrdinalIgnoreCase)
+				|| string.Equals(part, "--verbosity", StringComparison.OrdinalIgnoreCase))
+			{
+				i++;
+				continue;
+			}
 
-            if (part.StartsWith("--verbosity=", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
+			if (part.StartsWith("--verbosity=", StringComparison.OrdinalIgnoreCase))
+			{
+				continue;
+			}
 
-            filtered.Add(part);
-        }
+			filtered.Add(part);
+		}
 
-        return string.Join(' ', filtered);
-    }
+		return string.Join(' ', filtered);
+	}
 
-    public static string AddNuGetVerbosityIfNeeded(string fileName, string args)
-    {
-        if (!string.Equals(fileName, "nuget", StringComparison.OrdinalIgnoreCase))
-        {
-            return args;
-        }
+	public static string AddNuGetVerbosityIfNeeded(string fileName, string args)
+	{
+		if (!string.Equals(fileName, "nuget", StringComparison.OrdinalIgnoreCase))
+		{
+			return args;
+		}
 
-        return args.Contains("-Verbosity", StringComparison.OrdinalIgnoreCase)
-            ? args
-            : $"{args} -Verbosity detailed";
-    }
+		return args.Contains("-Verbosity", StringComparison.OrdinalIgnoreCase)
+			? args
+			: $"{args} -Verbosity detailed";
+	}
 }
