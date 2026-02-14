@@ -8,15 +8,15 @@ namespace ConcordIO.AsyncApi.Client;
 /// <param name="IsExternal">Whether this type exists in an external assembly and should not be generated.</param>
 /// <param name="ExternalAssembly">If external, the assembly name containing the type.</param>
 public record TypeInfo(
-    string TypeName,
-    string Namespace,
-    bool IsExternal = false,
-    string? ExternalAssembly = null)
+	string TypeName,
+	string Namespace,
+	bool IsExternal = false,
+	string? ExternalAssembly = null)
 {
-    /// <summary>
-    /// Gets the fully qualified type name.
-    /// </summary>
-    public string FullName => string.IsNullOrEmpty(Namespace) ? TypeName : $"{Namespace}.{TypeName}";
+	/// <summary>
+	/// Gets the fully qualified type name.
+	/// </summary>
+	public string FullName => string.IsNullOrEmpty(Namespace) ? TypeName : $"{Namespace}.{TypeName}";
 }
 
 /// <summary>
@@ -27,10 +27,10 @@ public record TypeInfo(
 /// <param name="Content">The generated C# source code.</param>
 /// <param name="Types">The types contained in this file.</param>
 public record GeneratedSourceFile(
-    string FileName,
-    string Namespace,
-    string Content,
-    IReadOnlyList<TypeInfo> Types);
+	string FileName,
+	string Namespace,
+	string Content,
+	IReadOnlyList<TypeInfo> Types);
 
 /// <summary>
 /// Result of the contract generation process.
@@ -39,6 +39,6 @@ public record GeneratedSourceFile(
 /// <param name="ExternalTypes">Types that were found in external assemblies and not generated.</param>
 /// <param name="GeneratedTypes">All types that were generated.</param>
 public record ContractGenerationResult(
-    IReadOnlyList<GeneratedSourceFile> SourceFiles,
-    IReadOnlyList<TypeInfo> ExternalTypes,
-    IReadOnlyList<TypeInfo> GeneratedTypes);
+	IReadOnlyList<GeneratedSourceFile> SourceFiles,
+	IReadOnlyList<TypeInfo> ExternalTypes,
+	IReadOnlyList<TypeInfo> GeneratedTypes);

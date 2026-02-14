@@ -4,6 +4,12 @@ namespace ConcordIO.AsyncApi.Tests.TestTypes.Namespace2;
 
 public class Product
 {
-    public int ProductCode { get; set; }
-    public decimal Price { get; set; }
+	public int ProductCode
+	{
+		get; set;
+	}
+	public decimal Price
+	{
+		get; set;
+	}
 }

@@ -42,29 +42,29 @@ namespace ConcordIO.Tool.Services;
 /// </example>
 public interface IConsoleOutput
 {
-    /// <summary>
-    /// Writes a line of text to the standard output stream.
-    /// </summary>
-    /// <param name="message">The message to write. If <c>null</c> or empty, writes only a newline.</param>
-    /// <example>
-    /// <code>
-    /// console.WriteLine("Operation completed successfully.");
-    /// console.WriteLine();  // Empty line
-    /// </code>
-    /// </example>
-    void WriteLine(string? message = null);
+	/// <summary>
+	/// Writes a line of text to the standard output stream.
+	/// </summary>
+	/// <param name="message">The message to write. If <c>null</c> or empty, writes only a newline.</param>
+	/// <example>
+	/// <code>
+	/// console.WriteLine("Operation completed successfully.");
+	/// console.WriteLine();  // Empty line
+	/// </code>
+	/// </example>
+	void WriteLine(string? message = null);
 
-    /// <summary>
-    /// Writes a line of text to the standard error stream.
-    /// </summary>
-    /// <param name="message">The error message to write. If <c>null</c> or empty, writes only a newline.</param>
-    /// <example>
-    /// <code>
-    /// console.WriteError("Error: File not found.");
-    /// console.WriteError("Warning: Deprecated option used.");
-    /// </code>
-    /// </example>
-    void WriteError(string? message = null);
+	/// <summary>
+	/// Writes a line of text to the standard error stream.
+	/// </summary>
+	/// <param name="message">The error message to write. If <c>null</c> or empty, writes only a newline.</param>
+	/// <example>
+	/// <code>
+	/// console.WriteError("Error: File not found.");
+	/// console.WriteError("Warning: Deprecated option used.");
+	/// </code>
+	/// </example>
+	void WriteError(string? message = null);
 }
 
 /// <summary>
@@ -76,21 +76,21 @@ public interface IConsoleOutput
 /// </remarks>
 public class ConsoleOutput : IConsoleOutput
 {
-    /// <summary>
-    /// Writes a line to <see cref="Console.Out"/>.
-    /// </summary>
-    /// <param name="message">The message to write.</param>
-    public void WriteLine(string? message = null)
-    {
-        Console.WriteLine(message ?? "");
-    }
+	/// <summary>
+	/// Writes a line to <see cref="Console.Out"/>.
+	/// </summary>
+	/// <param name="message">The message to write.</param>
+	public void WriteLine(string? message = null)
+	{
+		Console.WriteLine(message ?? "");
+	}
 
-    /// <summary>
-    /// Writes a line to <see cref="Console.Error"/>.
-    /// </summary>
-    /// <param name="message">The error message to write.</param>
-    public void WriteError(string? message = null)
-    {
-        Console.Error.WriteLine(message ?? "");
-    }
+	/// <summary>
+	/// Writes a line to <see cref="Console.Error"/>.
+	/// </summary>
+	/// <param name="message">The error message to write.</param>
+	public void WriteError(string? message = null)
+	{
+		Console.Error.WriteLine(message ?? "");
+	}
 }

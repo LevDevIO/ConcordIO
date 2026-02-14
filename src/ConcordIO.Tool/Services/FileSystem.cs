@@ -5,17 +5,17 @@ namespace ConcordIO.Tool.Services;
 /// </summary>
 public class FileSystem : IFileSystem
 {
-    public void CreateDirectory(string path) => Directory.CreateDirectory(path);
+	public void CreateDirectory(string path) => Directory.CreateDirectory(path);
 
-    public Task WriteAllTextAsync(string path, string contents) => File.WriteAllTextAsync(path, contents);
+	public Task WriteAllTextAsync(string path, string contents) => File.WriteAllTextAsync(path, contents);
 
-    public bool FileExists(string path) => File.Exists(path);
+	public bool FileExists(string path) => File.Exists(path);
 
-    public bool DirectoryExists(string path) => Directory.Exists(path);
+	public bool DirectoryExists(string path) => Directory.Exists(path);
 
-    public void DeleteDirectory(string path, bool recursive) => Directory.Delete(path, recursive);
+	public void DeleteDirectory(string path, bool recursive) => Directory.Delete(path, recursive);
 
-    public string[] GetFiles(string path, string searchPattern = "*") => Directory.GetFiles(path, searchPattern);
+	public string[] GetFiles(string path, string searchPattern = "*") => Directory.GetFiles(path, searchPattern);
 
-    public string[] GetDirectories(string path) => Directory.GetDirectories(path);
+	public string[] GetDirectories(string path) => Directory.GetDirectories(path);
 }

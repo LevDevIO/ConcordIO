@@ -8,103 +8,103 @@ namespace ConcordIO.AsyncApi.Server;
 /// </summary>
 public class TypeDiscoveryService
 {
-    /// <summary>
-    /// Discovers types from an assembly based on the provided patterns.
-    /// </summary>
-    /// <param name="assembly">The assembly to search.</param>
-    /// <param name="patterns">
-    /// Patterns to match:
-    /// - "Namespace.*" - all public non-abstract types in exact namespace
-    /// - "Namespace.**" - all public non-abstract types in namespace and sub-namespaces
-    /// - "IMyInterface" - all implementations of the interface
-    /// - "MyBaseClass" - all subclasses of the base class
-    /// - "MyConcreteType" - the specific type
-    /// </param>
-    /// <returns>Discovered types with their message kind.</returns>
-    public IEnumerable<DiscoveredType> DiscoverTypes(
-        Assembly assembly,
-        IEnumerable<MessageTypePattern> patterns)
-    {
-        ArgumentNullException.ThrowIfNull(assembly);
-        ArgumentNullException.ThrowIfNull(patterns);
+	/// <summary>
+	/// Discovers types from an assembly based on the provided patterns.
+	/// </summary>
+	/// <param name="assembly">The assembly to search.</param>
+	/// <param name="patterns">
+	/// Patterns to match:
+	/// - "Namespace.*" - all public non-abstract types in exact namespace
+	/// - "Namespace.**" - all public non-abstract types in namespace and sub-namespaces
+	/// - "IMyInterface" - all implementations of the interface
+	/// - "MyBaseClass" - all subclasses of the base class
+	/// - "MyConcreteType" - the specific type
+	/// </param>
+	/// <returns>Discovered types with their message kind.</returns>
+	public IEnumerable<DiscoveredType> DiscoverTypes(
+		Assembly assembly,
+		IEnumerable<MessageTypePattern> patterns)
+	{
+		ArgumentNullException.ThrowIfNull(assembly);
+		ArgumentNullException.ThrowIfNull(patterns);
 
-        var discovered = new Dictionary<Type, MessageKind>();
+		var discovered = new Dictionary<Type, MessageKind>();
 
-        foreach (var pattern in patterns)
-        {
-            foreach (var type in DiscoverTypesForPattern(assembly, pattern.Pattern))
-            {
-                // If type already discovered, keep the existing kind (first wins)
-                discovered.TryAdd(type, pattern.Kind);
-            }
-        }
+		foreach (var pattern in patterns)
+		{
+			foreach (var type in DiscoverTypesForPattern(assembly, pattern.Pattern))
+			{
+				// If type already discovered, keep the existing kind (first wins)
+				discovered.TryAdd(type, pattern.Kind);
+			}
+		}
 
-        return discovered.Select(kvp => new DiscoveredType(kvp.Key, kvp.Value));
-    }
+		return discovered.Select(kvp => new DiscoveredType(kvp.Key, kvp.Value));
+	}
 
-    private static IEnumerable<Type> DiscoverTypesForPattern(Assembly assembly, string pattern)
-    {
-        if (pattern.EndsWith(".**"))
-        {
-            // Recursive wildcard: namespace and all sub-namespaces
-            var ns = pattern[..^3];
-            return assembly.GetTypes()
-                .Where(t => t.IsPublic && !t.IsAbstract && !t.IsInterface &&
-                       (t.Namespace == ns || t.Namespace?.StartsWith(ns + ".") == true));
-        }
+	private static IEnumerable<Type> DiscoverTypesForPattern(Assembly assembly, string pattern)
+	{
+		if (pattern.EndsWith(".**"))
+		{
+			// Recursive wildcard: namespace and all sub-namespaces
+			var ns = pattern[..^3];
+			return assembly.GetTypes()
+				.Where(t => t.IsPublic && !t.IsAbstract && !t.IsInterface &&
+					   (t.Namespace == ns || t.Namespace?.StartsWith(ns + ".") == true));
+		}
 
-        if (pattern.EndsWith(".*"))
-        {
-            // Exact namespace wildcard
-            var ns = pattern[..^2];
-            return assembly.GetTypes()
-                .Where(t => t.IsPublic && !t.IsAbstract && !t.IsInterface && t.Namespace == ns);
-        }
+		if (pattern.EndsWith(".*"))
+		{
+			// Exact namespace wildcard
+			var ns = pattern[..^2];
+			return assembly.GetTypes()
+				.Where(t => t.IsPublic && !t.IsAbstract && !t.IsInterface && t.Namespace == ns);
+		}
 
-        // Try to resolve as a specific type
-        var type = ResolveType(assembly, pattern);
-        if (type is null)
-        {
-            return [];
-        }
+		// Try to resolve as a specific type
+		var type = ResolveType(assembly, pattern);
+		if (type is null)
+		{
+			return [];
+		}
 
-        if (type.IsInterface)
-        {
-            // Find all implementations
-            return assembly.GetTypes()
-                .Where(t => t.IsPublic && !t.IsInterface && !t.IsAbstract &&
-                       type.IsAssignableFrom(t));
-        }
+		if (type.IsInterface)
+		{
+			// Find all implementations
+			return assembly.GetTypes()
+				.Where(t => t.IsPublic && !t.IsInterface && !t.IsAbstract &&
+					   type.IsAssignableFrom(t));
+		}
 
-        if (type.IsAbstract || HasSubclasses(assembly, type))
-        {
-            // Find all subclasses
-            return assembly.GetTypes()
-                .Where(t => t.IsPublic && !t.IsAbstract && t.IsSubclassOf(type));
-        }
+		if (type.IsAbstract || HasSubclasses(assembly, type))
+		{
+			// Find all subclasses
+			return assembly.GetTypes()
+				.Where(t => t.IsPublic && !t.IsAbstract && t.IsSubclassOf(type));
+		}
 
-        // Concrete type - return just this type
-        return [type];
-    }
+		// Concrete type - return just this type
+		return [type];
+	}
 
-    private static Type? ResolveType(Assembly assembly, string typeName)
-    {
-        // Try exact match first
-        var type = assembly.GetType(typeName);
-        if (type is not null)
-        {
-            return type;
-        }
+	private static Type? ResolveType(Assembly assembly, string typeName)
+	{
+		// Try exact match first
+		var type = assembly.GetType(typeName);
+		if (type is not null)
+		{
+			return type;
+		}
 
-        // Try to find by full name match
-        return assembly.GetTypes()
-            .FirstOrDefault(t => t.FullName == typeName || t.Name == typeName);
-    }
+		// Try to find by full name match
+		return assembly.GetTypes()
+			.FirstOrDefault(t => t.FullName == typeName || t.Name == typeName);
+	}
 
-    private static bool HasSubclasses(Assembly assembly, Type type)
-    {
-        return assembly.GetTypes().Any(t => t.IsSubclassOf(type));
-    }
+	private static bool HasSubclasses(Assembly assembly, Type type)
+	{
+		return assembly.GetTypes().Any(t => t.IsSubclassOf(type));
+	}
 }
 
 /// <summary>
@@ -126,13 +126,13 @@ public record MessageTypePattern(string Pattern, MessageKind Kind);
 /// </summary>
 public enum MessageKind
 {
-    /// <summary>
-    /// An event message (publish/subscribe semantics).
-    /// </summary>
-    Event,
+	/// <summary>
+	/// An event message (publish/subscribe semantics).
+	/// </summary>
+	Event,
 
-    /// <summary>
-    /// A command message (send/receive semantics).
-    /// </summary>
-    Command
+	/// <summary>
+	/// A command message (send/receive semantics).
+	/// </summary>
+	Command
 }
