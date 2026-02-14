@@ -47,6 +47,30 @@ Before completing any task, verify:
 - [ ] MSBuild files have inline comments for all properties and targets
 - [ ] Scriban templates have header documentation blocks
 - [ ] No `CS1591` warnings for missing XML comments on public members
+- [ ] **Code is formatted using `dotnet format`** — Run `dotnet format src/ConcordIO.Tool.sln` before committing
+
+### Code Formatting
+
+**ALWAYS format code before committing and pushing.** The CI pipeline includes a formatting check that will fail if code is not properly formatted.
+
+To format the code:
+
+```bash
+dotnet format src/ConcordIO.Tool.sln
+```
+
+To verify formatting without making changes:
+
+```bash
+dotnet format src/ConcordIO.Tool.sln --verify-no-changes
+```
+
+Formatting rules are defined in `.editorconfig` at the repository root. Key rules:
+- **Indentation**: Tabs (size 4)
+- **Line endings**: LF (Unix-style)
+- **Braces**: New line before open brace (`all`)
+- **Implicit types**: Prefer `var` where appropriate
+- **Severity**: Formatting violations treated as errors in CI
 
 ### Documentation Quality Standards
 

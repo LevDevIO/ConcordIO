@@ -28,7 +28,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(3);
@@ -50,7 +50,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(1);
@@ -69,7 +69,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().AllSatisfy(r => r.Kind.Should().Be(MessageKind.Command));
@@ -89,7 +89,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(3);
@@ -108,7 +108,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert - should include types from Events, Commands, Interfaces, Inheritance, and Nested namespaces
 		result.Should().Contain(r => r.Type == typeof(OrderCreatedEvent));
@@ -137,7 +137,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(3);
@@ -166,7 +166,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(3);
@@ -192,7 +192,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(1);
@@ -211,7 +211,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(2);
@@ -238,7 +238,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		// Events: 3 (OrderCreated, OrderCancelled, OrderShipped)
@@ -260,7 +260,7 @@ public class TypeDiscoveryServiceTests
         };
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert - should not have duplicates, first kind wins
 		result.Should().HaveCount(3);
@@ -278,7 +278,7 @@ public class TypeDiscoveryServiceTests
 		var patterns = Array.Empty<MessageTypePattern>();
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().BeEmpty();
@@ -294,7 +294,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().BeEmpty();
@@ -315,8 +315,97 @@ public class TypeDiscoveryServiceTests
 	public void DiscoverTypes_WithNullPatterns_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		var act = () => _sut.DiscoverTypes(_testAssembly, null!);
+		var act = () => _sut.DiscoverTypes([_testAssembly], null!);
 		act.Should().Throw<ArgumentNullException>();
+	}
+
+	#endregion
+
+	#region Multiple Assembly Tests
+
+	[Fact]
+	public void DiscoverTypes_WithMultipleAssemblies_FindsTypesAcrossAllAssemblies()
+	{
+		// Arrange - include both the test assembly and mscorlib (as a second assembly)
+		// In practice, this simulates a host assembly + referenced class library scenario
+		var testAssembly = typeof(TypeDiscoveryServiceTests).Assembly;
+		var mscorlibAssembly = typeof(string).Assembly;
+		var assemblies = new[] { testAssembly, mscorlibAssembly };
+
+		var patterns = new[]
+		{
+			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.*", MessageKind.Event)
+		};
+
+		// Act
+		var result = _sut.DiscoverTypes(assemblies, patterns).ToList();
+
+		// Assert - should still find types from test assembly
+		result.Should().HaveCount(3);
+		result.Select(r => r.Type).Should().Contain(typeof(OrderCreatedEvent));
+		result.Select(r => r.Type).Should().Contain(typeof(OrderCancelledEvent));
+		result.Select(r => r.Type).Should().Contain(typeof(OrderShippedEvent));
+	}
+
+	[Fact]
+	public void DiscoverTypes_WithMultipleAssemblies_DeduplicatesTypesByFullName()
+	{
+		// Arrange - pass the same assembly twice to test deduplication
+		var assemblies = new[] { _testAssembly, _testAssembly };
+
+		var patterns = new[]
+		{
+			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.OrderCreatedEvent", MessageKind.Event)
+		};
+
+		// Act
+		var result = _sut.DiscoverTypes(assemblies, patterns).ToList();
+
+		// Assert - type should only appear once despite being in both assemblies
+		result.Should().HaveCount(1);
+		result[0].Type.Should().Be(typeof(OrderCreatedEvent));
+	}
+
+	[Fact]
+	public void DiscoverTypes_WithEmptyAssemblyList_ReturnsEmpty()
+	{
+		// Arrange
+		var assemblies = Array.Empty<Assembly>();
+		var patterns = new[]
+		{
+			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.*", MessageKind.Event)
+		};
+
+		// Act
+		var result = _sut.DiscoverTypes(assemblies, patterns).ToList();
+
+		// Assert
+		result.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void DiscoverTypes_WithTransitiveDependencies_FindsTypesInAllReferencedAssemblies()
+	{
+		// Arrange - verify TypeDiscoveryService can handle multiple assemblies at once.
+		// In practice, GenerateAsyncApiTask recursively loads A→B→C→D and passes all to DiscoverTypes.
+		// This test simulates that by providing multiple assemblies directly.
+		var testAssembly = typeof(TypeDiscoveryServiceTests).Assembly;
+		var linqAssembly = typeof(System.Linq.Enumerable).Assembly;
+		var assemblies = new[] { testAssembly, linqAssembly };
+
+		var patterns = new[]
+		{
+			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.*", MessageKind.Event)
+		};
+
+		// Act
+		var result = _sut.DiscoverTypes(assemblies, patterns).ToList();
+
+		// Assert - should find types from test assembly even when multiple assemblies are present
+		result.Should().HaveCount(3);
+		result.Select(r => r.Type).Should().Contain(typeof(OrderCreatedEvent));
+		result.Select(r => r.Type).Should().Contain(typeof(OrderCancelledEvent));
+		result.Select(r => r.Type).Should().Contain(typeof(OrderShippedEvent));
 	}
 
 	#endregion

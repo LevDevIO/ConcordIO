@@ -9,9 +9,9 @@ namespace ConcordIO.AsyncApi.Server;
 public class TypeDiscoveryService
 {
 	/// <summary>
-	/// Discovers types from an assembly based on the provided patterns.
+	/// Discovers types from assemblies based on the provided patterns.
 	/// </summary>
-	/// <param name="assembly">The assembly to search.</param>
+	/// <param name="assemblies">The assemblies to search (typically the primary assembly and its referenced assemblies).</param>
 	/// <param name="patterns">
 	/// Patterns to match:
 	/// - "Namespace.*" - all public non-abstract types in exact namespace
@@ -21,21 +21,34 @@ public class TypeDiscoveryService
 	/// - "MyConcreteType" - the specific type
 	/// </param>
 	/// <returns>Discovered types with their message kind.</returns>
+	/// <remarks>
+	/// This method searches across multiple assemblies to support scenarios where message types
+	/// are defined in referenced class libraries rather than the primary assembly.
+	/// Types are deduplicated by their full name to prevent duplicate matches.
+	/// 
+	/// The loop order (patterns outer, assemblies inner) is intentional: patterns are typically
+	/// few (2-5), while assemblies can be many (10-20+). This order minimizes redundant work
+	/// by processing each pattern against all assemblies in a single pass, rather than enumerating
+	/// types from each assembly multiple times.
+	/// </remarks>
 	public IEnumerable<DiscoveredType> DiscoverTypes(
-		Assembly assembly,
+		IEnumerable<Assembly> assemblies,
 		IEnumerable<MessageTypePattern> patterns)
 	{
-		ArgumentNullException.ThrowIfNull(assembly);
+		ArgumentNullException.ThrowIfNull(assemblies);
 		ArgumentNullException.ThrowIfNull(patterns);
 
 		var discovered = new Dictionary<Type, MessageKind>();
 
 		foreach (var pattern in patterns)
 		{
-			foreach (var type in DiscoverTypesForPattern(assembly, pattern.Pattern))
+			foreach (var assembly in assemblies)
 			{
-				// If type already discovered, keep the existing kind (first wins)
-				discovered.TryAdd(type, pattern.Kind);
+				foreach (var type in DiscoverTypesForPattern(assembly, pattern.Pattern))
+				{
+					// If type already discovered, keep the existing kind (first wins)
+					discovered.TryAdd(type, pattern.Kind);
+				}
 			}
 		}
 

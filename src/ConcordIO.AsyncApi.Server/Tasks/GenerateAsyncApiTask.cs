@@ -75,6 +75,14 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 			{
 				var assembly = alc.LoadFromAssemblyPath(AssemblyPath);
 
+				// Load referenced assemblies for type discovery
+				var assemblies = GetSearchableAssemblies(alc, assembly, assemblyDir);
+
+				Log.LogMessage(MessageImportance.Normal,
+					"ConcordIO: Scanning {0} assemblies for message types: {1}",
+					assemblies.Count,
+					string.Join(", ", assemblies.Select(a => a.GetName().Name)));
+
 				// Apply defaults for optional parameters
 				var assemblyName = assembly.GetName().Name ?? Path.GetFileNameWithoutExtension(AssemblyPath);
 				var title = string.IsNullOrWhiteSpace(DocumentTitle) ? assemblyName : DocumentTitle;
@@ -97,7 +105,7 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 
 				// Discover types
 				var discoveryService = new TypeDiscoveryService();
-				var discoveredTypes = discoveryService.DiscoverTypes(assembly, patterns).ToList();
+				var discoveredTypes = discoveryService.DiscoverTypes(assemblies, patterns).ToList();
 
 				if (discoveredTypes.Count == 0)
 				{
@@ -163,6 +171,142 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 
 		return patterns;
 	}
+
+	/// <summary>
+	/// Gets the list of assemblies to search for message types.
+	/// Includes the primary assembly and its referenced assemblies recursively (excluding framework assemblies).
+	/// </summary>
+	/// <param name="alc">The AssemblyLoadContext for loading assemblies.</param>
+	/// <param name="primary">The primary assembly (from TargetPath).</param>
+	/// <param name="probeDir">The directory to probe for referenced assemblies.</param>
+	/// <returns>List of assemblies to scan for message types.</returns>
+	/// <remarks>
+	/// This method recursively loads referenced assemblies to support transitive dependencies
+	/// (e.g., A→B→C→D). Framework assemblies are filtered out to avoid loading the entire
+	/// dependency graph. A visited set prevents duplicate loading and infinite loops.
+	/// </remarks>
+	private List<Assembly> GetSearchableAssemblies(
+		AssemblyLoadContext alc,
+		Assembly primary,
+		string probeDir)
+	{
+		var result = new List<Assembly>();
+		var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		// Recursively load assemblies starting from the primary
+		LoadAssemblyAndReferences(alc, primary, probeDir, result, visited, depth: 0);
+
+		return result;
+	}
+
+	/// <summary>
+	/// Recursively loads an assembly and its non-framework references.
+	/// </summary>
+	/// <param name="alc">The AssemblyLoadContext for loading assemblies.</param>
+	/// <param name="assembly">The assembly to process.</param>
+	/// <param name="probeDir">The directory to probe for referenced assemblies.</param>
+	/// <param name="result">The list to add discovered assemblies to.</param>
+	/// <param name="visited">Set of already-visited assembly names to prevent duplicates.</param>
+	/// <param name="depth">Current recursion depth (for logging).</param>
+	private void LoadAssemblyAndReferences(
+		AssemblyLoadContext alc,
+		Assembly assembly,
+		string probeDir,
+		List<Assembly> result,
+		HashSet<string> visited,
+		int depth)
+	{
+		var assemblyName = assembly.GetName().Name;
+		if (assemblyName == null || !visited.Add(assemblyName))
+		{
+			return; // Already processed or null name
+		}
+
+		// Add this assembly to results
+		result.Add(assembly);
+		var indent = new string(' ', depth * 2);
+		Log.LogMessage(MessageImportance.Low,
+			"{0}Loaded assembly: {1}", indent, assemblyName);
+
+		// Recursively process references
+		foreach (var refName in assembly.GetReferencedAssemblies())
+		{
+			// Skip framework/runtime assemblies — they won't contain user message types
+			if (IsFrameworkAssembly(refName.Name))
+			{
+				continue;
+			}
+
+			// Skip if already visited - this check avoids unnecessary file system probes
+			// for assemblies that have already been processed (common in diamond dependencies)
+			if (refName.Name != null && visited.Contains(refName.Name))
+			{
+				continue;
+			}
+
+			// Try both .dll and .exe extensions (assemblies can have either)
+			var possiblePaths = new[]
+			{
+				Path.Combine(probeDir, refName.Name + ".dll"),
+				Path.Combine(probeDir, refName.Name + ".exe")
+			};
+
+			foreach (var path in possiblePaths)
+			{
+				if (File.Exists(path))
+				{
+					try
+					{
+						var refAssembly = alc.LoadFromAssemblyPath(path);
+						// Recursively load this assembly's references
+						LoadAssemblyAndReferences(alc, refAssembly, probeDir, result, visited, depth + 1);
+						break; // Found and loaded, no need to try other extensions
+					}
+					catch (Exception ex)
+					{
+						// Skip assemblies that fail to load
+						Log.LogMessage(MessageImportance.Low,
+							"{0}Skipped assembly {1}: {2}", indent, refName.Name, ex.Message);
+					}
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// Assembly name prefixes for framework and third-party libraries that should be excluded
+	/// from message type discovery. These assemblies are part of the .NET runtime, ConcordIO's
+	/// own dependencies, or common infrastructure libraries that won't contain user message types.
+	/// </summary>
+	/// <remarks>
+	/// This list includes:
+	/// <list type="bullet">
+	/// <item><description>.NET runtime assemblies (System, Microsoft, mscorlib, netstandard)</description></item>
+	/// <item><description>ConcordIO's AsyncAPI dependencies (Neuroglia, NJsonSchema)</description></item>
+	/// <item><description>Common serialization libraries (Newtonsoft)</description></item>
+	/// </list>
+	/// If your message types are in an assembly that starts with one of these prefixes,
+	/// you'll need to explicitly include it using a different pattern or rename the assembly.
+	/// </remarks>
+	private static readonly string[] FrameworkAssemblyPrefixes =
+	[
+		"System",
+		"Microsoft",
+		"netstandard",
+		"mscorlib",
+		"Neuroglia",      // ConcordIO AsyncAPI dependency
+		"NJsonSchema",    // ConcordIO schema generation dependency
+		"Newtonsoft",     // JSON serialization library
+	];
+
+	/// <summary>
+	/// Determines if an assembly is a framework/runtime assembly that shouldn't be scanned for message types.
+	/// </summary>
+	/// <param name="name">The assembly name.</param>
+	/// <returns>True if this is a framework assembly that should be skipped.</returns>
+	private static bool IsFrameworkAssembly(string? name) =>
+		name is null ||
+		FrameworkAssemblyPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.Ordinal));
 }
 
 /// <summary>

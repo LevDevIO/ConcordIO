@@ -14,7 +14,11 @@ ConcordIO.AsyncApi.Client is a NuGet tool package that runs at build time in con
 │     │  Contract package provides:                       │
 │     │  <ConcordIOAsyncApiContract> items                 │
 │     ▼                                                   │
+│  ResolveAssemblyReferences                               │
+│     │  Populates @(ReferencePath)                       │
+│     ▼                                                   │
 │  ConcordIOGenerateContracts (BeforeTargets=CoreCompile) │
+│     │  (DependsOnTargets=ResolveAssemblyReferences)     │
 │     │                                                   │
 │     ├─ Collect @(ReferencePath) for external types       │
 │     │                                                   │
@@ -131,7 +135,7 @@ AsyncApiContractGenerator.Generate()  [in ConcordIO.AsyncApi]
 
 - Registers `GenerateContractsTask` via `<UsingTask>`
 - Resolves the task assembly from the package `tools/$(TargetFramework)` folder using `$(MSBuildThisFileDirectory)..\tools\$(TargetFramework)\`
-- `ConcordIOGenerateContracts` — runs before `CoreCompile`, generates code, adds to `<Compile>`
+- `ConcordIOGenerateContracts` — depends on `ResolveAssemblyReferences` to ensure `@(ReferencePath)` is populated, runs before `CoreCompile`, generates code, adds to `<Compile>`
 - `ConcordIOCleanGeneratedContracts` — cleans generated directory after `Clean`
 
 **Transitive** (`buildTransitive/ConcordIO.AsyncApi.Client.props`):
