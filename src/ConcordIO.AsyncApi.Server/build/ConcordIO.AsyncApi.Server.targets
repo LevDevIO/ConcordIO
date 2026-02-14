@@ -36,7 +36,7 @@
       <_ConcordIODocumentTitle Condition="'$(_ConcordIODocumentTitle)' == ''">$(AssemblyName)</_ConcordIODocumentTitle>
       <!-- Compute output path at target time - IntermediateOutputPath is now available -->
       <_ConcordIOOutputDir>$(ConcordIOAsyncApiOutputPath)</_ConcordIOOutputDir>
-      <_ConcordIOOutputDir Condition="'$(_ConcordIOOutputDir)' == '' Or !$(_ConcordIOOutputDir.Contains('obj'))">$(IntermediateOutputPath)asyncapi\</_ConcordIOOutputDir>
+      <_ConcordIOOutputDir Condition="'$(_ConcordIOOutputDir)' == ''">$(IntermediateOutputPath)asyncapi\</_ConcordIOOutputDir>
       <_ConcordIOOutputFile>$(_ConcordIOOutputDir)$(_ConcordIODocumentTitle)$(_ConcordIOOutputExtension)</_ConcordIOOutputFile>
     </PropertyGroup>
 

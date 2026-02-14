@@ -130,7 +130,7 @@ GenerateAsyncApiTask.Execute()
 
 **Props** (`build/ConcordIO.AsyncApi.Server.props`):
 - Sets defaults for `ConcordIOAsyncApiDocumentVersion` (falls back to `$(Version)` then `1.0.0`)
-- Sets defaults for `ConcordIOAsyncApiOutputFormat` (`yaml`) and `ConcordIOIncludeAsyncApiInPackage` (`true`)
+- Sets defaults for `ConcordIOAsyncApiOutputFormat` (`json`) and `ConcordIOIncludeAsyncApiInPackage` (`true`)
 - Does NOT set `OutputPath` or `DocumentTitle` — these depend on `IntermediateOutputPath` and `AssemblyName` which aren't available at props evaluation time
 
 **Targets** (`build/ConcordIO.AsyncApi.Server.targets`):

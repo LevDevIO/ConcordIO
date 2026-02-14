@@ -47,7 +47,7 @@ Define event and command types using MSBuild properties with semicolon-separated
 |-----------------|---------|-------------|
 | `ConcordIOAsyncApiDocumentVersion` | `$(Version)` or `1.0.0` | Version in the AsyncAPI document `info` block. |
 | `ConcordIOAsyncApiDocumentTitle` | `$(AssemblyName)` | Title in the AsyncAPI document `info` block. |
-| `ConcordIOAsyncApiOutputFormat` | `yaml` | Output format: `yaml` or `json`. |
+| `ConcordIOAsyncApiOutputFormat` | `json` | Output format: `json` (default, more reliable) or `yaml`. |
 | `ConcordIOAsyncApiOutputPath` | `$(IntermediateOutputPath)asyncapi\` | Output directory for the generated spec. |
 | `ConcordIOIncludeAsyncApiInPackage` | `true` | Include the spec in the NuGet package under `asyncapi/`. |
 | `ConcordIOEventTypes` | — | Semicolon-separated event type patterns. |
@@ -62,7 +62,7 @@ Define event and command types using MSBuild properties with semicolon-separated
     <ConcordIOEventTypes>MyService.Contracts.Events.*</ConcordIOEventTypes>
     <ConcordIOCommandTypes>MyService.Contracts.Commands.*</ConcordIOCommandTypes>
     <ConcordIOAsyncApiDocumentVersion>2.0.0</ConcordIOAsyncApiDocumentVersion>
-    <ConcordIOAsyncApiOutputFormat>yaml</ConcordIOAsyncApiOutputFormat>
+    <ConcordIOAsyncApiOutputFormat>json</ConcordIOAsyncApiOutputFormat>
   </PropertyGroup>
 
   <ItemGroup>
@@ -142,6 +142,38 @@ The auto-generated `.targets` file exposes the spec as a `ConcordIOAsyncApiContr
 | `ConcordIOGenerateContractTargets` | `AfterTargets="ConcordIOGenerateAsyncApi"` | Auto-generates consumer `.targets` file. |
 
 ## Troubleshooting
+
+### YAML serialization errors
+
+**Symptom**: Build fails with `YamlDotNet.Core.SyntaxErrorException: Expected SCALAR, SEQUENCE-START, MAPPING-START, or ALIAS, got MappingEnd`.
+
+**Cause**: The YAML serializer encounters empty `JsonObject` nodes in the AsyncAPI document model (e.g., schemas with no properties).
+
+**Solution**: Use JSON output format instead (this is now the default):
+
+```xml
+<PropertyGroup>
+  <ConcordIOAsyncApiOutputFormat>json</ConcordIOAsyncApiOutputFormat>
+</PropertyGroup>
+```
+
+JSON is more reliable for programmatic consumption and is treated as equivalent to YAML in the AsyncAPI 3.0 specification.
+
+### Custom output path ignored
+
+**Symptom**: Setting `ConcordIOAsyncApiOutputPath` to a custom directory (e.g., `$(MSBuildProjectDirectory)\asyncapi\`) is ignored, and the spec is still written to `obj/`.
+
+**Cause**: Fixed in v0.2.3+. Earlier versions required the path to contain `obj`.
+
+**Solution**: Upgrade to v0.2.3 or later, or use a workaround with a post-build copy target:
+
+```xml
+<Target Name="CopyAsyncApiToStableLocation" AfterTargets="ConcordIOGenerateAsyncApi">
+  <Copy SourceFiles="@(ConcordIOGeneratedAsyncApi)"
+        DestinationFolder="$(MSBuildProjectDirectory)\asyncapi"
+        SkipUnchangedFiles="true" />
+</Target>
+```
 
 ### No types discovered
 

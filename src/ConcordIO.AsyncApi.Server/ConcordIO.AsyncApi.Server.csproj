@@ -17,7 +17,7 @@
     
     <!-- NuGet Package settings -->
     <PackageId>ConcordIO.AsyncApi.Server</PackageId>
-    <Version>0.2.0</Version>
+    <Version>0.2.3</Version>
     <Authors>LevDev</Authors>
     <Description>MSBuild integration for generating AsyncAPI specifications from .NET MassTransit message contracts at build time.</Description>
     <PackageTags>asyncapi;masstransit;contracts;messaging;codegen</PackageTags>
