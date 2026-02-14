@@ -1,4 +1,33 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Contract Package .nuspec Template
+  =================================
+  This template generates the .nuspec file for contract packages containing
+  API specifications (OpenAPI, Protocol Buffers, AsyncAPI).
+  
+  MODEL KEYS:
+  - package_id:        The NuGet package ID (e.g., "MyService.Contracts")
+  - version:           The package version (e.g., "1.0.0")
+  - authors:           Package author(s)
+  - description:       Package description for NuGet gallery
+  - package_properties: Additional metadata key-value pairs (license, repository, etc.)
+  - specs_by_kind:     Dictionary<string, List<string>> - spec files grouped by kind
+                       Keys: "openapi", "proto", "asyncapi"
+                       Values: List of spec file names
+  
+  GENERATED STRUCTURE:
+  - contentFiles/any/any/{spec}  - IDE visibility (allows viewing in Solution Explorer)
+  - {kind}/{spec}                - Organized by spec type for MSBuild targets
+  - build/{package_id}.targets   - MSBuild integration exposing specs as items
+  
+  EXAMPLE OUTPUT:
+  A package with openapi/petstore.yaml and asyncapi/events.yaml creates:
+    - contentFiles/any/any/petstore.yaml
+    - contentFiles/any/any/events.yaml
+    - openapi/petstore.yaml
+    - asyncapi/events.yaml
+    - build/MyService.Contracts.targets
+-->
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>Acme.PetStore.Contracts</id>
@@ -12,8 +41,10 @@
     </contentFiles>
   </metadata>
   <files>
+    <!-- petstore.yaml: Included in contentFiles for IDE and {kind}/ for MSBuild -->
     <file src="petstore.yaml" target="contentFiles/any/any/petstore.yaml" />
     <file src="petstore.yaml" target="openapi/petstore.yaml" />
+    <!-- MSBuild targets file exposes specs as ConcordIOContract/ConcordIOAsyncApiContract items -->
     <file src="build/Acme.PetStore.Contracts.targets" target="build/Acme.PetStore.Contracts.targets" />
   </files>
 </package>

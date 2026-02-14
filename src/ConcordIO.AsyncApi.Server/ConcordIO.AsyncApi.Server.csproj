@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>ConcordIO.AsyncApi.Server</RootNamespace>
@@ -17,7 +17,7 @@
     
     <!-- NuGet Package settings -->
     <PackageId>ConcordIO.AsyncApi.Server</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>LevDev</Authors>
     <Description>MSBuild integration for generating AsyncAPI specifications from .NET MassTransit message contracts at build time.</Description>
     <PackageTags>asyncapi;masstransit;contracts;messaging;codegen</PackageTags>

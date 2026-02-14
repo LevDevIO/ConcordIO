@@ -616,9 +616,24 @@ public class AsyncApiClientPackageIntegrationTests
         process.StartInfo.Environment["NUGET_PACKAGES"] = _fixture.NugetCacheDir;
 
         process.Start();
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        
+        // Start reading streams concurrently to avoid pipe buffer deadlock
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
+        
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
+        }
+        
+        var output = await outputTask;
+        var error = await errorTask;
 
         return (process.ExitCode, output + error);
     }
