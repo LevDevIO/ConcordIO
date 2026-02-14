@@ -9,10 +9,11 @@
   EXECUTION FLOW:
   ==============
   1. Package restore creates ConcordIOAsyncApiContract items (from contract packages)
-  2. BeforeTargets="CoreCompile" triggers ConcordIOGenerateContracts target
-  3. GenerateContractsTask parses AsyncAPI files and generates C# classes
-  4. Generated .g.cs files are added to Compile items
-  5. Normal C# compilation proceeds with generated types included
+  2. ResolveAssemblyReferences populates @(ReferencePath) with referenced assemblies
+  3. BeforeTargets="CoreCompile" triggers ConcordIOGenerateContracts target
+  4. GenerateContractsTask parses AsyncAPI files and generates C# classes
+  5. Generated .g.cs files are added to Compile items
+  6. Normal C# compilation proceeds with generated types included
   
   INPUTS:
   =======
@@ -32,6 +33,9 @@
   The generator scans @(ReferencePath) assemblies for types matching
   x-dotnet-type extensions in the AsyncAPI schemas. Matching types
   are referenced (not regenerated), enabling shared contract libraries.
+  
+  The target explicitly depends on ResolveAssemblyReferences to ensure
+  @(ReferencePath) is fully populated before external type detection runs.
   
   TROUBLESHOOTING:
   ================
@@ -63,9 +67,11 @@
     
     Runs when: @(ConcordIOAsyncApiContract) is not empty
     Timing: Before CoreCompile (so generated types are available for compilation)
+    Dependencies: ResolveAssemblyReferences (ensures @(ReferencePath) is populated)
   -->
   <Target Name="ConcordIOGenerateContracts"
           BeforeTargets="CoreCompile"
+          DependsOnTargets="ResolveAssemblyReferences"
           Condition="'@(ConcordIOAsyncApiContract)' != ''">
 
     <!-- Compute output directory (IntermediateOutputPath is available at target time) -->
