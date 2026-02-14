@@ -8,6 +8,7 @@
         "dotnet clean": true,
         "git switch": true,
         "dotnet pack": true,
-        "dotnet restore": true
+        "dotnet restore": true,
+        "dotnet format": true
     }
 }

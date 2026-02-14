@@ -61,7 +61,7 @@ public class TypeDiscoveryService
 		{
 			// Recursive wildcard: namespace and all sub-namespaces
 			var ns = pattern[..^3];
-			return assembly.GetTypes()
+			return GetLoadableTypes(assembly)
 				.Where(t => t.IsPublic && !t.IsAbstract && !t.IsInterface &&
 					   (t.Namespace == ns || t.Namespace?.StartsWith(ns + ".") == true));
 		}
@@ -70,7 +70,7 @@ public class TypeDiscoveryService
 		{
 			// Exact namespace wildcard
 			var ns = pattern[..^2];
-			return assembly.GetTypes()
+			return GetLoadableTypes(assembly)
 				.Where(t => t.IsPublic && !t.IsAbstract && !t.IsInterface && t.Namespace == ns);
 		}
 
@@ -84,7 +84,7 @@ public class TypeDiscoveryService
 		if (type.IsInterface)
 		{
 			// Find all implementations
-			return assembly.GetTypes()
+			return GetLoadableTypes(assembly)
 				.Where(t => t.IsPublic && !t.IsInterface && !t.IsAbstract &&
 					   type.IsAssignableFrom(t));
 		}
@@ -92,7 +92,7 @@ public class TypeDiscoveryService
 		if (type.IsAbstract || HasSubclasses(assembly, type))
 		{
 			// Find all subclasses
-			return assembly.GetTypes()
+			return GetLoadableTypes(assembly)
 				.Where(t => t.IsPublic && !t.IsAbstract && t.IsSubclassOf(type));
 		}
 
@@ -110,13 +110,38 @@ public class TypeDiscoveryService
 		}
 
 		// Try to find by full name match
-		return assembly.GetTypes()
+		return GetLoadableTypes(assembly)
 			.FirstOrDefault(t => t.FullName == typeName || t.Name == typeName);
 	}
 
 	private static bool HasSubclasses(Assembly assembly, Type type)
 	{
-		return assembly.GetTypes().Any(t => t.IsSubclassOf(type));
+		return GetLoadableTypes(assembly).Any(t => t.IsSubclassOf(type));
+	}
+
+	/// <summary>
+	/// Safely loads all types from an assembly, handling cases where some types
+	/// cannot be loaded due to missing referenced assemblies (e.g., shared framework types).
+	/// </summary>
+	/// <param name="assembly">The assembly to load types from.</param>
+	/// <returns>All successfully loaded types from the assembly.</returns>
+	/// <remarks>
+	/// Some types may fail to load because they reference assemblies not present in the
+	/// output directory (e.g., framework assemblies like System.Threading.RateLimiting
+	/// that are provided by the shared framework at runtime but not copied to bin/).
+	/// When this occurs, we return only the types that loaded successfully.
+	/// </remarks>
+	private static Type[] GetLoadableTypes(Assembly assembly)
+	{
+		try
+		{
+			return assembly.GetTypes();
+		}
+		catch (ReflectionTypeLoadException ex)
+		{
+			// Return only the types that loaded successfully
+			return ex.Types.Where(t => t is not null).ToArray()!;
+		}
 	}
 }
 

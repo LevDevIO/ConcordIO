@@ -21,8 +21,8 @@
   ConcordIOAsyncApiDocumentVersion (default: $(Version) or "1.0.0")
     Version string in the generated AsyncAPI document.
   
-  ConcordIOAsyncApiOutputFormat (default: "yaml")
-    Output format: "yaml" or "json"
+  ConcordIOAsyncApiOutputFormat (default: "json")
+    Output format: "json" (default, more reliable) or "yaml"
   
   ConcordIOAsyncApiDocumentTitle (default: $(AssemblyName))
     Title in the generated document and output filename.
@@ -70,9 +70,10 @@
 
     <!-- 
       Output format for the AsyncAPI document.
-      Supported values: "yaml" (default) or "json"
+      Supported values: "json" (default, more reliable) or "yaml"
+      Note: JSON is the default to avoid potential YAML serialization issues with empty objects.
     -->
-    <ConcordIOAsyncApiOutputFormat Condition="'$(ConcordIOAsyncApiOutputFormat)' == ''">yaml</ConcordIOAsyncApiOutputFormat>
+    <ConcordIOAsyncApiOutputFormat Condition="'$(ConcordIOAsyncApiOutputFormat)' == ''">json</ConcordIOAsyncApiOutputFormat>
 
     <!-- 
       When true, the generated AsyncAPI spec is included in the NuGet package.
