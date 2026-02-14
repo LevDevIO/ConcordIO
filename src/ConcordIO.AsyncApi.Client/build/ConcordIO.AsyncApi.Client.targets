@@ -44,7 +44,7 @@
 
   <!-- Internal: Locate the task assembly in the package tools folder -->
   <PropertyGroup>
-    <_ConcordIOClientToolsDir>$(MSBuildThisFileDirectory)..\tools\net10.0\</_ConcordIOClientToolsDir>
+    <_ConcordIOClientToolsDir>$(MSBuildThisFileDirectory)..\..\.\tools\$(TargetFramework)\</_ConcordIOClientToolsDir>
     <_ConcordIOClientTaskAssembly>$(_ConcordIOClientToolsDir)ConcordIO.AsyncApi.Client.dll</_ConcordIOClientTaskAssembly>
   </PropertyGroup>
 

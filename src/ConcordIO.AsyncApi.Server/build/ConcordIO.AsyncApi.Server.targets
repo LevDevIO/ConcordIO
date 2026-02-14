@@ -2,7 +2,7 @@
 <Project>
 
   <PropertyGroup>
-    <_ConcordIOToolsDir>$(MSBuildThisFileDirectory)..\tools\net10.0\</_ConcordIOToolsDir>
+    <_ConcordIOToolsDir>$(MSBuildThisFileDirectory)..\tools\$(TargetFramework)\</_ConcordIOToolsDir>
     <_ConcordIOTaskAssembly>$(_ConcordIOToolsDir)ConcordIO.AsyncApi.Server.dll</_ConcordIOTaskAssembly>
   </PropertyGroup>
 

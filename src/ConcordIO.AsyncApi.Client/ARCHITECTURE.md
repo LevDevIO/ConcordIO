@@ -33,16 +33,26 @@ ConcordIO.AsyncApi.Client is a NuGet tool package that runs at build time in con
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Target Framework Strategy
+
+ConcordIO.AsyncApi.Client is multi-targeted to **.NET 9.0 and 10.0** only, due to NuGet dependency constraints (Neuroglia.AsyncApi.Core requires net9.0+).
+
+**Impact on Consumers**:
+- **Consuming projects targeting net6.0, net7.0, or net8.0** can still use AsyncAPI contracts via the generated contract packages
+- **But cannot use the MSBuild task at build time** if their project targets net6.0–8.0
+- The `.targets` file dynamically resolves `$(TargetFramework)` to select the appropriate framework-specific task assembly
+
 ## Package Structure
 
 ```
 ConcordIO.AsyncApi.Client.nupkg
 ├── build/
 │   ├── ConcordIO.AsyncApi.Client.props    # Default MSBuild properties
-│   └── ConcordIO.AsyncApi.Client.targets  # Task registration and build targets
+│   └── ConcordIO.AsyncApi.Client.targets  # Task registration (uses dynamic $(TargetFramework) resolution)
 ├── buildTransitive/
 │   └── ConcordIO.AsyncApi.Client.props    # Imports build/props for transitive consumers
 └── tools/
+    ├── net9.0/
     └── net10.0/
         ├── ConcordIO.AsyncApi.Client.dll  # MSBuild task assembly
         ├── ConcordIO.AsyncApi.dll         # Core library (PrivateAssets=all)

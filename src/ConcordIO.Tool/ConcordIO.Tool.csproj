@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
@@ -17,7 +17,7 @@
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>concordio</ToolCommandName>
 		<PackageId>ConcordIO.Tool</PackageId>
-		<Version>0.1.0</Version>
+		<Version>0.2.0</Version>
 		<Authors>LevDev</Authors>
 		<Description>CLI tool for generating OpenAPI and Protobuf contract packages</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
