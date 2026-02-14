@@ -10,8 +10,8 @@ namespace ConcordIO.Tool.Tests.Integration;
 public class OasDiffRunnerTests
 {
     private static readonly string TestDataPath = Path.Combine(
-        AppContext.BaseDirectory, 
-        "..", "..", "..", 
+        AppContext.BaseDirectory,
+        "..", "..", "..",
         "TestData");
 
     private static string GetTestFile(string fileName) => Path.Combine(TestDataPath, fileName);

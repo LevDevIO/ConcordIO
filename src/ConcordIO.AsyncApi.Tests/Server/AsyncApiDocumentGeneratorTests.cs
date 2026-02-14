@@ -453,12 +453,12 @@ public class AsyncApiDocumentGeneratorTests
         // Assert
         result.Channels.Should().HaveCount(5);
         result.Operations.Should().HaveCount(5);
-        
+
         // Verify events have receive operations
         result.Operations[$"{nameof(OrderCreatedEvent)}Operation"].Action.Should().Be(V3OperationAction.Receive);
         result.Operations[$"{nameof(OrderCancelledEvent)}Operation"].Action.Should().Be(V3OperationAction.Receive);
         result.Operations[$"{nameof(OrderShippedEvent)}Operation"].Action.Should().Be(V3OperationAction.Receive);
-        
+
         // Verify commands have send operations
         result.Operations[$"{nameof(CreateOrderCommand)}Operation"].Action.Should().Be(V3OperationAction.Send);
         result.Operations[$"{nameof(CancelOrderCommand)}Operation"].Action.Should().Be(V3OperationAction.Send);

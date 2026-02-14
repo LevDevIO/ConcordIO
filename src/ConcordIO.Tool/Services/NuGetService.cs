@@ -9,8 +9,8 @@ public class NuGetService : INuGetService
 {
     public async Task<int> DownloadPackageAsync(string outputDir, string packageId, string? version, bool prerelease)
     {
-        var arguments = $"install {packageId} -OutputDirectory {outputDir}" 
-            + (version != null ? $" -Version {version}" : "") 
+        var arguments = $"install {packageId} -OutputDirectory {outputDir}"
+            + (version != null ? $" -Version {version}" : "")
             + (prerelease ? " -Prerelease" : "");
 
         using var process = new Process();

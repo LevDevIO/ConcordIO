@@ -34,7 +34,7 @@ public class TypeDiscoveryServiceTests
         result.Select(r => r.Type).Should().Contain(typeof(OrderCreatedEvent));
         result.Select(r => r.Type).Should().Contain(typeof(OrderCancelledEvent));
         result.Select(r => r.Type).Should().Contain(typeof(OrderShippedEvent));
-        
+
         // Abstract class should NOT be included
         result.Select(r => r.Type).Should().NotContain(typeof(OrderEventBase));
     }
@@ -115,7 +115,7 @@ public class TypeDiscoveryServiceTests
         result.Should().Contain(r => r.Type == typeof(CustomerCreatedEvent));
         result.Should().Contain(r => r.Type == typeof(InventoryAddedEvent));
         result.Should().Contain(r => r.Type == typeof(RootLevelEvent));
-        
+
         // Should NOT contain abstract/interface types
         result.Select(r => r.Type).Should().NotContain(typeof(OrderEventBase));
         result.Select(r => r.Type).Should().NotContain(typeof(InventoryEventBase));
@@ -143,10 +143,10 @@ public class TypeDiscoveryServiceTests
         result.Select(r => r.Type).Should().Contain(typeof(CustomerCreatedEvent));
         result.Select(r => r.Type).Should().Contain(typeof(CustomerUpdatedEvent));
         result.Select(r => r.Type).Should().Contain(typeof(CustomerDeletedEvent));
-        
+
         // UnrelatedEvent should NOT be included
         result.Select(r => r.Type).Should().NotContain(typeof(UnrelatedEvent));
-        
+
         // Interface itself should NOT be included
         result.Select(r => r.Type).Should().NotContain(typeof(ICustomerEvent));
     }
@@ -172,7 +172,7 @@ public class TypeDiscoveryServiceTests
         result.Select(r => r.Type).Should().Contain(typeof(InventoryAddedEvent));
         result.Select(r => r.Type).Should().Contain(typeof(InventoryRemovedEvent));
         result.Select(r => r.Type).Should().Contain(typeof(InventoryAdjustedEvent));
-        
+
         // Base class itself should NOT be included
         result.Select(r => r.Type).Should().NotContain(typeof(InventoryEventBase));
     }
@@ -214,10 +214,10 @@ public class TypeDiscoveryServiceTests
 
         // Assert
         result.Should().HaveCount(2);
-        
+
         var orderCreated = result.First(r => r.Type == typeof(OrderCreatedEvent));
         orderCreated.Kind.Should().Be(MessageKind.Event);
-        
+
         var createOrder = result.First(r => r.Type == typeof(CreateOrderCommand));
         createOrder.Kind.Should().Be(MessageKind.Command);
     }
@@ -243,7 +243,7 @@ public class TypeDiscoveryServiceTests
         // Events: 3 (OrderCreated, OrderCancelled, OrderShipped)
         // Commands: 3 (CreateOrder, CancelOrder, OrderItem)
         result.Should().HaveCount(6);
-        
+
         result.Where(r => r.Kind == MessageKind.Event).Should().HaveCount(3);
         result.Where(r => r.Kind == MessageKind.Command).Should().HaveCount(3);
     }

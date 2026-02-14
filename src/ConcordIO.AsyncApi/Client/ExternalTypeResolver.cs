@@ -244,10 +244,10 @@ public class ExternalTypeResolver : IDisposable
             var typeName = type.Name;
             var ns = type.Namespace ?? string.Empty;
             var assemblyName = type.Assembly.GetName().Name;
-            
+
             return new TypeInfo(typeName, ns, IsExternal: true, ExternalAssembly: assemblyName);
         }
-        
+
         return null;
     }
 

@@ -35,7 +35,7 @@ public enum GeneratedClassStyle
     /// Generate plain old C# objects with get/set properties.
     /// </summary>
     Poco,
-    
+
     /// <summary>
     /// Generate record types (immutable by default).
     /// </summary>

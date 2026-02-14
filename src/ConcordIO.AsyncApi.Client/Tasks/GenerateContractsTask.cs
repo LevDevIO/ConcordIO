@@ -87,7 +87,7 @@ public class GenerateContractsTask : MSBuildTask
             foreach (var asyncApiFile in AsyncApiFiles)
             {
                 var filePath = asyncApiFile.ItemSpec;
-                
+
                 if (!File.Exists(filePath))
                 {
                     Log.LogWarning("ConcordIO.Client: AsyncAPI file not found: {0}", filePath);
@@ -109,7 +109,7 @@ public class GenerateContractsTask : MSBuildTask
                     {
                         var outputPath = Path.Combine(OutputDirectory, sourceFile.FileName);
                         File.WriteAllText(outputPath, sourceFile.Content);
-                        
+
                         generatedFiles.Add(new TaskItem(outputPath));
                         Log.LogMessage(MessageImportance.Normal, "ConcordIO.Client: Generated {0} ({1} types)",
                             sourceFile.FileName, sourceFile.Types.Count);
@@ -118,12 +118,12 @@ public class GenerateContractsTask : MSBuildTask
                     // Log external types
                     if (result.ExternalTypes.Count > 0)
                     {
-                        Log.LogMessage(MessageImportance.Normal, 
+                        Log.LogMessage(MessageImportance.Normal,
                             "ConcordIO.Client: Skipped {0} external type(s) already defined in referenced assemblies.",
                             result.ExternalTypes.Count);
                     }
 
-                    Log.LogMessage(MessageImportance.High, 
+                    Log.LogMessage(MessageImportance.High,
                         "ConcordIO.Client: Generated {0} type(s) from {1}",
                         result.GeneratedTypes.Count, Path.GetFileName(filePath));
                 }
@@ -144,26 +144,26 @@ public class GenerateContractsTask : MSBuildTask
         }
     }
 
-        private static V3AsyncApiDocument LoadAsyncApiDocument(string filePath)
+    private static V3AsyncApiDocument LoadAsyncApiDocument(string filePath)
+    {
+        var content = File.ReadAllText(filePath);
+        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+
+        V3AsyncApiDocument document;
+
+        if (extension == ".yaml" || extension == ".yml")
         {
-            var content = File.ReadAllText(filePath);
-            var extension = Path.GetExtension(filePath).ToLowerInvariant();
-
-            V3AsyncApiDocument document;
-
-            if (extension == ".yaml" || extension == ".yml")
-            {
-                // Parse YAML using Neuroglia's default serializer
-                document = YamlSerializer.Default.Deserialize<V3AsyncApiDocument>(content)
-                    ?? throw new InvalidOperationException($"Failed to parse AsyncAPI YAML file: {filePath}");
-            }
-            else
-            {
-                // Parse JSON
-                document = JsonSerializer.Deserialize<V3AsyncApiDocument>(content)
-                    ?? throw new InvalidOperationException($"Failed to parse AsyncAPI JSON file: {filePath}");
-            }
-
-            return document;
+            // Parse YAML using Neuroglia's default serializer
+            document = YamlSerializer.Default.Deserialize<V3AsyncApiDocument>(content)
+                ?? throw new InvalidOperationException($"Failed to parse AsyncAPI YAML file: {filePath}");
         }
+        else
+        {
+            // Parse JSON
+            document = JsonSerializer.Deserialize<V3AsyncApiDocument>(content)
+                ?? throw new InvalidOperationException($"Failed to parse AsyncAPI JSON file: {filePath}");
+        }
+
+        return document;
     }
+}

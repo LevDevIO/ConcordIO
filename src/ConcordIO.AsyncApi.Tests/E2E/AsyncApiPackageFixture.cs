@@ -78,11 +78,11 @@ public class AsyncApiPackageFixture : IAsyncLifetime
         process.StartInfo.Environment["NUGET_PACKAGES"] = NugetCacheDir;
 
         process.Start();
-        
+
         // Start reading streams concurrently to avoid pipe buffer deadlock
         var outputTask = process.StandardOutput.ReadToEndAsync();
         var errorTask = process.StandardError.ReadToEndAsync();
-        
+
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
         try
         {
@@ -93,7 +93,7 @@ public class AsyncApiPackageFixture : IAsyncLifetime
             process.Kill(entireProcessTree: true);
             throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
         }
-        
+
         var output = await outputTask;
         var error = await errorTask;
 

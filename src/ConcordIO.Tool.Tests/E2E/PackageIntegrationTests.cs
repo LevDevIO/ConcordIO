@@ -125,8 +125,8 @@ public class PackageIntegrationTests
 
         // Use the CLI tool to generate both contract and client packages
         var packageDir = await GeneratePackagesWithToolAsync(ctx,
-            contractPackageId, version, specFileName, GetPetStoreOpenApiSpec(), 
-            clientClassName: clientClassName, 
+            contractPackageId, version, specFileName, GetPetStoreOpenApiSpec(),
+            clientClassName: clientClassName,
             clientPackageId: clientPackageId);
 
         // Pack both packages
@@ -238,7 +238,7 @@ public class PackageIntegrationTests
         await File.WriteAllTextAsync(Path.Combine(consumerDir, "ConsumerProject.csproj"), consumerCsproj);
         await ctx.CreateNuGetConfigAsync(consumerDir);
         // add class with reference to the generated client
-        await File.WriteAllTextAsync(Path.Combine(consumerDir, "ConsumerService.cs"), 
+        await File.WriteAllTextAsync(Path.Combine(consumerDir, "ConsumerService.cs"),
             "namespace ConsumerProject { public class ConsumerService { public LibraryProject.TransitClient Client; } }");
 
         // Act - Build only the consumer project (library is already built)
@@ -259,10 +259,10 @@ public class PackageIntegrationTests
     /// </summary>
     private static async Task<string> GeneratePackagesWithToolAsync(
         TestContext ctx,
-        string packageId, 
-        string version, 
-        string specFileName, 
-        string specContent, 
+        string packageId,
+        string version,
+        string specFileName,
+        string specContent,
         string? clientClassName = null,
         string? clientPackageId = null)
     {

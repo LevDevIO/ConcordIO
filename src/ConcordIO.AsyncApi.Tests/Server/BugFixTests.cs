@@ -47,7 +47,7 @@ public class BugFixTests
         var ns2ProductSchema = result.Components!.Schemas!["ConcordIO.AsyncApi.Tests.TestTypes.Namespace2.Product"];
 
         ns1ProductSchema.Should().NotBe(ns2ProductSchema);
-        
+
         // Note: Detailed property validation would require deserializing the Schema objects
         // which is done in the generator via ExpandoObject/JSON
     }
@@ -70,7 +70,7 @@ public class BugFixTests
 
         // Assert - Should only have the ModernTypesEvent schema (no dependency schemas for simple types)
         result.Components!.Schemas.Should().ContainKey(typeof(ModernTypesEvent).FullName!);
-        
+
         // Modern types should be treated as simple types, not generate separate schemas
         result.Components!.Schemas.Should().NotContainKey("System.DateOnly");
         result.Components!.Schemas.Should().NotContainKey("System.TimeOnly");
@@ -338,7 +338,7 @@ public class BugFixTests
 
         // Verify the schema was generated with the expected structure
         var schemaJson = System.Text.Json.JsonSerializer.Serialize(eventSchema.Schema);
-        
+
         // Schema should contain properties for all the generic type fields
         schemaJson.Should().Contain("SinglePair", because: "KeyValuePair property should be in schema");
         schemaJson.Should().Contain("TupleOfCustomTypes", because: "Tuple property should be in schema");

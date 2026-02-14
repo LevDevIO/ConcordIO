@@ -311,43 +311,43 @@ public class AsyncApiServerPackageIntegrationTests
 
     #endregion
 
-        #region Helper Methods
+    #region Helper Methods
 
-        private async Task<string> CreateTestProjectWithMessageTypesAsync(
-            string projectName,
-            string[]? eventTypes = null,
-            string[]? commandTypes = null,
-            string? outputFormat = null,
-            string? documentVersion = null,
-            string? documentTitle = null,
-            bool includeEventsAndCommands = false)
-        {
-            var projectDir = Path.Combine(_fixture.TestDir, projectName);
-            Directory.CreateDirectory(projectDir);
+    private async Task<string> CreateTestProjectWithMessageTypesAsync(
+        string projectName,
+        string[]? eventTypes = null,
+        string[]? commandTypes = null,
+        string? outputFormat = null,
+        string? documentVersion = null,
+        string? documentTitle = null,
+        bool includeEventsAndCommands = false)
+    {
+        var projectDir = Path.Combine(_fixture.TestDir, projectName);
+        Directory.CreateDirectory(projectDir);
 
-            // Build property overrides - now includes event/command type patterns as properties
-            var propertyOverrides = new List<string>();
+        // Build property overrides - now includes event/command type patterns as properties
+        var propertyOverrides = new List<string>();
 
-            // Add event types as semicolon-separated property (not ItemGroup - MSBuild globs would consume wildcards)
-            if (eventTypes != null && eventTypes.Length > 0)
-                propertyOverrides.Add($"<ConcordIOEventTypes>{string.Join(";", eventTypes)}</ConcordIOEventTypes>");
+        // Add event types as semicolon-separated property (not ItemGroup - MSBuild globs would consume wildcards)
+        if (eventTypes != null && eventTypes.Length > 0)
+            propertyOverrides.Add($"<ConcordIOEventTypes>{string.Join(";", eventTypes)}</ConcordIOEventTypes>");
 
-            // Add command types as semicolon-separated property
-            if (commandTypes != null && commandTypes.Length > 0)
-                propertyOverrides.Add($"<ConcordIOCommandTypes>{string.Join(";", commandTypes)}</ConcordIOCommandTypes>");
+        // Add command types as semicolon-separated property
+        if (commandTypes != null && commandTypes.Length > 0)
+            propertyOverrides.Add($"<ConcordIOCommandTypes>{string.Join(";", commandTypes)}</ConcordIOCommandTypes>");
 
-            if (outputFormat != null)
-                propertyOverrides.Add($"<ConcordIOAsyncApiOutputFormat>{outputFormat}</ConcordIOAsyncApiOutputFormat>");
-            if (documentVersion != null)
-                propertyOverrides.Add($"<ConcordIOAsyncApiDocumentVersion>{documentVersion}</ConcordIOAsyncApiDocumentVersion>");
-            if (documentTitle != null)
-                propertyOverrides.Add($"<ConcordIOAsyncApiDocumentTitle>{documentTitle}</ConcordIOAsyncApiDocumentTitle>");
+        if (outputFormat != null)
+            propertyOverrides.Add($"<ConcordIOAsyncApiOutputFormat>{outputFormat}</ConcordIOAsyncApiOutputFormat>");
+        if (documentVersion != null)
+            propertyOverrides.Add($"<ConcordIOAsyncApiDocumentVersion>{documentVersion}</ConcordIOAsyncApiDocumentVersion>");
+        if (documentTitle != null)
+            propertyOverrides.Add($"<ConcordIOAsyncApiDocumentTitle>{documentTitle}</ConcordIOAsyncApiDocumentTitle>");
 
-            var propertyOverridesXml = propertyOverrides.Count > 0
-                ? $"\n    {string.Join("\n    ", propertyOverrides)}"
-                : "";
+        var propertyOverridesXml = propertyOverrides.Count > 0
+            ? $"\n    {string.Join("\n    ", propertyOverrides)}"
+            : "";
 
-            var csproj = $"""
+        var csproj = $"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>net10.0</TargetFramework>
@@ -361,23 +361,23 @@ public class AsyncApiServerPackageIntegrationTests
                   </ItemGroup>
                 </Project>
                 """;
-            await File.WriteAllTextAsync(Path.Combine(projectDir, $"{projectName}.csproj"), csproj);
+        await File.WriteAllTextAsync(Path.Combine(projectDir, $"{projectName}.csproj"), csproj);
 
-            // Create nuget.config
-            await CreateNuGetConfigAsync(projectDir);
+        // Create nuget.config
+        await CreateNuGetConfigAsync(projectDir);
 
-            // Create sample message types
-            await CreateSampleMessageTypesAsync(projectDir, projectName, includeEventsAndCommands);
+        // Create sample message types
+        await CreateSampleMessageTypesAsync(projectDir, projectName, includeEventsAndCommands);
 
-            return projectDir;
-        }
+        return projectDir;
+    }
 
-        private static async Task CreateSampleMessageTypesAsync(string projectDir, string rootNamespace, bool includeEventsAndCommands)
+    private static async Task CreateSampleMessageTypesAsync(string projectDir, string rootNamespace, bool includeEventsAndCommands)
+    {
+        if (includeEventsAndCommands)
         {
-            if (includeEventsAndCommands)
-            {
-                // Create events
-                var eventsContent = $$"""
+            // Create events
+            var eventsContent = $$"""
                     namespace {{rootNamespace}}.Events;
 
                     public class OrderCreatedEvent
@@ -392,10 +392,10 @@ public class AsyncApiServerPackageIntegrationTests
                         public string Reason { get; set; } = string.Empty;
                     }
                     """;
-                await File.WriteAllTextAsync(Path.Combine(projectDir, "Events.cs"), eventsContent);
+            await File.WriteAllTextAsync(Path.Combine(projectDir, "Events.cs"), eventsContent);
 
-                // Create commands
-                var commandsContent = $$"""
+            // Create commands
+            var commandsContent = $$"""
                     namespace {{rootNamespace}}.Commands;
 
                     public class CreateOrderCommand
@@ -410,12 +410,12 @@ public class AsyncApiServerPackageIntegrationTests
                         public int Quantity { get; set; }
                     }
                     """;
-                await File.WriteAllTextAsync(Path.Combine(projectDir, "Commands.cs"), commandsContent);
-            }
-            else
-            {
-                // Create simple event types
-                var content = $$"""
+            await File.WriteAllTextAsync(Path.Combine(projectDir, "Commands.cs"), commandsContent);
+        }
+        else
+        {
+            // Create simple event types
+            var content = $$"""
                     namespace {{rootNamespace}};
 
                     public class OrderCreatedEvent
@@ -437,13 +437,13 @@ public class AsyncApiServerPackageIntegrationTests
                         public string Name { get; set; } = string.Empty;
                     }
                     """;
-                await File.WriteAllTextAsync(Path.Combine(projectDir, "Messages.cs"), content);
-            }
+            await File.WriteAllTextAsync(Path.Combine(projectDir, "Messages.cs"), content);
         }
+    }
 
-        private async Task CreateNuGetConfigAsync(string projectDir)
-        {
-            var nugetConfig = $"""
+    private async Task CreateNuGetConfigAsync(string projectDir)
+    {
+        var nugetConfig = $"""
                 <?xml version="1.0" encoding="utf-8"?>
                 <configuration>
                   <packageSources>
@@ -453,49 +453,49 @@ public class AsyncApiServerPackageIntegrationTests
                   </packageSources>
                 </configuration>
                 """;
-            await File.WriteAllTextAsync(Path.Combine(projectDir, "nuget.config"), nugetConfig);
-        }
-
-        private async Task<(int ExitCode, string Output)> RunDotNetAsync(
-            string command, string workingDir, string args = "")
-        {
-            using var process = new Process();
-            process.StartInfo = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = $"{command} {AsyncApiE2ECommandVerbosity.AddDotNetVerbosity(args)}",
-                WorkingDirectory = workingDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            // Use test-local NuGet cache to avoid conflicts with global cache
-            process.StartInfo.Environment["NUGET_PACKAGES"] = _fixture.NugetCacheDir;
-
-            process.Start();
-
-            // Start reading streams concurrently to avoid pipe buffer deadlock
-            var outputTask = process.StandardOutput.ReadToEndAsync();
-            var errorTask = process.StandardError.ReadToEndAsync();
-            
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
-            try
-            {
-                await process.WaitForExitAsync(cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                process.Kill(entireProcessTree: true);
-                throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
-            }
-            
-            var output = await outputTask;
-            var error = await errorTask;
-
-            return (process.ExitCode, output + error);
-        }
-
-        #endregion
+        await File.WriteAllTextAsync(Path.Combine(projectDir, "nuget.config"), nugetConfig);
     }
+
+    private async Task<(int ExitCode, string Output)> RunDotNetAsync(
+        string command, string workingDir, string args = "")
+    {
+        using var process = new Process();
+        process.StartInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = $"{command} {AsyncApiE2ECommandVerbosity.AddDotNetVerbosity(args)}",
+            WorkingDirectory = workingDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        // Use test-local NuGet cache to avoid conflicts with global cache
+        process.StartInfo.Environment["NUGET_PACKAGES"] = _fixture.NugetCacheDir;
+
+        process.Start();
+
+        // Start reading streams concurrently to avoid pipe buffer deadlock
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
+        }
+
+        var output = await outputTask;
+        var error = await errorTask;
+
+        return (process.ExitCode, output + error);
+    }
+
+    #endregion
+}

@@ -358,8 +358,8 @@ public class AsyncApiContractGenerator
             var trimmed = line.TrimStart();
 
             // Skip using statements and namespace declarations
-            if (trimmed.StartsWith("using ") || 
-                trimmed.StartsWith("namespace ") || 
+            if (trimmed.StartsWith("using ") ||
+                trimmed.StartsWith("namespace ") ||
                 trimmed.StartsWith("#pragma ") ||
                 (trimmed.StartsWith("//") && !inClass))
             {
@@ -373,7 +373,7 @@ public class AsyncApiContractGenerator
             }
 
             // Start capturing when we hit the class/record definition
-            if (!inClass && (trimmed.StartsWith("public class ") || 
+            if (!inClass && (trimmed.StartsWith("public class ") ||
                             trimmed.StartsWith("public partial class ") ||
                             trimmed.StartsWith("public record ") ||
                             trimmed.StartsWith("public sealed class ") ||

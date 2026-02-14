@@ -252,12 +252,12 @@ public class AsyncApiDocumentGenerator
                         CollectTypeAndDependencies(argType, schemas);
                     }
                 }
-                
+
                 // Also handle nested collection types (e.g., List<CustomType>)
                 // by calling GetUnderlyingType for the outer generic
                 var underlyingType = GetUnderlyingType(propertyType);
-                if (underlyingType != propertyType && 
-                    !IsSimpleType(underlyingType) && 
+                if (underlyingType != propertyType &&
+                    !IsSimpleType(underlyingType) &&
                     underlyingType.Namespace?.StartsWith("System") != true)
                 {
                     CollectTypeAndDependencies(underlyingType, schemas);

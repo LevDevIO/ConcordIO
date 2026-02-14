@@ -71,11 +71,11 @@ public class IntegrationTestFixture : IAsyncLifetime
         };
 
         process.Start();
-        
+
         // Start reading streams concurrently to avoid pipe buffer deadlock
         var outputTask = process.StandardOutput.ReadToEndAsync();
         var errorTask = process.StandardError.ReadToEndAsync();
-        
+
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
         try
         {
@@ -86,7 +86,7 @@ public class IntegrationTestFixture : IAsyncLifetime
             process.Kill(entireProcessTree: true);
             throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
         }
-        
+
         var output = await outputTask;
         var error = await errorTask;
 
@@ -162,11 +162,11 @@ public class TestContext : IDisposable
         process.StartInfo.Environment["NUGET_PACKAGES"] = NuGetCacheDir;
 
         process.Start();
-        
+
         // Start reading streams concurrently to avoid pipe buffer deadlock
         var outputTask = process.StandardOutput.ReadToEndAsync();
         var errorTask = process.StandardError.ReadToEndAsync();
-        
+
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
         try
         {
@@ -177,7 +177,7 @@ public class TestContext : IDisposable
             process.Kill(entireProcessTree: true);
             throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
         }
-        
+
         var output = await outputTask;
         var error = await errorTask;
 
@@ -204,11 +204,11 @@ public class TestContext : IDisposable
         process.StartInfo.Environment["NUGET_PACKAGES"] = NuGetCacheDir;
 
         process.Start();
-        
+
         // Start reading streams concurrently to avoid pipe buffer deadlock
         var outputTask = process.StandardOutput.ReadToEndAsync();
         var errorTask = process.StandardError.ReadToEndAsync();
-        
+
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
         try
         {
@@ -219,7 +219,7 @@ public class TestContext : IDisposable
             process.Kill(entireProcessTree: true);
             throw new TimeoutException($"{fileName} timed out after 3 minutes in {workingDir}");
         }
-        
+
         var output = await outputTask;
         var error = await errorTask;
 

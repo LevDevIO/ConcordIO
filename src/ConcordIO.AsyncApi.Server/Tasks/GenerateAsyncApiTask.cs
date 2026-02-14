@@ -79,7 +79,7 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
                 var version = string.IsNullOrWhiteSpace(DocumentVersion) ? "1.0.0" : DocumentVersion;
                 var isJson = OutputFormat.Equals("json", StringComparison.OrdinalIgnoreCase);
                 var extension = isJson ? ".json" : ".yaml";
-                var outputPath = string.IsNullOrWhiteSpace(OutputPath) 
+                var outputPath = string.IsNullOrWhiteSpace(OutputPath)
                     ? Path.Combine(Path.GetDirectoryName(AssemblyPath) ?? ".", $"{assemblyName}{extension}")
                     : OutputPath;
 
