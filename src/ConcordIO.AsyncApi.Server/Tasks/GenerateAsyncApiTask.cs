@@ -195,21 +195,31 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 				continue;
 			}
 
-			var path = Path.Combine(probeDir, refName.Name + ".dll");
-			if (File.Exists(path))
+			// Try both .dll and .exe extensions (assemblies can have either)
+			var possiblePaths = new[]
 			{
-				try
+				Path.Combine(probeDir, refName.Name + ".dll"),
+				Path.Combine(probeDir, refName.Name + ".exe")
+			};
+
+			foreach (var path in possiblePaths)
+			{
+				if (File.Exists(path))
 				{
-					var refAssembly = alc.LoadFromAssemblyPath(path);
-					result.Add(refAssembly);
-					Log.LogMessage(MessageImportance.Low, 
-						"  Loaded referenced assembly: {0}", refName.Name);
-				}
-				catch (Exception ex)
-				{
-					// Skip assemblies that fail to load
-					Log.LogMessage(MessageImportance.Low, 
-						"  Skipped assembly {0}: {1}", refName.Name, ex.Message);
+					try
+					{
+						var refAssembly = alc.LoadFromAssemblyPath(path);
+						result.Add(refAssembly);
+						Log.LogMessage(MessageImportance.Low, 
+							"  Loaded referenced assembly: {0}", refName.Name);
+						break; // Found and loaded, no need to try other extensions
+					}
+					catch (Exception ex)
+					{
+						// Skip assemblies that fail to load
+						Log.LogMessage(MessageImportance.Low, 
+							"  Skipped assembly {0}: {1}", refName.Name, ex.Message);
+					}
 				}
 			}
 		}

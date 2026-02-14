@@ -25,6 +25,11 @@ public class TypeDiscoveryService
 	/// This method searches across multiple assemblies to support scenarios where message types
 	/// are defined in referenced class libraries rather than the primary assembly.
 	/// Types are deduplicated by their full name to prevent duplicate matches.
+	/// 
+	/// The loop order (patterns outer, assemblies inner) is intentional: patterns are typically
+	/// few (2-5), while assemblies can be many (10-20+). This order minimizes redundant work
+	/// by processing each pattern against all assemblies in a single pass, rather than enumerating
+	/// types from each assembly multiple times.
 	/// </remarks>
 	public IEnumerable<DiscoveredType> DiscoverTypes(
 		IEnumerable<Assembly> assemblies,
