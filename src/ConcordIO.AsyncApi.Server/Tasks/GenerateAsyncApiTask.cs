@@ -248,23 +248,9 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 	/// </summary>
 	/// <param name="name">The assembly name.</param>
 	/// <returns>True if this is a framework assembly that should be skipped.</returns>
-	private static bool IsFrameworkAssembly(string? name)
-	{
-		if (name is null)
-		{
-			return true;
-		}
-
-		foreach (var prefix in FrameworkAssemblyPrefixes)
-		{
-			if (name.StartsWith(prefix, StringComparison.Ordinal))
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
+	private static bool IsFrameworkAssembly(string? name) =>
+		name is null ||
+		FrameworkAssemblyPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.Ordinal));
 }
 
 /// <summary>
