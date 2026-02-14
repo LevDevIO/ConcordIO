@@ -174,23 +174,71 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 
 	/// <summary>
 	/// Gets the list of assemblies to search for message types.
-	/// Includes the primary assembly and its referenced assemblies (excluding framework assemblies).
+	/// Includes the primary assembly and its referenced assemblies recursively (excluding framework assemblies).
 	/// </summary>
 	/// <param name="alc">The AssemblyLoadContext for loading assemblies.</param>
 	/// <param name="primary">The primary assembly (from TargetPath).</param>
 	/// <param name="probeDir">The directory to probe for referenced assemblies.</param>
 	/// <returns>List of assemblies to scan for message types.</returns>
+	/// <remarks>
+	/// This method recursively loads referenced assemblies to support transitive dependencies
+	/// (e.g., A→B→C→D). Framework assemblies are filtered out to avoid loading the entire
+	/// dependency graph. A visited set prevents duplicate loading and infinite loops.
+	/// </remarks>
 	private List<Assembly> GetSearchableAssemblies(
 		AssemblyLoadContext alc, 
 		Assembly primary, 
 		string probeDir)
 	{
-		var result = new List<Assembly> { primary };
+		var result = new List<Assembly>();
+		var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		
+		// Recursively load assemblies starting from the primary
+		LoadAssemblyAndReferences(alc, primary, probeDir, result, visited, depth: 0);
+		
+		return result;
+	}
 
-		foreach (var refName in primary.GetReferencedAssemblies())
+	/// <summary>
+	/// Recursively loads an assembly and its non-framework references.
+	/// </summary>
+	/// <param name="alc">The AssemblyLoadContext for loading assemblies.</param>
+	/// <param name="assembly">The assembly to process.</param>
+	/// <param name="probeDir">The directory to probe for referenced assemblies.</param>
+	/// <param name="result">The list to add discovered assemblies to.</param>
+	/// <param name="visited">Set of already-visited assembly names to prevent duplicates.</param>
+	/// <param name="depth">Current recursion depth (for logging).</param>
+	private void LoadAssemblyAndReferences(
+		AssemblyLoadContext alc,
+		Assembly assembly,
+		string probeDir,
+		List<Assembly> result,
+		HashSet<string> visited,
+		int depth)
+	{
+		var assemblyName = assembly.GetName().Name;
+		if (assemblyName == null || !visited.Add(assemblyName))
+		{
+			return; // Already processed or null name
+		}
+
+		// Add this assembly to results
+		result.Add(assembly);
+		var indent = new string(' ', depth * 2);
+		Log.LogMessage(MessageImportance.Low, 
+			"{0}Loaded assembly: {1}", indent, assemblyName);
+
+		// Recursively process references
+		foreach (var refName in assembly.GetReferencedAssemblies())
 		{
 			// Skip framework/runtime assemblies — they won't contain user message types
 			if (IsFrameworkAssembly(refName.Name))
+			{
+				continue;
+			}
+
+			// Skip if already visited
+			if (refName.Name != null && visited.Contains(refName.Name))
 			{
 				continue;
 			}
@@ -209,22 +257,19 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 					try
 					{
 						var refAssembly = alc.LoadFromAssemblyPath(path);
-						result.Add(refAssembly);
-						Log.LogMessage(MessageImportance.Low, 
-							"  Loaded referenced assembly: {0}", refName.Name);
+						// Recursively load this assembly's references
+						LoadAssemblyAndReferences(alc, refAssembly, probeDir, result, visited, depth + 1);
 						break; // Found and loaded, no need to try other extensions
 					}
 					catch (Exception ex)
 					{
 						// Skip assemblies that fail to load
 						Log.LogMessage(MessageImportance.Low, 
-							"  Skipped assembly {0}: {1}", refName.Name, ex.Message);
+							"{0}Skipped assembly {1}: {2}", indent, refName.Name, ex.Message);
 					}
 				}
 			}
 		}
-
-		return result;
 	}
 
 	/// <summary>
