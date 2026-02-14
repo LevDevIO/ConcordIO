@@ -77,9 +77,9 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 
 				// Load referenced assemblies for type discovery
 				var assemblies = GetSearchableAssemblies(alc, assembly, assemblyDir);
-				
-				Log.LogMessage(MessageImportance.Normal, 
-					"ConcordIO: Scanning {0} assemblies for message types: {1}", 
+
+				Log.LogMessage(MessageImportance.Normal,
+					"ConcordIO: Scanning {0} assemblies for message types: {1}",
 					assemblies.Count,
 					string.Join(", ", assemblies.Select(a => a.GetName().Name)));
 
@@ -186,16 +186,16 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 	/// dependency graph. A visited set prevents duplicate loading and infinite loops.
 	/// </remarks>
 	private List<Assembly> GetSearchableAssemblies(
-		AssemblyLoadContext alc, 
-		Assembly primary, 
+		AssemblyLoadContext alc,
+		Assembly primary,
 		string probeDir)
 	{
 		var result = new List<Assembly>();
 		var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		
+
 		// Recursively load assemblies starting from the primary
 		LoadAssemblyAndReferences(alc, primary, probeDir, result, visited, depth: 0);
-		
+
 		return result;
 	}
 
@@ -225,7 +225,7 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 		// Add this assembly to results
 		result.Add(assembly);
 		var indent = new string(' ', depth * 2);
-		Log.LogMessage(MessageImportance.Low, 
+		Log.LogMessage(MessageImportance.Low,
 			"{0}Loaded assembly: {1}", indent, assemblyName);
 
 		// Recursively process references
@@ -265,7 +265,7 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 					catch (Exception ex)
 					{
 						// Skip assemblies that fail to load
-						Log.LogMessage(MessageImportance.Low, 
+						Log.LogMessage(MessageImportance.Low,
 							"{0}Skipped assembly {1}: {2}", indent, refName.Name, ex.Message);
 					}
 				}

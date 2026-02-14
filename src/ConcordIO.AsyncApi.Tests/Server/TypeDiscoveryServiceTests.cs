@@ -331,7 +331,7 @@ public class TypeDiscoveryServiceTests
 		var testAssembly = typeof(TypeDiscoveryServiceTests).Assembly;
 		var mscorlibAssembly = typeof(string).Assembly;
 		var assemblies = new[] { testAssembly, mscorlibAssembly };
-		
+
 		var patterns = new[]
 		{
 			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.*", MessageKind.Event)
@@ -352,7 +352,7 @@ public class TypeDiscoveryServiceTests
 	{
 		// Arrange - pass the same assembly twice to test deduplication
 		var assemblies = new[] { _testAssembly, _testAssembly };
-		
+
 		var patterns = new[]
 		{
 			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.OrderCreatedEvent", MessageKind.Event)
@@ -392,7 +392,7 @@ public class TypeDiscoveryServiceTests
 		var testAssembly = typeof(TypeDiscoveryServiceTests).Assembly;
 		var linqAssembly = typeof(System.Linq.Enumerable).Assembly;
 		var assemblies = new[] { testAssembly, linqAssembly };
-		
+
 		var patterns = new[]
 		{
 			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.*", MessageKind.Event)
