@@ -1,0 +1,14 @@
+#!/bin/sh
+# Pre-commit hook: run dotnet format. To enable locally: git config core.hooksPath .githooks
+set -e
+
+echo "Running dotnet format (may modify files)..."
+dotnet format
+
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Formatting made changes. Please review and stage them. Aborting commit so you can inspect the changes."
+  git add -A
+  exit 1
+fi
+
+exit 0

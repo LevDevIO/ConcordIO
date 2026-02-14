@@ -1,0 +1,30 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = tab
+indent_size = 4
+
+[*.cs]
+# Use tabs and common C# formatting preferences
+indent_style = tab
+indent_size = 4
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = true
+csharp_new_line_before_open_brace = all
+csharp_preserve_single_line_blocks = false
+csharp_preserve_single_line_statements = false
+# Prefer explicit types (adjust to taste)
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = false:suggestion
+csharp_style_var_elsewhere = false:suggestion
+# Treat formatting issues as errors so dotnet-format will fail CI when code is not formatted
+dotnet_diagnostic.IDE0055.severity = error
+
+[*.{csproj,props,targets,xml}]
+indent_style = tab
+indent_size = 4
+trim_trailing_whitespace = false
