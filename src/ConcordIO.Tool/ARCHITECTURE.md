@@ -2,6 +2,14 @@
 
 This document explains the internal design and code structure of the ConcordIO CLI tool. For usage instructions, see [README.md](README.md).
 
+## Target Framework Strategy
+
+ConcordIO.Tool is multi-targeted to support **.NET 8.0, 9.0, and 10.0**. The codebase uses C# 11+ features (required members, collection expressions), which are not available in net6.0 or net7.0. This ensures:
+
+- Broad compatibility across modern .NET versions without OS/platform restrictions
+- Access to latest language features for clean, maintainable code
+- Consumed by projects on any .NET framework (generated packages remain framework-agnostic)
+
 ## High-Level Overview
 
 ConcordIO.Tool is a .NET CLI tool (distributed as a `dotnet tool`) that generates NuGet package scaffolds from API specification files. The generated packages use MSBuild integration (`.targets` files) so that consuming projects get contracts and auto-generated clients at build time — without copying spec files.

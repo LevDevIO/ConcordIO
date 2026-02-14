@@ -2,6 +2,18 @@
 
 This document explains the internal design of the shared AsyncAPI library. For the design rationale and overall system vision, see [ConcordIO.AsyncApi.Design.md](../../ConcordIO.AsyncApi.Design.md).
 
+## Target Framework Strategy
+
+ConcordIO.AsyncApi is multi-targeted to **.NET 9.0 and 10.0** only, due to NuGet dependency constraints:
+
+- **Neuroglia.AsyncApi.Core 3.0.0** — Only supports net9.0 (excludes net6.0, net7.0, net8.0)
+- **Neuroglia.Serialization** — Only supports net8.0 and net9.0 (excludes net6.0, net7.0)
+- **Neuroglia.Serialization.YamlDotNet** — Only supports net8.0 and net9.0 (excludes net6.0, net7.0)
+
+**Implication**: Projects consuming ConcordIO.AsyncApi (Client/Server packages and tasks) are restricted to net9.0+.
+
+The generated contract packages themselves remain **framework-agnostic** — consumers can target net6.0+ without restrictions, but the **generating tool** (ConcordIO.Tool) and **runtime tasks** (AsyncApi.Client, AsyncApi.Server) require net9.0+.
+
 ## High-Level Overview
 
 ConcordIO.AsyncApi is the shared core library that provides two sets of functionality:
