@@ -140,7 +140,7 @@ public class TypeDiscoveryService
 		catch (ReflectionTypeLoadException ex)
 		{
 			// Return only the types that loaded successfully
-			return ex.Types.Where(t => t is not null).ToArray()!;
+			return ex.Types.OfType<Type>().ToArray();
 		}
 	}
 }
