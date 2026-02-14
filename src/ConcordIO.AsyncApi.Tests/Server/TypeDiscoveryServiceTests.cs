@@ -320,4 +320,68 @@ public class TypeDiscoveryServiceTests
 	}
 
 	#endregion
+
+	#region Multiple Assembly Tests
+
+	[Fact]
+	public void DiscoverTypes_WithMultipleAssemblies_FindsTypesAcrossAllAssemblies()
+	{
+		// Arrange - include both the test assembly and mscorlib (as a second assembly)
+		// In practice, this simulates a host assembly + referenced class library scenario
+		var testAssembly = typeof(TypeDiscoveryServiceTests).Assembly;
+		var mscorlibAssembly = typeof(string).Assembly;
+		var assemblies = new[] { testAssembly, mscorlibAssembly };
+		
+		var patterns = new[]
+		{
+			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.*", MessageKind.Event)
+		};
+
+		// Act
+		var result = _sut.DiscoverTypes(assemblies, patterns).ToList();
+
+		// Assert - should still find types from test assembly
+		result.Should().HaveCount(3);
+		result.Select(r => r.Type).Should().Contain(typeof(OrderCreatedEvent));
+		result.Select(r => r.Type).Should().Contain(typeof(OrderCancelledEvent));
+		result.Select(r => r.Type).Should().Contain(typeof(OrderShippedEvent));
+	}
+
+	[Fact]
+	public void DiscoverTypes_WithMultipleAssemblies_DeduplicatesTypesByFullName()
+	{
+		// Arrange - pass the same assembly twice to test deduplication
+		var assemblies = new[] { _testAssembly, _testAssembly };
+		
+		var patterns = new[]
+		{
+			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.OrderCreatedEvent", MessageKind.Event)
+		};
+
+		// Act
+		var result = _sut.DiscoverTypes(assemblies, patterns).ToList();
+
+		// Assert - type should only appear once despite being in both assemblies
+		result.Should().HaveCount(1);
+		result[0].Type.Should().Be(typeof(OrderCreatedEvent));
+	}
+
+	[Fact]
+	public void DiscoverTypes_WithEmptyAssemblyList_ReturnsEmpty()
+	{
+		// Arrange
+		var assemblies = Array.Empty<Assembly>();
+		var patterns = new[]
+		{
+			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.*", MessageKind.Event)
+		};
+
+		// Act
+		var result = _sut.DiscoverTypes(assemblies, patterns).ToList();
+
+		// Assert
+		result.Should().BeEmpty();
+	}
+
+	#endregion
 }
