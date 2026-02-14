@@ -138,7 +138,8 @@ public class TestContext : IDisposable
     /// </summary>
     public async Task<(int ExitCode, string Output)> RunToolAsync(string args)
     {
-        return await RunDotNetAsync("run", Path.GetDirectoryName(ToolProjectPath)!, $"-- {args}");
+        // Use net10.0 framework since ConcordIO.Tool targets multiple frameworks (net8.0, net9.0, net10.0)
+        return await RunDotNetAsync("run", Path.GetDirectoryName(ToolProjectPath)!, $"--framework net10.0 -- {args}");
     }
 
     /// <summary>
