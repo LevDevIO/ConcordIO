@@ -383,5 +383,29 @@ public class TypeDiscoveryServiceTests
 		result.Should().BeEmpty();
 	}
 
+	[Fact]
+	public void DiscoverTypes_WithTransitiveDependencies_FindsTypesInAllReferencedAssemblies()
+	{
+		// Arrange - simulate a chain of assemblies: TestAssembly -> System.Linq (a referenced assembly)
+		// This demonstrates that we can find types across multiple levels of dependencies
+		var testAssembly = typeof(TypeDiscoveryServiceTests).Assembly;
+		var linqAssembly = typeof(System.Linq.Enumerable).Assembly;
+		var assemblies = new[] { testAssembly, linqAssembly };
+		
+		var patterns = new[]
+		{
+			new MessageTypePattern("ConcordIO.AsyncApi.Tests.TestTypes.Events.*", MessageKind.Event)
+		};
+
+		// Act
+		var result = _sut.DiscoverTypes(assemblies, patterns).ToList();
+
+		// Assert - should find types from test assembly even when multiple assemblies are present
+		result.Should().HaveCount(3);
+		result.Select(r => r.Type).Should().Contain(typeof(OrderCreatedEvent));
+		result.Select(r => r.Type).Should().Contain(typeof(OrderCancelledEvent));
+		result.Select(r => r.Type).Should().Contain(typeof(OrderShippedEvent));
+	}
+
 	#endregion
 }
