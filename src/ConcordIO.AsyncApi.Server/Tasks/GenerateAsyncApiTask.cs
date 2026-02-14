@@ -218,19 +218,53 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 	}
 
 	/// <summary>
+	/// Assembly name prefixes for framework and third-party libraries that should be excluded
+	/// from message type discovery. These assemblies are part of the .NET runtime, ConcordIO's
+	/// own dependencies, or common infrastructure libraries that won't contain user message types.
+	/// </summary>
+	/// <remarks>
+	/// This list includes:
+	/// <list type="bullet">
+	/// <item><description>.NET runtime assemblies (System, Microsoft, mscorlib, netstandard)</description></item>
+	/// <item><description>ConcordIO's AsyncAPI dependencies (Neuroglia, NJsonSchema)</description></item>
+	/// <item><description>Common serialization libraries (Newtonsoft)</description></item>
+	/// </list>
+	/// If your message types are in an assembly that starts with one of these prefixes,
+	/// you'll need to explicitly include it using a different pattern or rename the assembly.
+	/// </remarks>
+	private static readonly string[] FrameworkAssemblyPrefixes =
+	[
+		"System",
+		"Microsoft",
+		"netstandard",
+		"mscorlib",
+		"Neuroglia",      // ConcordIO AsyncAPI dependency
+		"NJsonSchema",    // ConcordIO schema generation dependency
+		"Newtonsoft",     // JSON serialization library
+	];
+
+	/// <summary>
 	/// Determines if an assembly is a framework/runtime assembly that shouldn't be scanned for message types.
 	/// </summary>
 	/// <param name="name">The assembly name.</param>
 	/// <returns>True if this is a framework assembly that should be skipped.</returns>
-	private static bool IsFrameworkAssembly(string? name) =>
-		name is null ||
-		name.StartsWith("System", StringComparison.Ordinal) ||
-		name.StartsWith("Microsoft", StringComparison.Ordinal) ||
-		name.StartsWith("netstandard", StringComparison.Ordinal) ||
-		name.StartsWith("mscorlib", StringComparison.Ordinal) ||
-		name.StartsWith("Neuroglia", StringComparison.Ordinal) ||
-		name.StartsWith("NJsonSchema", StringComparison.Ordinal) ||
-		name.StartsWith("Newtonsoft", StringComparison.Ordinal);
+	private static bool IsFrameworkAssembly(string? name)
+	{
+		if (name is null)
+		{
+			return true;
+		}
+
+		foreach (var prefix in FrameworkAssemblyPrefixes)
+		{
+			if (name.StartsWith(prefix, StringComparison.Ordinal))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 }
 
 /// <summary>
