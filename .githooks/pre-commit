@@ -3,7 +3,7 @@
 set -e
 
 echo "Running dotnet format (may modify files)..."
-dotnet format
+dotnet format src/ConcordIO.Tool.sln
 
 if [ -n "$(git status --porcelain)" ]; then
   echo "Formatting made changes. Please review and stage them. Aborting commit so you can inspect the changes."
