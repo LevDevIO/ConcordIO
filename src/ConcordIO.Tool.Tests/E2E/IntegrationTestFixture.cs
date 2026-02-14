@@ -71,9 +71,24 @@ public class IntegrationTestFixture : IAsyncLifetime
         };
 
         process.Start();
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        
+        // Start reading streams concurrently to avoid pipe buffer deadlock
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
+        
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
+        }
+        
+        var output = await outputTask;
+        var error = await errorTask;
 
         return (process.ExitCode, output + error);
     }
@@ -146,9 +161,24 @@ public class TestContext : IDisposable
         process.StartInfo.Environment["NUGET_PACKAGES"] = NuGetCacheDir;
 
         process.Start();
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        
+        // Start reading streams concurrently to avoid pipe buffer deadlock
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
+        
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            throw new TimeoutException($"dotnet {command} timed out after 3 minutes in {workingDir}");
+        }
+        
+        var output = await outputTask;
+        var error = await errorTask;
 
         return (process.ExitCode, output + error);
     }
@@ -173,9 +203,24 @@ public class TestContext : IDisposable
         process.StartInfo.Environment["NUGET_PACKAGES"] = NuGetCacheDir;
 
         process.Start();
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        
+        // Start reading streams concurrently to avoid pipe buffer deadlock
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
+        
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            throw new TimeoutException($"{fileName} timed out after 3 minutes in {workingDir}");
+        }
+        
+        var output = await outputTask;
+        var error = await errorTask;
 
         return (process.ExitCode, output + error);
     }
@@ -228,7 +273,9 @@ public class IntegrationTestCollection : ICollectionFixture<IntegrationTestFixtu
 
 internal static class CommandVerbosity
 {
-    private const string DotNetVerbosity = "-v diag";
+    // Use 'normal' verbosity in CI to reduce output volume and prevent pipe buffer deadlocks.
+    // Local debugging can override via environment variable if needed.
+    private const string DotNetVerbosity = "-v normal";
 
     public static string AddDotNetVerbosity(string command, string args)
     {
