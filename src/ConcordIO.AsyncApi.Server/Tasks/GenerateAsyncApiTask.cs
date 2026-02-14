@@ -237,7 +237,8 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 				continue;
 			}
 
-			// Skip if already visited
+			// Skip if already visited - this check avoids unnecessary file system probes
+			// for assemblies that have already been processed (common in diamond dependencies)
 			if (refName.Name != null && visited.Contains(refName.Name))
 			{
 				continue;

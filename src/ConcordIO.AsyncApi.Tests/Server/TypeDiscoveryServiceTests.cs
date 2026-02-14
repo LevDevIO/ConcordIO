@@ -386,8 +386,9 @@ public class TypeDiscoveryServiceTests
 	[Fact]
 	public void DiscoverTypes_WithTransitiveDependencies_FindsTypesInAllReferencedAssemblies()
 	{
-		// Arrange - simulate a chain of assemblies: TestAssembly -> System.Linq (a referenced assembly)
-		// This demonstrates that we can find types across multiple levels of dependencies
+		// Arrange - verify TypeDiscoveryService can handle multiple assemblies at once.
+		// In practice, GenerateAsyncApiTask recursively loads A→B→C→D and passes all to DiscoverTypes.
+		// This test simulates that by providing multiple assemblies directly.
 		var testAssembly = typeof(TypeDiscoveryServiceTests).Assembly;
 		var linqAssembly = typeof(System.Linq.Enumerable).Assembly;
 		var assemblies = new[] { testAssembly, linqAssembly };
