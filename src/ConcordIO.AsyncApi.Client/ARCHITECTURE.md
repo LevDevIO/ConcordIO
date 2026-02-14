@@ -6,7 +6,7 @@ This document explains the internal design of the Client MSBuild task package. F
 
 ConcordIO.AsyncApi.Client is a NuGet tool package that runs at build time in consuming projects. It reads AsyncAPI specification files (exposed as `ConcordIOAsyncApiContract` MSBuild items from contract packages) and generates C# source files that are compiled into the consumer's assembly.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │  Consumer Project Build                                 │
 │                                                         │
@@ -38,13 +38,14 @@ ConcordIO.AsyncApi.Client is a NuGet tool package that runs at build time in con
 ConcordIO.AsyncApi.Client is multi-targeted to **.NET 9.0 and 10.0** only, due to NuGet dependency constraints (Neuroglia.AsyncApi.Core requires net9.0+).
 
 **Impact on Consumers**:
+
 - **Consuming projects targeting net6.0, net7.0, or net8.0** can still use AsyncAPI contracts via the generated contract packages
 - **But cannot use the MSBuild task at build time** if their project targets net6.0–8.0
 - The `.targets` file dynamically resolves `$(TargetFramework)` to select the appropriate framework-specific task assembly
 
 ## Package Structure
 
-```
+```text
 ConcordIO.AsyncApi.Client.nupkg
 ├── build/
 │   ├── ConcordIO.AsyncApi.Client.props    # Default MSBuild properties
@@ -57,7 +58,7 @@ ConcordIO.AsyncApi.Client.nupkg
         ├── ConcordIO.AsyncApi.Client.dll  # MSBuild task assembly
         ├── ConcordIO.AsyncApi.dll         # Core library (PrivateAssets=all)
         └── (NJsonSchema, Neuroglia, etc.) # Dependencies bundled as tools
-```
+```text
 
 ## Key Components
 
@@ -84,7 +85,7 @@ Entry point invoked by MSBuild. Located in `Tasks/GenerateContractsTask.cs`.
 
 ### Code Generation Pipeline
 
-```
+```text
 AsyncAPI file (YAML/JSON)
     │
     ▼
@@ -122,22 +123,26 @@ AsyncApiContractGenerator.Generate()  [in ConcordIO.AsyncApi]
 ### MSBuild Integration
 
 **Props** (`build/ConcordIO.AsyncApi.Client.props`):
+
 - Sets defaults for `ConcordIOClientGenerateDataAnnotations`, `ConcordIOClientGenerateNullableReferenceTypes`, `ConcordIOClientClassStyle`
 - Output path computed at target time (depends on `IntermediateOutputPath`)
 
 **Targets** (`build/ConcordIO.AsyncApi.Client.targets`):
+
 - Registers `GenerateContractsTask` via `<UsingTask>`
+- Resolves the task assembly from the package `tools/$(TargetFramework)` folder using `$(MSBuildThisFileDirectory)..\tools\$(TargetFramework)\`
 - `ConcordIOGenerateContracts` — runs before `CoreCompile`, generates code, adds to `<Compile>`
 - `ConcordIOCleanGeneratedContracts` — cleans generated directory after `Clean`
 
 **Transitive** (`buildTransitive/ConcordIO.AsyncApi.Client.props`):
+
 - Imports the main props file for projects that transitively reference this package
 
 ### External Type Resolution
 
 `ExternalTypeResolver` prevents duplicate type generation:
 
-```
+```text
 @(ReferencePath) assembly paths
     │
     ▼
