@@ -28,7 +28,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(3);
@@ -50,7 +50,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(1);
@@ -69,7 +69,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().AllSatisfy(r => r.Kind.Should().Be(MessageKind.Command));
@@ -89,7 +89,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(3);
@@ -108,7 +108,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert - should include types from Events, Commands, Interfaces, Inheritance, and Nested namespaces
 		result.Should().Contain(r => r.Type == typeof(OrderCreatedEvent));
@@ -137,7 +137,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(3);
@@ -166,7 +166,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(3);
@@ -192,7 +192,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(1);
@@ -211,7 +211,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().HaveCount(2);
@@ -238,7 +238,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		// Events: 3 (OrderCreated, OrderCancelled, OrderShipped)
@@ -260,7 +260,7 @@ public class TypeDiscoveryServiceTests
         };
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert - should not have duplicates, first kind wins
 		result.Should().HaveCount(3);
@@ -278,7 +278,7 @@ public class TypeDiscoveryServiceTests
 		var patterns = Array.Empty<MessageTypePattern>();
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().BeEmpty();
@@ -294,7 +294,7 @@ public class TypeDiscoveryServiceTests
 		};
 
 		// Act
-		var result = _sut.DiscoverTypes(_testAssembly, patterns).ToList();
+		var result = _sut.DiscoverTypes([_testAssembly], patterns).ToList();
 
 		// Assert
 		result.Should().BeEmpty();
@@ -315,7 +315,7 @@ public class TypeDiscoveryServiceTests
 	public void DiscoverTypes_WithNullPatterns_ThrowsArgumentNullException()
 	{
 		// Act & Assert
-		var act = () => _sut.DiscoverTypes(_testAssembly, null!);
+		var act = () => _sut.DiscoverTypes([_testAssembly], null!);
 		act.Should().Throw<ArgumentNullException>();
 	}
 

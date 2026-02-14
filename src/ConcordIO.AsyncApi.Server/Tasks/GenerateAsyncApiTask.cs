@@ -75,6 +75,14 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 			{
 				var assembly = alc.LoadFromAssemblyPath(AssemblyPath);
 
+				// Load referenced assemblies for type discovery
+				var assemblies = GetSearchableAssemblies(alc, assembly, assemblyDir);
+				
+				Log.LogMessage(MessageImportance.Normal, 
+					"ConcordIO: Scanning {0} assemblies for message types: {1}", 
+					assemblies.Count,
+					string.Join(", ", assemblies.Select(a => a.GetName().Name)));
+
 				// Apply defaults for optional parameters
 				var assemblyName = assembly.GetName().Name ?? Path.GetFileNameWithoutExtension(AssemblyPath);
 				var title = string.IsNullOrWhiteSpace(DocumentTitle) ? assemblyName : DocumentTitle;
@@ -97,7 +105,7 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 
 				// Discover types
 				var discoveryService = new TypeDiscoveryService();
-				var discoveredTypes = discoveryService.DiscoverTypes(assembly, patterns).ToList();
+				var discoveredTypes = discoveryService.DiscoverTypes(assemblies, patterns).ToList();
 
 				if (discoveredTypes.Count == 0)
 				{
@@ -163,6 +171,66 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 
 		return patterns;
 	}
+
+	/// <summary>
+	/// Gets the list of assemblies to search for message types.
+	/// Includes the primary assembly and its referenced assemblies (excluding framework assemblies).
+	/// </summary>
+	/// <param name="alc">The AssemblyLoadContext for loading assemblies.</param>
+	/// <param name="primary">The primary assembly (from TargetPath).</param>
+	/// <param name="probeDir">The directory to probe for referenced assemblies.</param>
+	/// <returns>List of assemblies to scan for message types.</returns>
+	private List<Assembly> GetSearchableAssemblies(
+		AssemblyLoadContext alc, 
+		Assembly primary, 
+		string probeDir)
+	{
+		var result = new List<Assembly> { primary };
+
+		foreach (var refName in primary.GetReferencedAssemblies())
+		{
+			// Skip framework/runtime assemblies — they won't contain user message types
+			if (IsFrameworkAssembly(refName.Name))
+			{
+				continue;
+			}
+
+			var path = Path.Combine(probeDir, refName.Name + ".dll");
+			if (File.Exists(path))
+			{
+				try
+				{
+					var refAssembly = alc.LoadFromAssemblyPath(path);
+					result.Add(refAssembly);
+					Log.LogMessage(MessageImportance.Low, 
+						"  Loaded referenced assembly: {0}", refName.Name);
+				}
+				catch (Exception ex)
+				{
+					// Skip assemblies that fail to load
+					Log.LogMessage(MessageImportance.Low, 
+						"  Skipped assembly {0}: {1}", refName.Name, ex.Message);
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Determines if an assembly is a framework/runtime assembly that shouldn't be scanned for message types.
+	/// </summary>
+	/// <param name="name">The assembly name.</param>
+	/// <returns>True if this is a framework assembly that should be skipped.</returns>
+	private static bool IsFrameworkAssembly(string? name) =>
+		name is null ||
+		name.StartsWith("System", StringComparison.Ordinal) ||
+		name.StartsWith("Microsoft", StringComparison.Ordinal) ||
+		name.StartsWith("netstandard", StringComparison.Ordinal) ||
+		name.StartsWith("mscorlib", StringComparison.Ordinal) ||
+		name.StartsWith("Neuroglia", StringComparison.Ordinal) ||
+		name.StartsWith("NJsonSchema", StringComparison.Ordinal) ||
+		name.StartsWith("Newtonsoft", StringComparison.Ordinal);
 }
 
 /// <summary>
