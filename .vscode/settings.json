@@ -6,6 +6,8 @@
         "git commit": true,
         "git pull": true,
         "dotnet clean": true,
-        "git switch": true
+        "git switch": true,
+        "dotnet pack": true,
+        "dotnet restore": true
     }
 }

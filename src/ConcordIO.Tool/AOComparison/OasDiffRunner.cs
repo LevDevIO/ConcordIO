@@ -45,7 +45,23 @@ public class OasDiffRunner : IOasDiffRunner
         var outputTask = process.StandardOutput.ReadToEndAsync();
         var errorTask = process.StandardError.ReadToEndAsync();
 
-        await process.WaitForExitAsync();
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            return new OasDiffResult
+            {
+                ExitCode = -1,
+                Output = string.Empty,
+                Error = $"oasdiff timed out after 3 minutes while running: {arguments}",
+                Breaking = false,
+                Success = false
+            };
+        }
 
         var output = await outputTask;
         var error = await errorTask;

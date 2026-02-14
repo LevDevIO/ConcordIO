@@ -8,7 +8,9 @@ public class AsyncApiE2ECollection : ICollectionFixture<AsyncApiPackageFixture>
 
 internal static class AsyncApiE2ECommandVerbosity
 {
-    private const string DotNetVerbosity = "-v diag";
+    // Use 'normal' verbosity in CI to reduce output volume and prevent pipe buffer deadlocks.
+    // Local debugging can override via environment variable if needed.
+    private const string DotNetVerbosity = "-v normal";
 
     public static string AddDotNetVerbosity(string args)
     {
