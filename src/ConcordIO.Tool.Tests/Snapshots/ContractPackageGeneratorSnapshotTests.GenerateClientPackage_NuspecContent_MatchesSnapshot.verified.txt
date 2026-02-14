@@ -21,8 +21,10 @@
   - Depends on contract package to get spec files
   - Conditionally depends on code generators based on spec types
   
-  Code generator dependencies use exclude="compile,runtime" to prevent shipping
-  generator assemblies with the consuming application.
+  DEPENDENCY STRATEGY:
+  - NSwag.ApiDescription.Client: For OpenAPI → C# HTTP clients
+  
+  Dependencies use exclude="compile,runtime" to prevent shipping generator assemblies.
 -->
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
