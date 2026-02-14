@@ -18,4 +18,7 @@ public class FileSystem : IFileSystem
 	public string[] GetFiles(string path, string searchPattern = "*") => Directory.GetFiles(path, searchPattern);
 
 	public string[] GetDirectories(string path) => Directory.GetDirectories(path);
+
+	public void CopyFile(string sourceFileName, string destFileName, bool overwrite = false) =>
+		File.Copy(sourceFileName, destFileName, overwrite);
 }

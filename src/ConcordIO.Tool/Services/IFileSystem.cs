@@ -90,4 +90,12 @@ public interface IFileSystem
 	/// <param name="path">The path to the directory to search.</param>
 	/// <returns>An array of directory paths.</returns>
 	string[] GetDirectories(string path);
+
+	/// <summary>
+	/// Copies a file to a new location, optionally overwriting the destination.
+	/// </summary>
+	/// <param name="sourceFileName">The file to copy.</param>
+	/// <param name="destFileName">The destination path for the copied file.</param>
+	/// <param name="overwrite">If <c>true</c>, overwrites the destination file if it exists; otherwise, throws if the destination exists.</param>
+	void CopyFile(string sourceFileName, string destFileName, bool overwrite = false);
 }

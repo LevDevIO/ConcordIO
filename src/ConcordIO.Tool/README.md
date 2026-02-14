@@ -200,6 +200,88 @@ concordio get-spec \
   --kind asyncapi
 ```
 
+---
+
+### `concordio pack`
+
+Generate and pack contract NuGet packages (.nupkg) from specification files. Combines `generate` functionality with `nuget pack` to produce ready-to-publish packages.
+
+```bash
+concordio pack \
+  --spec <path[:kind]> \
+  --package-id <id> \
+  --version <semver>
+```
+
+**Required options:**
+
+| Option | Description |
+|--------|-------------|
+| `--spec` | Specification file(s) with optional kind suffix (format: `path[:kind]`). Kind defaults to `openapi`. Valid kinds: `openapi`, `proto`, `asyncapi`. Can be specified multiple times. |
+| `--package-id` | Package ID for the generated NuGet package. |
+| `--version` | SemVer version for the package. |
+
+**Optional options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--authors` | `ConcordIO` | Package authors. |
+| `--description` | Auto-generated | Package description. |
+| `--output` | `.` | Output directory for generated files and .nupkg packages. |
+| `--client` | `true` | Also generate and pack a client package. |
+| `--client-package-id` | `{PackageId}.Client` | Client package ID. |
+| `--client-class-name` | Derived from PackageId | Client class name (OpenAPI only). |
+| `--nswag-options` | — | Additional NSwag options as `key=value` (OpenAPI only, repeatable). |
+| `--client-options` | — | Additional client options as `key=value` (AsyncAPI only, repeatable). |
+| `--package-properties` | — | Additional NuSpec metadata as `key=value` (repeatable). |
+
+**Examples:**
+
+```bash
+# Pack a single OpenAPI spec
+concordio pack \
+  --spec petstore.yaml \
+  --package-id Contoso.PetStore.Api \
+  --version 1.0.0
+
+# Pack with client package to a specific output directory
+concordio pack \
+  --spec api.yaml \
+  --package-id Contoso.Api \
+  --version 2.0.0 \
+  --output ./packages
+
+# Pack multiple specs of different kinds
+concordio pack \
+  --spec api.yaml:openapi \
+  --spec events.yaml:asyncapi \
+  --package-id Contoso.Service \
+  --version 1.0.0
+
+# Pack contract only (no client)
+concordio pack \
+  --spec service.proto:proto \
+  --package-id Contoso.Grpc.Api \
+  --version 1.0.0 \
+  --client false
+```
+
+**Output:**
+
+The `pack` command produces `.nupkg` files:
+
+1. **Contract package** (`{PackageId}.{Version}.nupkg`) — ready-to-publish NuGet package containing spec files and MSBuild targets.
+2. **Client package** (`{PackageId}.Client.{Version}.nupkg`) — if `--client` is enabled, a development dependency package for code generation.
+
+**Exit codes:**
+
+| Code | Meaning |
+|------|--------|
+| `0` | Packages created successfully. |
+| `1` | Error (e.g., invalid arguments, missing spec files, nuget pack failure). |
+
+---
+
 ## How It Works
 
 ### Contract Packages

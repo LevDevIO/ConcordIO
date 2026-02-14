@@ -15,16 +15,16 @@ ConcordIO.Tool is multi-targeted to support **.NET 8.0, 9.0, and 10.0**. The cod
 ConcordIO.Tool is a .NET CLI tool (distributed as a `dotnet tool`) that generates NuGet package scaffolds from API specification files. The generated packages use MSBuild integration (`.targets` files) so that consuming projects get contracts and auto-generated clients at build time — without copying spec files.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLI (DotMake)                           │
-│  ┌──────────────┐  ┌────────────────┐  ┌─────────────────────┐  │
-│  │GenerateCommand│  │BreakingCommand │  │  GetSpecCommand    │  │
-│  └──────┬───────┘  └───────┬────────┘  └──────────┬──────────┘  │
-│         │                  │                      │             │
-│  ┌──────▼───────┐  ┌───────▼────────┐  ┌──────────▼──────────┐  │
-│  │ContractPkg   │  │  OasDiffRunner │  │   NuGetService      │  │
-│  │Generator     │  │  (oasdiff bin) │  │   (nuget CLI)       │  │
-│  └──────┬───────┘  └────────────────┘  └─────────────────────┘  │
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              CLI (DotMake)                              │
+│  ┌──────────────┐ ┌────────────────┐ ┌─────────────────┐ ┌───────────┐  │
+│  │GenerateCommand│ │BreakingCommand │ │  GetSpecCommand │ │PackCommand│  │
+│  └──────┬───────┘ └───────┬────────┘ └──────────┬──────┘ └─────┬─────┘  │
+│         │                 │                     │              │        │
+│  ┌──────▼───────┐  ┌──────▼────────┐  ┌─────────▼─────────┐    │        │
+│  │ContractPkg   │  │ OasDiffRunner │  │   NuGetService    │◄───┘        │
+│  │Generator     │  │ (oasdiff bin) │  │   (nuget CLI)     │             │
+│  └──────┬───────┘  └───────────────┘  └───────────────────┘             │
 │         │                                                       │
 │  ┌──────▼───────┐                                               │
 │  │ Template     │                                               │
@@ -50,7 +50,8 @@ ConcordIO.Tool/
 ├── CliCommands/                 # CLI command definitions (DotMake)
 │   ├── GenerateCommand.cs       # `concordio generate` — package scaffold generation
 │   ├── BreakingCommand.cs       # `concordio breaking` — breaking-change detection
-│   └── GetSpecCommand.cs        # `concordio get-spec` — spec retrieval from NuGet
+│   ├── GetSpecCommand.cs        # `concordio get-spec` — spec retrieval from NuGet
+│   └── PackCommand.cs           # `concordio pack` — generate + nuget pack in one step
 │
 ├── Services/                    # Core business logic and abstractions
 │   ├── SpecKind.cs              # Constants for specification kinds (openapi, proto, asyncapi)
@@ -93,6 +94,7 @@ The tool uses [DotMake.CommandLine](https://github.com/dotmake-build/command-lin
 - **`GenerateCommand`** — parses `--spec path[:kind]` arguments, groups specs by kind, then delegates to `ContractPackageGenerator`.
 - **`BreakingCommand`** — downloads the published NuGet package via `GetSpecCommand`, extracts the spec, then runs `OasDiffRunner` to compare. Supports `--kind` option to specify the spec kind (openapi, proto, or asyncapi).
 - **`GetSpecCommand`** — downloads a NuGet package using the `nuget` CLI and extracts the spec file from it. Supports `--kind` option to specify which spec kind to retrieve (openapi, proto, or asyncapi). Includes explicit error handling for missing or duplicate files.
+- **`PackCommand`** — combines `generate` functionality with `nuget pack`, producing ready-to-publish `.nupkg` files. Copies spec files to the output directory, generates `.nuspec` and `.targets` files, then calls `NuGetService.PackAsync()`.
 
 Each command's `RunAsync()` method returns an `int` exit code (0 = success).
 
@@ -279,9 +281,9 @@ The codebase defines interfaces for testability:
 
 | Interface | Implementation | Purpose |
 |-----------|---------------|---------|
-| `IFileSystem` | `FileSystem` | Wraps `System.IO` for directory/file operations |
+| `IFileSystem` | `FileSystem` | Wraps `System.IO` for directory/file operations (including `CopyFile`) |
 | `ITemplateRenderer` | `TemplateRenderer` | Renders Scriban templates from embedded resources |
-| `INuGetService` | `NuGetService` | Shells out to `nuget` CLI to download packages |
+| `INuGetService` | `NuGetService` | Shells out to `nuget` CLI (download via `install`, pack via `pack`) |
 | `IOasDiffRunner` | `OasDiffRunner` | Wraps the bundled oasdiff binary |
 | `IConsoleOutput` | `ConsoleOutput` | Abstracts console output for testability and redirection |
 
@@ -347,9 +349,10 @@ public class GenerateCommand
 - **No runtime overhead:** Lazy-load pattern only incurs one null-check per command execution
 - **No DI framework needed:** Suitable for CLI tools that don't need full DI containers
 
-All commands (`GenerateCommand`, `BreakingCommand`, `GetSpecCommand`) follow this pattern, exposing lazy-loaded `internal` properties for:
-- `ITemplateRenderer`, `IFileSystem` (GenerateCommand)
+All commands (`GenerateCommand`, `BreakingCommand`, `GetSpecCommand`, `PackCommand`) follow this pattern, exposing lazy-loaded `internal` properties for:
+- `ITemplateRenderer`, `IFileSystem` (GenerateCommand, PackCommand)
 - `IConsoleOutput`, `INuGetService`, `IOasDiffRunner` (various commands)
+- `INuGetService` (GetSpecCommand, BreakingCommand, PackCommand)
 
 ### Spec Kind System
 
@@ -400,3 +403,41 @@ User runs: concordio generate --spec api.yaml --package-id Foo --version 1.0.0
 ```
 
 The output directory is then ready for `nuget pack` to produce `.nupkg` files.
+
+### Pack Command Data Flow
+
+The `pack` command combines `generate` with NuGet packaging:
+
+```
+User runs: concordio pack --spec api.yaml --package-id Foo --version 1.0.0
+
+1. DotMake parses CLI args → PackCommand properties
+2. ParseSpecEntries: "api.yaml" → [SpecEntry(fullPath, "api.yaml", "openapi")]
+3. Validate all spec files exist
+4. Group by kind: { "openapi": ["api.yaml"] }
+5. CopySpecFiles:
+   a. Copy api.yaml → output/openapi/api.yaml (kind folder)
+   b. Copy api.yaml → output/api.yaml (root for contentFiles)
+6. GenerateAndPackContractAsync:
+   a. ContractPackageGenerator.GenerateContractPackageAsync() → Foo.nuspec + build/Foo.targets
+   b. NuGetService.PackAsync(Foo.nuspec, outputDir, outputDir) → Foo.1.0.0.nupkg
+7. GenerateAndPackClientAsync (if --client):
+   a. ContractPackageGenerator.GenerateClientPackageAsync() → Foo.Client.nuspec + build/Foo.Client.targets
+   b. NuGetService.PackAsync(Foo.Client.nuspec, outputDir, outputDir) → Foo.Client.1.0.0.nupkg
+8. Output: Foo.1.0.0.nupkg, Foo.Client.1.0.0.nupkg (ready to publish)
+```
+
+### NuGetService.PackAsync
+
+The `PackAsync` method shells out to the `nuget` CLI:
+
+```csharp
+// Command: nuget pack "{nuspecPath}" -OutputDirectory "{outputDir}" -BasePath "{basePath}"
+// Returns: NuGetPackResult { ExitCode, Output, NupkgPath, Success }
+```
+
+The `NuGetPackResult` class provides:
+- `ExitCode`: Process exit code (0 = success)
+- `Output`: Combined stdout/stderr from nuget
+- `NupkgPath`: Parsed path to the created `.nupkg` file (extracted from "Successfully created package '...'" output)
+- `Success`: True if `ExitCode == 0`
