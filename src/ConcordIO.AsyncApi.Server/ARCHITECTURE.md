@@ -137,6 +137,8 @@ GenerateAsyncApiTask.Execute()
 
 Three targets form the pipeline:
 
+- The task registration uses explicit runtime/architecture hints (`CurrentRuntime` / `CurrentArchitecture`) to avoid MSBuild fallback task hosting
+
 1. **`ConcordIOGenerateAsyncApi`** (`AfterTargets="Build"`)
    - Converts `ConcordIOEventTypes`/`ConcordIOCommandTypes` semicolon-separated properties into `_ConcordIOAllMessageTypes` items with `Kind` metadata
    - Computes output path at target time
@@ -153,6 +155,7 @@ Three targets form the pipeline:
    - Includes the auto-generated consumer `.targets` file under `build/{PackageId}.targets`
 
 **Transitive** (`buildTransitive/ConcordIO.AsyncApi.Server.props`):
+
 - Imports the main props file for projects that transitively reference this package
 
 ### Assembly Loading and Memory Management
@@ -160,11 +163,13 @@ Three targets form the pipeline:
 The task uses a **collectible AssemblyLoadContext** to load the target assembly and its dependencies. This is critical for preventing memory leaks in long-running MSBuild processes (e.g., Visual Studio builds).
 
 **Why collectible contexts?**
+
 - `Assembly.LoadFrom()` loads assemblies into the default AppDomain where they cannot be unloaded
 - In long-running processes, this causes memory to accumulate with each build
 - Collectible `AssemblyLoadContext` allows the assemblies to be unloaded via `Unload()` after generation is complete
 
 **Implementation:**
+
 ```csharp
 var alc = new AssemblyLoadContext("ConcordIO-GenerateAsyncApi", isCollectible: true);
 try
@@ -176,6 +181,7 @@ finally
 {
     alc.Unload();
 }
+
 ```
 
 Dependency assemblies are automatically resolved within the same context by the runtime, eliminating the need for custom `AssemblyResolve` handlers.

@@ -89,7 +89,7 @@ concordio generate \
 The `generate` command produces two NuGet package scaffolds:
 
 1. **Contract package** (`{PackageId}`) — contains the specification files and a `.targets` file that exposes them as `ConcordIOContract` MSBuild items to consuming projects.
-2. **Client package** (`{PackageId}.Client`) — contains a `.targets` file that wires contract specs to code generators (NSwag for OpenAPI, ConcordIO.AsyncApi.Client for AsyncAPI) at build time.
+2. **Client package** (`{PackageId}.Client`) — contains a `.targets` file that wires contract specs to code generators (NSwag for OpenAPI, ConcordIO.AsyncApi.Client for AsyncAPI) at build time. For AsyncAPI, the generated client package depends on `ConcordIO.AsyncApi.Client` with a minimum version equal to the current `ConcordIO.Tool` version (NuGet range `[toolVersion,)`).
 
 ---
 

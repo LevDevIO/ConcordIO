@@ -17,13 +17,17 @@ Add the package reference to your consumer project:
 
 When combined with a contract package that defines `ConcordIOAsyncApiContract` items, C# types are generated automatically before compilation.
 
+## Runtime Compatibility
+
+The MSBuild task assembly is packaged for **net9.0** and **net10.0**, and the `.targets` file selects the task based on the **MSBuild runtime**, not the consuming project's TFM.
+
 ## How It Works
 
 1. A **contract package** (produced by `ConcordIO.AsyncApi.Server` or `concordio generate`) exposes AsyncAPI spec files as `ConcordIOAsyncApiContract` MSBuild items.
 2. This **client package** picks up those items and runs `GenerateContractsTask` before `CoreCompile`.
 3. The task generates C# source files in `obj/{Config}/{TFM}/ConcordIO.AsyncApi.Generated/` and adds them to compilation.
 
-```
+```text
 Contract NuGet Package
   └── asyncapi/MyService.Contracts.yaml
   └── build/MyService.Contracts.targets  ←  defines <ConcordIOAsyncApiContract>
@@ -93,6 +97,7 @@ public partial class OrderCreatedEvent
 ## External Type Detection
 
 If a type defined in the AsyncAPI spec already exists in a referenced assembly, the generator will:
+
 1. **Skip** generating that type
 2. **Add** a `using` statement for its namespace
 
@@ -106,6 +111,29 @@ This avoids duplicate type definitions when contract types are shared via a comm
 | `ConcordIOCleanGeneratedContracts` | `AfterTargets="Clean"` | Removes the generated output directory. |
 
 ## Troubleshooting
+
+### Task instantiation error (MetadataLoadContext disposed)
+
+**Symptom**:
+
+```text
+The "ConcordIO.AsyncApi.Client.Tasks.GenerateContractsTask" task could not be instantiated...
+Type must be a type provided by the runtime.
+The "GenerateContractsTask" task generated invalid items...
+MetadataLoadContext that created it has been disposed.
+```
+
+**Cause**: The task assembly was selected based on `$(TargetFramework)` rather than the **MSBuild runtime**, causing MSBuild to load the task in a metadata-only context.
+
+**Solution**: Upgrade to a version that selects the task assembly by MSBuild runtime and includes a net9.0+ task build.
+
+### MSBuild warning about task runtime/architecture
+
+**Symptom**: Build shows a warning about the task falling back to out-of-process execution, sometimes followed by an MSBuild unhandled exception.
+
+**Cause**: Older package versions did not specify explicit task runtime/architecture hints.
+
+**Solution**: Upgrade to a version that includes explicit runtime/architecture hints in the MSBuild task registration.
 
 ### Generation doesn't run
 

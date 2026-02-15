@@ -48,17 +48,26 @@
 
   <!--
     Internal: Locate the task assembly in the package tools folder
-    - _ConcordIOClientToolsDir (string): Absolute tools folder path for the current TargetFramework
+    - _ConcordIOClientTaskTfm (string): Task TFM based on the MSBuild runtime (net8.0 fallback)
+    - _ConcordIOClientToolsDir (string): Absolute tools folder path for the task TFM
     - _ConcordIOClientTaskAssembly (string): Full path to ConcordIO.AsyncApi.Client.dll for UsingTask
+    - _ConcordIOClientTaskRuntime (string): MSBuild task runtime hint (CurrentRuntime by default)
+    - _ConcordIOClientTaskArchitecture (string): MSBuild task architecture hint (CurrentArchitecture by default)
   -->
   <PropertyGroup>
-    <_ConcordIOClientToolsDir>$(MSBuildThisFileDirectory)..\tools\$(TargetFramework)\</_ConcordIOClientToolsDir>
+    <_ConcordIOClientTaskTfm>net9.0</_ConcordIOClientTaskTfm>
+    <_ConcordIOClientTaskTfm Condition="'$(MSBuildRuntimeType)' == 'Core' and $([System.Version]::Parse('$(MSBuildRuntimeVersion)').Major) &gt;= 10">net10.0</_ConcordIOClientTaskTfm>
+    <_ConcordIOClientToolsDir>$(MSBuildThisFileDirectory)..\tools\$(_ConcordIOClientTaskTfm)\</_ConcordIOClientToolsDir>
     <_ConcordIOClientTaskAssembly>$(_ConcordIOClientToolsDir)ConcordIO.AsyncApi.Client.dll</_ConcordIOClientTaskAssembly>
+    <_ConcordIOClientTaskRuntime>CurrentRuntime</_ConcordIOClientTaskRuntime>
+    <_ConcordIOClientTaskArchitecture>CurrentArchitecture</_ConcordIOClientTaskArchitecture>
   </PropertyGroup>
 
   <!-- Register the MSBuild task from the package -->
   <UsingTask TaskName="ConcordIO.AsyncApi.Client.Tasks.GenerateContractsTask" 
-             AssemblyFile="$(_ConcordIOClientTaskAssembly)" />
+             AssemblyFile="$(_ConcordIOClientTaskAssembly)"
+             Runtime="$(_ConcordIOClientTaskRuntime)"
+             Architecture="$(_ConcordIOClientTaskArchitecture)" />
 
   <!--
     Target: ConcordIOGenerateContracts

@@ -193,6 +193,7 @@ The model passed to Scriban templates is a `Dictionary<string, object>`. Key fie
 | `client_package_id` | `string` | Client package ID |
 | `contract_package_id` | `string` | The contract package this client depends on |
 | `contract_version` | `string` | Version of the contract dependency |
+| `tool_version` | `string` | ConcordIO.Tool version used to set generator dependency minimums |
 | `nswag_client_class_name` | `string` | Generated C# client class name |
 | `nswag_output_path` | `string` | Output file path for NSwag |
 | `nswag_options` | `List<KeyValuePair<string,string>>` | Additional NSwag MSBuild properties |

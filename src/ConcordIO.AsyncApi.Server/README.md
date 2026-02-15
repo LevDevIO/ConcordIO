@@ -143,6 +143,14 @@ The auto-generated `.targets` file exposes the spec as a `ConcordIOAsyncApiContr
 
 ## Troubleshooting
 
+### MSBuild warning about task runtime/architecture
+
+**Symptom**: Build shows a warning about the task falling back to out-of-process execution, sometimes followed by an MSBuild unhandled exception.
+
+**Cause**: Older package versions did not specify explicit task runtime/architecture hints.
+
+**Solution**: Upgrade to a version that includes explicit runtime/architecture hints in the MSBuild task registration.
+
 ### YAML serialization errors
 
 **Symptom**: Build fails with `YamlDotNet.Core.SyntaxErrorException: Expected SCALAR, SEQUENCE-START, MAPPING-START, or ALIAS, got MappingEnd`.

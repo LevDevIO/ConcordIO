@@ -54,6 +54,31 @@ public class GenerateAsyncApiTask : Microsoft.Build.Utilities.Task
 	[Output]
 	public string GeneratedFile { get; set; } = string.Empty;
 
+	/// <summary>
+	/// Executes AsyncAPI document generation from discovered message types.
+	/// </summary>
+	/// <returns>
+	/// <c>true</c> when the AsyncAPI document is generated successfully; otherwise, <c>false</c>.
+	/// </returns>
+	/// <remarks>
+	/// <para>
+	/// The task loads the target assembly, discovers message types based on
+	/// <see cref="MessageTypePatterns"/>, and writes a YAML or JSON AsyncAPI
+	/// document to <see cref="OutputPath"/> (or the default location when not specified).
+	/// </para>
+	/// <para>
+	/// Any errors are logged to MSBuild and cause the task to return <c>false</c>.
+	/// </para>
+	/// </remarks>
+	/// <example>
+	/// <para>MSBuild usage:</para>
+	/// <code>
+	/// &lt;GenerateAsyncApiTask
+	///     AssemblyPath="$(TargetPath)"
+	///     OutputFormat="yaml"
+	///     OutputPath="$(IntermediateOutputPath)asyncapi.yaml" /&gt;
+	/// </code>
+	/// </example>
 	public override bool Execute()
 	{
 		try

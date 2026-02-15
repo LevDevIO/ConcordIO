@@ -56,6 +56,31 @@ public class GenerateContractsTask : MSBuildTask
 	[Output]
 	public ITaskItem[] GeneratedFiles { get; set; } = [];
 
+	/// <summary>
+	/// Executes the contract generation task for the provided AsyncAPI files.
+	/// </summary>
+	/// <returns>
+	/// <c>true</c> when generation completes without errors; otherwise, <c>false</c>.
+	/// </returns>
+	/// <remarks>
+	/// <para>
+	/// The task parses each AsyncAPI document, generates C# source files into
+	/// <see cref="OutputDirectory"/>, and returns those paths via <see cref="GeneratedFiles"/>.
+	/// </para>
+	/// <para>
+	/// If any input file is missing or an exception occurs during generation,
+	/// the task logs the error and returns <c>false</c>.
+	/// </para>
+	/// </remarks>
+	/// <example>
+	/// <para>MSBuild usage:</para>
+	/// <code>
+	/// &lt;GenerateContractsTask
+	///     AsyncApiFiles="@(ConcordIOAsyncApiContract)"
+	///     OutputDirectory="$(IntermediateOutputPath)ConcordIO.AsyncApi.Generated\"
+	///     ReferencedAssemblies="@(ReferencePath)" /&gt;
+	/// </code>
+	/// </example>
 	public override bool Execute()
 	{
 		try
