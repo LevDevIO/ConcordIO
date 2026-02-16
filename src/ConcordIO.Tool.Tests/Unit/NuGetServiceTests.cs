@@ -5,14 +5,14 @@ using FluentAssertions;
 namespace ConcordIO.Tool.Tests.Unit;
 
 /// <summary>
-/// Unit tests for the <see cref="NuGetService"/> class.
+/// Unit tests for the <see cref="NuGetPackResult"/> class.
 /// </summary>
 /// <remarks>
-/// These tests verify the NuGetService behavior including command construction
-/// and output parsing. Note that full integration tests that actually call nuget.exe
-/// are in the E2E test suite.
+/// These tests verify the <see cref="NuGetPackResult"/> behavior, including the
+/// <see cref="NuGetPackResult.Success"/> property semantics based on <see cref="NuGetPackResult.ExitCode"/>
+/// and the handling of <see cref="NuGetPackResult.NupkgPath"/> when provided or omitted.
 /// </remarks>
-public class NuGetServiceTests
+public class NuGetPackResultTests
 {
 	[Fact]
 	public void NuGetPackResult_Success_WhenExitCodeIsZero()
