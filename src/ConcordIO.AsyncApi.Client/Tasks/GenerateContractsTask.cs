@@ -56,17 +56,48 @@ public class GenerateContractsTask : MSBuildTask
 	[Output]
 	public ITaskItem[] GeneratedFiles { get; set; } = [];
 
+	/// <summary>
+	/// Executes the contract generation task for the provided AsyncAPI files.
+	/// </summary>
+	/// <returns>
+	/// <c>true</c> when generation completes without errors; otherwise, <c>false</c>.
+	/// </returns>
+	/// <remarks>
+	/// <para>
+	/// The task parses each AsyncAPI document, generates C# source files into
+	/// <see cref="OutputDirectory"/>, and returns those paths via <see cref="GeneratedFiles"/>.
+	/// </para>
+	/// <para>
+	/// If any input file is missing or an exception occurs during generation,
+	/// the task logs the error and returns <c>false</c>.
+	/// </para>
+	/// </remarks>
+	/// <example>
+	/// <para>MSBuild usage:</para>
+	/// <code>
+	/// &lt;GenerateContractsTask
+	///     AsyncApiFiles="@(ConcordIOAsyncApiContract)"
+	///     OutputDirectory="$(BaseIntermediateOutputPath)ConcordIO.AsyncApi.Generated\"
+	///     ReferencedAssemblies="@(ReferencePath)" /&gt;
+	/// </code>
+	/// </example>
 	public override bool Execute()
 	{
 		try
 		{
-			if (AsyncApiFiles.Length == 0)
+			var distinctAsyncApiFiles = AsyncApiFiles
+				.Select(item => item.ItemSpec)
+				.Where(path => !string.IsNullOrWhiteSpace(path))
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.ToArray();
+
+			if (distinctAsyncApiFiles.Length == 0)
 			{
 				Log.LogMessage(MessageImportance.Normal, "ConcordIO.Client: No AsyncAPI files specified, skipping generation.");
 				return true;
 			}
 
-			Log.LogMessage(MessageImportance.High, "ConcordIO.Client: Generating contracts from {0} AsyncAPI file(s)...", AsyncApiFiles.Length);
+			Log.LogMessage(MessageImportance.High, "ConcordIO.Client: Generating contracts from {0} AsyncAPI file(s)...", distinctAsyncApiFiles.Length);
 
 			// Ensure output directory exists
 			Directory.CreateDirectory(OutputDirectory);
@@ -87,11 +118,10 @@ public class GenerateContractsTask : MSBuildTask
 
 			var generator = new AsyncApiContractGenerator(settings, resolver);
 			var generatedFiles = new List<ITaskItem>();
+			var generatedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-			foreach (var asyncApiFile in AsyncApiFiles)
+			foreach (var filePath in distinctAsyncApiFiles)
 			{
-				var filePath = asyncApiFile.ItemSpec;
-
 				if (!File.Exists(filePath))
 				{
 					Log.LogWarning("ConcordIO.Client: AsyncAPI file not found: {0}", filePath);
@@ -114,7 +144,10 @@ public class GenerateContractsTask : MSBuildTask
 						var outputPath = Path.Combine(OutputDirectory, sourceFile.FileName);
 						File.WriteAllText(outputPath, sourceFile.Content);
 
-						generatedFiles.Add(new TaskItem(outputPath));
+						if (generatedFilePaths.Add(outputPath))
+						{
+							generatedFiles.Add(new TaskItem(outputPath));
+						}
 						Log.LogMessage(MessageImportance.Normal, "ConcordIO.Client: Generated {0} ({1} types)",
 							sourceFile.FileName, sourceFile.Types.Count);
 					}

@@ -153,8 +153,10 @@ public class TestContext : IDisposable
 	/// </summary>
 	public async Task<(int ExitCode, string Output)> RunToolAsync(string args)
 	{
-		// Use net10.0 framework since ConcordIO.Tool targets multiple frameworks (net8.0, net9.0, net10.0)
-		return await RunDotNetAsync("run", Path.GetDirectoryName(ToolProjectPath)!, $"--framework net10.0 -- {args}");
+		// Use net10.0 framework since ConcordIO.Tool targets multiple frameworks (net8.0, net9.0, net10.0).
+		// Use --no-build because the fixture pre-builds once in InitializeAsync; this prevents concurrent
+		// file-lock/contention issues when multiple test processes execute dotnet commands.
+		return await RunDotNetAsync("run", Path.GetDirectoryName(ToolProjectPath)!, $"--framework net10.0 --no-build -- {args}");
 	}
 
 	/// <summary>

@@ -42,6 +42,10 @@ To check if code is properly formatted:
 dotnet format src/ConcordIO.Tool.sln --verify-no-changes
 ```
 
+### Testing
+
+E2E tests generate temporary consumer projects that now multi-target **net8.0;net9.0;net10.0** for CLI OpenAPI flows and **net9.0;net10.0** for AsyncAPI flows to validate tool packages across supported frameworks. This ensures MSBuild tasks and generated outputs work under all supported runtimes during end-to-end flows.
+
 ## License
 
 Licensed under the Apache License 2.0. See [LICENSE](LICENSE).

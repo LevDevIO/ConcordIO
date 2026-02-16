@@ -236,7 +236,8 @@ public partial class RootCommand
 			var stjOptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 			{
 				{ "NSwagJsonLibrary", "SystemTextJson" },
-				{ "NSwagJsonPolymorphicSerializationStyle", "SystemTextJson" }
+				{ "NSwagJsonPolymorphicSerializationStyle", "SystemTextJson" },
+				{ "NSwagGenerateNullableReferenceTypes", "false" }
 			};
 
 			if (!normalizedNswagOptions.Any(o => stjOptions.ContainsKey(o.Key)))

@@ -17,8 +17,8 @@
   
   TARGET EXECUTION ORDER:
   1. Package restore creates ConcordIOContract/ConcordIOAsyncApiContract items
-  2. AfterTargets="ResolvePackageAssets" - these targets run
-  3. Items are enriched with code generation metadata
+  2. BeforeTargets="GenerateOpenApiCode" - OpenAPI references are materialized for NSwag
+  3. AfterTargets="ResolvePackageAssets" - AsyncAPI metadata enrichment runs
   4. Code generators (NSwag, ConcordIO.AsyncApi.Client) consume the items
   
   TROUBLESHOOTING:
@@ -36,18 +36,19 @@
       
       OUTPUT: {nswag_output_path}.cs containing typed HTTP client
     -->
-    <Target Name="ConcordIOAddOpenApiReferenceForNSwag" 
-            AfterTargets="ResolvePackageAssets"
+        <Target Name="ConcordIOAddOpenApiReferenceForNSwag"
+          BeforeTargets="GenerateOpenApiCode"
             Condition="'@(ConcordIOContract)' != ''">
         <ItemGroup>
             <!-- Filter to specs from this contract package with openapi kind -->
-            <OpenApiReference Include="@(ConcordIOContract)" 
+            <OpenApiReference Include="@(ConcordIOContract)"
                               Condition="'%(ConcordIOContract.PackageId)' == '{{ contract_package_id }}' And '%(ConcordIOContract.Kind)' == 'openapi'">
+                <!-- Standard MSBuild metadata (no prefix needed) -->
                 <CodeGenerator>NSwagCSharp</CodeGenerator>
                 <ClassName>{{ nswag_client_class_name }}</ClassName>
                 <OutputPath>{{ nswag_output_path }}.cs</OutputPath>
 {{~ for option in nswag_options ~}}
-                <!-- Custom NSwag option: {{ option.key }} -->
+                <!-- NSwag generator option: {{ option.key }} (prefix required for NSwag-specific settings) -->
                 <{{ option.key }}>{{ option.value }}</{{ option.key }}>
 {{~ end ~}}
             </OpenApiReference>
@@ -63,12 +64,12 @@
       
       OUTPUT: {Namespace}.g.cs files with message contract classes
     -->
-    <Target Name="ConcordIOAddAsyncApiContractForGeneration" 
+    <Target Name="ConcordIOAddAsyncApiContractForGeneration"
             AfterTargets="ResolvePackageAssets"
             Condition="'@(ConcordIOAsyncApiContract)' != ''">
         <ItemGroup>
-            <!-- Filter to specs from this contract package -->
-            <ConcordIOAsyncApiContract Include="@(ConcordIOAsyncApiContract)" 
+        <!-- Filter to specs from this contract package and update metadata in-place (no duplicate items). -->
+        <ConcordIOAsyncApiContract Update="@(ConcordIOAsyncApiContract)"
                                        Condition="'%(ConcordIOAsyncApiContract.PackageId)' == '{{ contract_package_id }}'">
                 <SourcePackage>{{ contract_package_id }}</SourcePackage>
                 <SourceVersion>{{ contract_version }}</SourceVersion>

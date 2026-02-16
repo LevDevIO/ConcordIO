@@ -142,4 +142,25 @@ public class TemplateRendererTests
 		result.Should().Contain("<NSwagJsonLibrary>SystemTextJson</NSwagJsonLibrary>");
 		result.Should().Contain("<NSwagGenerateExceptionClasses>true</NSwagGenerateExceptionClasses>");
 	}
+
+	[Fact]
+	public async Task RenderAsync_RendersAsyncApiClientTargetsTemplate_UsesItemUpdate()
+	{
+		// Arrange
+		var model = new Dictionary<string, object>
+		{
+			["contract_package_id"] = "TestPackage",
+			["contract_version"] = "1.0.0",
+			["has_openapi"] = false,
+			["has_asyncapi"] = true,
+			["client_options"] = Array.Empty<KeyValuePair<string, string>>()
+		};
+
+		// Act
+		var result = await _sut.RenderAsync("Contract.Client.Contract.Client.targets", model);
+
+		// Assert
+		result.Should().Contain("<ConcordIOAsyncApiContract Update=\"@(ConcordIOAsyncApiContract)\"");
+		result.Should().NotContain("<ConcordIOAsyncApiContract Include=\"@(ConcordIOAsyncApiContract)\"");
+	}
 }

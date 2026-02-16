@@ -17,13 +17,20 @@ Add the package reference to your consumer project:
 
 When combined with a contract package that defines `ConcordIOAsyncApiContract` items, C# types are generated automatically before compilation.
 
+## Runtime Compatibility
+
+The MSBuild task assembly is packaged for **net8.0**, **net9.0**, and **net10.0**, and the `.targets` file selects the task based on the **MSBuild runtime**, not the consuming project's TFM.
+
+- **Consuming projects targeting .NET 8 and above** can use this package regardless of their specific framework version.
+- Supports all modern .NET SDK builds (.NET 8/9/10).
+
 ## How It Works
 
 1. A **contract package** (produced by `ConcordIO.AsyncApi.Server` or `concordio generate`) exposes AsyncAPI spec files as `ConcordIOAsyncApiContract` MSBuild items.
 2. This **client package** picks up those items and runs `GenerateContractsTask` before `CoreCompile`.
 3. The task generates C# source files in `obj/{Config}/{TFM}/ConcordIO.AsyncApi.Generated/` and adds them to compilation.
 
-```
+```text
 Contract NuGet Package
   └── asyncapi/MyService.Contracts.yaml
   └── build/MyService.Contracts.targets  ←  defines <ConcordIOAsyncApiContract>
@@ -48,7 +55,7 @@ All properties are optional with sensible defaults.
 
 | MSBuild Property | Default | Description |
 |-----------------|---------|-------------|
-| `ConcordIOClientOutputPath` | `$(IntermediateOutputPath)ConcordIO.AsyncApi.Generated\` | Output directory for generated files. |
+| `ConcordIOClientOutputPath` | `$(BaseIntermediateOutputPath)ConcordIO.AsyncApi.Generated\` | Output directory for generated files. |
 | `ConcordIOClientGenerateDataAnnotations` | `true` | Generate `[Required]`, `[StringLength]`, etc. |
 | `ConcordIOClientGenerateNullableReferenceTypes` | `true` | Generate nullable reference type annotations (`?`). |
 | `ConcordIOClientClassStyle` | `Poco` | Class style: `Poco` or `Record`. |
@@ -93,6 +100,7 @@ public partial class OrderCreatedEvent
 ## External Type Detection
 
 If a type defined in the AsyncAPI spec already exists in a referenced assembly, the generator will:
+
 1. **Skip** generating that type
 2. **Add** a `using` statement for its namespace
 
@@ -106,6 +114,41 @@ This avoids duplicate type definitions when contract types are shared via a comm
 | `ConcordIOCleanGeneratedContracts` | `AfterTargets="Clean"` | Removes the generated output directory. |
 
 ## Troubleshooting
+
+### Task instantiation error (MetadataLoadContext disposed)
+
+**Symptom**:
+
+```text
+The "ConcordIO.AsyncApi.Client.Tasks.GenerateContractsTask" task could not be instantiated...
+Type must be a type provided by the runtime.
+The "GenerateContractsTask" task generated invalid items...
+MetadataLoadContext that created it has been disposed.
+```
+
+**Cause**: The task assembly was selected based on `$(TargetFramework)` rather than the **MSBuild runtime**, causing MSBuild to load the task in a metadata-only context.
+
+**Solution**: Upgrade to a version that selects the task assembly by MSBuild runtime and includes a net9.0+ task build.
+
+### MSBuild warning about task runtime/architecture
+
+**Symptom**: Build shows a warning about the task falling back to out-of-process execution, sometimes followed by an MSBuild unhandled exception.
+
+**Cause**: Older package versions did not specify explicit task runtime/architecture hints.
+
+**Solution**: Upgrade to a version that includes explicit runtime/architecture hints in the MSBuild task registration.
+
+### MSBuild error parsing MSBuildRuntimeVersion
+
+**Symptom**:
+
+```text
+error MSB4184: The expression "[System.Version]::Parse('')" cannot be evaluated.
+```
+
+**Cause**: Some MSBuild hosts provide an empty `$(MSBuildRuntimeVersion)` during restore/build, which caused the task TFM selection logic to attempt parsing an empty version string.
+
+**Solution**: Upgrade to a version that guards empty `$(MSBuildRuntimeVersion)` values and falls back to the net9.0 task build.
 
 ### Generation doesn't run
 
@@ -134,6 +177,26 @@ This avoids duplicate type definitions when contract types are shared via a comm
 2. **Namespace conflicts**: Ensure `x-dotnet-namespace` values don't conflict with existing types
 
 3. **Missing dependencies**: Check that shared types are properly referenced
+
+### "Generating contracts from 2 AsyncAPI file(s)" with only one file on disk
+
+**Symptom**: Build logs show duplicate AsyncAPI processing and repeated `Generated ... from <file>` lines.
+
+**Cause**: Upstream package targets can re-emit `ConcordIOAsyncApiContract` items with `Include`, which duplicates the same file path in the MSBuild item list.
+
+**Current behavior**:
+
+1. Client template metadata enrichment updates items in-place (`Update`) instead of adding duplicates.
+2. The `ConcordIO.AsyncApi.Client` target removes duplicate AsyncAPI items before invoking the task.
+3. The task also deduplicates file paths as a defensive fallback.
+
+### Missing enum types from schema `definitions`
+
+**Symptom**: Generated classes reference enum types (for example `DhlRateSyncCancellationReason`) that are not emitted.
+
+**Cause**: Some contracts define enums only inside a parent schema's `definitions` block instead of as top-level `components/schemas` entries.
+
+**Current behavior**: The generator extracts definition-scoped enum schemas and emits them as regular generated types in the same namespace, while still avoiding duplicate generation of shared object definitions.
 
 ### External types not detected
 
