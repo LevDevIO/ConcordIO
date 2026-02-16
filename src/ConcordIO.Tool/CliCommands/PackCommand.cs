@@ -139,11 +139,6 @@ public partial class RootCommand
 		/// </summary>
 		internal INuGetService NuGetService => _nuGetService ??= new NuGetService();
 
-		/// <summary>
-		/// Represents a parsed specification entry with file path, file name, and kind.
-		/// </summary>
-		private record SpecEntry(string FilePath, string FileName, string Kind);
-
 		private static readonly IReadOnlyList<string> ValidKinds = SpecKind.All;
 
 		/// <summary>
@@ -153,7 +148,9 @@ public partial class RootCommand
 		public async Task<int> RunAsync()
 		{
 			// Parse spec entries (with full paths for copying)
-			var specs = ParseSpecEntries(Spec);
+			var specs = SpecHelpers.ParseSpecEntries(Spec)
+				.Select(e => (e.FilePath, e.FileName, e.Kind))
+				.ToList();
 			if (specs.Count == 0)
 			{
 				Console.WriteError("Error: At least one specification file is required.");
@@ -161,11 +158,11 @@ public partial class RootCommand
 			}
 
 			// Validate all spec files exist
-			foreach (var spec in specs)
+			foreach (var (filePath, _, _) in specs)
 			{
-				if (!FileSystem.FileExists(spec.FilePath))
+				if (!FileSystem.FileExists(filePath))
 				{
-					Console.WriteError($"Error: Specification file not found: {spec.FilePath}");
+					Console.WriteError($"Error: Specification file not found: {filePath}");
 					return 1;
 				}
 			}
@@ -206,66 +203,49 @@ public partial class RootCommand
 				return contractResult.ExitCode;
 			}
 
-			Console.WriteLine($"Created: {contractResult.NupkgPath}");
+			Console.WriteLine($"Created: {contractResult.NupkgPath ?? Path.Combine(outputDir, "*.nupkg")}");
 
 			// Generate and pack client package if requested
 			if (Client)
 			{
-				var clientResult = await GenerateAndPackClientAsync(outputDir, specFilesByKind, description);
+				var clientResult = await GenerateAndPackClientAsync(outputDir, specFilesByKind);
 				if (!clientResult.Success)
 				{
 					Console.WriteError($"Error: Failed to pack client package. {clientResult.Output}");
 					return clientResult.ExitCode;
 				}
 
-				Console.WriteLine($"Created: {clientResult.NupkgPath}");
+				Console.WriteLine($"Created: {clientResult.NupkgPath ?? Path.Combine(outputDir, "*.Client.nupkg")}");
 			}
 
 			Console.WriteLine($"Successfully created package(s) in: {outputDir}");
 			return 0;
 		}
 
-		private List<SpecEntry> ParseSpecEntries(string[] specArgs)
+		private void CopySpecFiles(List<(string FilePath, string FileName, string Kind)> specs, string outputDir)
 		{
-			var entries = new List<SpecEntry>();
+			// Check for duplicate filenames across all specs
+			var fileNames = specs.Select(s => s.FileName).ToList();
+			var duplicates = fileNames.GroupBy(f => f).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
 
-			foreach (var spec in specArgs)
+			if (duplicates.Count > 0)
 			{
-				var colonIndex = spec.LastIndexOf(':');
-
-				// Check if colon is part of a Windows path (e.g., C:\path)
-				if (colonIndex > 1 && spec.Length > colonIndex + 1)
-				{
-					var possibleKind = spec[(colonIndex + 1)..].ToLowerInvariant();
-					if (ValidKinds.Contains(possibleKind))
-					{
-						var filePath = spec[..colonIndex];
-						entries.Add(new SpecEntry(Path.GetFullPath(filePath), Path.GetFileName(filePath), possibleKind));
-						continue;
-					}
-				}
-
-				// No valid kind suffix, default to openapi
-				var fullPath = Path.GetFullPath(spec);
-				entries.Add(new SpecEntry(fullPath, Path.GetFileName(spec), SpecKind.OpenApi));
+				throw new InvalidOperationException(
+					$"Error: Duplicate spec file names detected: {string.Join(", ", duplicates)}. " +
+					"Each spec file must have a unique file name to avoid overwriting in the package.");
 			}
 
-			return entries;
-		}
-
-		private void CopySpecFiles(List<SpecEntry> specs, string outputDir)
-		{
-			foreach (var spec in specs)
+			foreach (var (filePath, fileName, kind) in specs)
 			{
 				// Copy to kind-specific folder (e.g., openapi/, asyncapi/)
-				var kindDir = Path.Combine(outputDir, spec.Kind);
+				var kindDir = Path.Combine(outputDir, kind);
 				FileSystem.CreateDirectory(kindDir);
-				var destPath = Path.Combine(kindDir, spec.FileName);
-				FileSystem.CopyFile(spec.FilePath, destPath, overwrite: true);
+				var destPath = Path.Combine(kindDir, fileName);
+				FileSystem.CopyFile(filePath, destPath, overwrite: true);
 
 				// Also copy to root for nuspec file references (contentFiles)
-				var rootDestPath = Path.Combine(outputDir, spec.FileName);
-				FileSystem.CopyFile(spec.FilePath, rootDestPath, overwrite: true);
+				var rootDestPath = Path.Combine(outputDir, fileName);
+				FileSystem.CopyFile(filePath, rootDestPath, overwrite: true);
 			}
 		}
 
@@ -296,8 +276,7 @@ public partial class RootCommand
 
 		private async Task<NuGetPackResult> GenerateAndPackClientAsync(
 			string outputDir,
-			Dictionary<string, List<string>> specsByKind,
-			string description)
+			Dictionary<string, List<string>> specsByKind)
 		{
 			var clientPackageId = ClientPackageId ?? $"{PackageId}.Client";
 			var hasOpenApi = specsByKind.ContainsKey(SpecKind.OpenApi);
