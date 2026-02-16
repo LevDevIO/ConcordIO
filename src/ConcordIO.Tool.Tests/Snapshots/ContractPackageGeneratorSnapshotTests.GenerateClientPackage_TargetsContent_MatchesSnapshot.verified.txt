@@ -42,16 +42,17 @@
             <!-- Filter to specs from this contract package with openapi kind -->
             <OpenApiReference Include="@(ConcordIOContract)"
                               Condition="'%(ConcordIOContract.PackageId)' == 'Acme.PetStore.Contracts' And '%(ConcordIOContract.Kind)' == 'openapi'">
+                <!-- Standard MSBuild metadata (no prefix needed) -->
                 <CodeGenerator>NSwagCSharp</CodeGenerator>
                 <ClassName>PetStoreClient</ClassName>
                 <OutputPath>PetStoreClient.cs</OutputPath>
-                <!-- Custom NSwag option: NSwagJsonLibrary -->
+                <!-- NSwag generator option: NSwagJsonLibrary (prefix required for NSwag-specific settings) -->
                 <NSwagJsonLibrary>SystemTextJson</NSwagJsonLibrary>
-                <!-- Custom NSwag option: NSwagJsonPolymorphicSerializationStyle -->
+                <!-- NSwag generator option: NSwagJsonPolymorphicSerializationStyle (prefix required for NSwag-specific settings) -->
                 <NSwagJsonPolymorphicSerializationStyle>SystemTextJson</NSwagJsonPolymorphicSerializationStyle>
-                <!-- Custom NSwag option: NSwagGenerateExceptionClasses -->
+                <!-- NSwag generator option: NSwagGenerateExceptionClasses (prefix required for NSwag-specific settings) -->
                 <NSwagGenerateExceptionClasses>true</NSwagGenerateExceptionClasses>
-                <!-- Custom NSwag option: NSwagInjectHttpClient -->
+                <!-- NSwag generator option: NSwagInjectHttpClient (prefix required for NSwag-specific settings) -->
                 <NSwagInjectHttpClient>true</NSwagInjectHttpClient>
             </OpenApiReference>
         </ItemGroup>

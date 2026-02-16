@@ -471,3 +471,9 @@ The `NuGetPackResult` class provides:
 - `Output`: Combined stdout/stderr from nuget
 - `NupkgPath`: Parsed path to the created `.nupkg` file (extracted from "Successfully created package '...'" output)
 - `Success`: True if `ExitCode == 0`
+
+### E2E Test Execution Model
+
+`ConcordIO.Tool.Tests` E2E tests pre-build `ConcordIO.Tool` once in `IntegrationTestFixture.InitializeAsync()` and then invoke the tool with `dotnet run --no-build --framework net10.0`.
+
+This design avoids repeated compilations during test execution and reduces transient file-lock/contention failures on `obj/Debug/net10.0/ConcordIO.Tool.dll` that can occur when external scanners or concurrent dotnet processes touch build outputs.
