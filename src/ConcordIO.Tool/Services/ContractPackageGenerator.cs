@@ -25,12 +25,19 @@ public class ContractPackageGenerator
 
 		var model = BuildContractModel(options);
 
-		return await GeneratePackageAsync(
+		var generatedPackage = await GeneratePackageAsync(
 			options.PackageId,
 			options.OutputDirectory,
 			"Contract.Contract.nuspec",
 			"Contract.Contracts.targets",
 			model);
+
+		var buildTransitiveDir = Path.Combine(options.OutputDirectory, "buildTransitive");
+		_fileSystem.CreateDirectory(buildTransitiveDir);
+		var buildTransitiveTargetsPath = Path.Combine(buildTransitiveDir, $"{options.PackageId}.targets");
+		await _fileSystem.WriteAllTextAsync(buildTransitiveTargetsPath, generatedPackage.TargetsContent);
+
+		return generatedPackage;
 	}
 
 	/// <summary>

@@ -212,11 +212,13 @@ The contract package bundles spec files and exposes them via MSBuild:
 │   └── petstore.yaml
 ├── openapi/                      # Specs organized by kind
 │   └── petstore.yaml
-└── build/
-    └── {PackageId}.targets       # Exposes ConcordIOContract MSBuild items
+├── build/
+│   └── {PackageId}.targets       # Exposes ConcordIOContract MSBuild items (direct)
+└── buildTransitive/
+    └── {PackageId}.targets       # Exposes ConcordIOContract MSBuild items (transitive)
 ```
 
-The `.targets` file defines `<ConcordIOContract>` items (for OpenAPI/Proto) or `<ConcordIOAsyncApiContract>` items (for AsyncAPI) that point to the spec files inside the package. Consuming projects see these items automatically after package restore.
+The `.targets` files define `<ConcordIOContract>` items (for OpenAPI/Proto) or `<ConcordIOAsyncApiContract>` items (for AsyncAPI) that point to the spec files inside the package. `build/` covers direct references, while `buildTransitive/` ensures items flow when the contract package is referenced transitively (for example, through a client package).
 
 #### Client Package
 
@@ -230,8 +232,33 @@ The client package is a development dependency that wires contracts to code gene
 ```
 
 The client `.targets` file:
-- **OpenAPI**: Creates `<OpenApiReference>` items pointing to the contract's `ConcordIOContract` items, configured for NSwag C# code generation. Runs `AfterTargets="ResolvePackageAssets"` to pick up contracts from restored packages.
-- **AsyncAPI**: Adds metadata to `<ConcordIOAsyncApiContract>` items for `ConcordIO.AsyncApi.Client` to process.
+
+- **OpenAPI**: Creates `<OpenApiReference>` items pointing to the contract's `ConcordIOContract` items, configured for NSwag C# code generation. Runs `BeforeTargets="GenerateOpenApiCode"` so NSwag always sees the generated references in single- and multi-target builds.
+- **AsyncAPI**: Updates metadata on existing `<ConcordIOAsyncApiContract>` items (MSBuild `Update`, not `Include`) for `ConcordIO.AsyncApi.Client` to process without duplicating contract paths.
+
+#### OpenApiReference Metadata: Standard vs. NSwag-Specific
+
+The generated `.targets` file sets metadata on `<OpenApiReference>` items. This metadata falls into two categories:
+
+**Standard MSBuild metadata** (processed by `Microsoft.Extensions.ApiDescription.Client`):
+
+- `CodeGenerator` — Determines which generator to invoke (e.g., `NSwagCSharp`)
+- `ClassName` — Generated client class name
+- `OutputPath` — Where the generated file will be written
+- `Namespace` — Namespace for generated code
+
+These properties do **not** require the `NSwag` prefix because they're part of the build orchestration layer that NSwag.ApiDescription.Client depends on.
+
+**NSwag-specific code generation options** (passed to NSwag's generator):
+
+- `NSwagJsonLibrary` — JSON serializer selection
+- `NSwagGenerateNullableReferenceTypes` — Nullable reference type generation
+- `NSwagGenerateExceptionClasses` — Exception class generation
+- All other NSwag generator settings
+
+These **must** have the `NSwag` prefix because they're custom metadata that NSwag.ApiDescription.Client extracts and passes to its code generator.
+
+Consumers can override both categories in an MSBuild target that runs `AfterTargets="ConcordIOAddOpenApiReferenceForNSwag"`.
 
 The client NuSpec declares transitive dependencies on the contract package and the appropriate code generator (`NSwag.ApiDescription.Client` for OpenAPI, `ConcordIO.AsyncApi.Client` for AsyncAPI).
 
@@ -239,7 +266,7 @@ The client NuSpec declares transitive dependencies on the contract package and t
 
 The `breaking` command compares a local spec against a published one:
 
-```
+```text
 concordio breaking --spec local.yaml --package-id Contoso.Api
     │
     ▼
@@ -378,13 +405,14 @@ When generating OpenAPI client packages, `GenerateCommand` injects these NSwag d
 |----------|---------|---------|
 | `NSwagJsonLibrary` | `SystemTextJson` | Use System.Text.Json instead of Newtonsoft |
 | `NSwagJsonPolymorphicSerializationStyle` | `SystemTextJson` | Polymorphic serialization via STJ |
+| `NSwagGenerateNullableReferenceTypes` | `false` | Avoid nullable pragma blocks in generated clients for stricter consumer compilers |
 | `NSwagGenerateExceptionClasses` | `true` | Generate typed exception classes |
 
 Users can override or extend these via `--nswag-options`.
 
 ## Data Flow Summary
 
-```
+```text
 User runs: concordio generate --spec api.yaml --package-id Foo --version 1.0.0
 
 1. DotMake parses CLI args → GenerateCommand properties
@@ -409,7 +437,7 @@ The output directory is then ready for `nuget pack` to produce `.nupkg` files.
 
 The `pack` command combines `generate` with NuGet packaging:
 
-```
+```text
 User runs: concordio pack --spec api.yaml --package-id Foo --version 1.0.0
 
 1. DotMake parses CLI args → PackCommand properties
@@ -438,6 +466,7 @@ The `PackAsync` method shells out to the `nuget` CLI:
 ```
 
 The `NuGetPackResult` class provides:
+
 - `ExitCode`: Process exit code (0 = success)
 - `Output`: Combined stdout/stderr from nuget
 - `NupkgPath`: Parsed path to the created `.nupkg` file (extracted from "Successfully created package '...'" output)

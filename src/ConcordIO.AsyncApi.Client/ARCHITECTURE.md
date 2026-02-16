@@ -20,6 +20,9 @@ ConcordIO.AsyncApi.Client is a NuGet tool package that runs at build time in con
 │  ConcordIOGenerateContracts (BeforeTargets=CoreCompile) │
 │     │  (DependsOnTargets=ResolveAssemblyReferences)     │
 │     │                                                   │
+│     ├─ RemoveDuplicates on @(ConcordIOAsyncApiContract)  │
+│     │  to avoid duplicate file processing                │
+│     │                                                   │
 │     ├─ Collect @(ReferencePath) for external types       │
 │     │                                                   │
 │     ├─ GenerateContractsTask.Execute()                  │
@@ -28,9 +31,10 @@ ConcordIO.AsyncApi.Client is a NuGet tool package that runs at build time in con
 │     │  │  ├─ LoadAsyncApiDocument() (YAML/JSON)         │
 │     │  │  ├─ AsyncApiContractGenerator.Generate()       │
 │     │  │  └─ Write .g.cs files                          │
-│     │  └─ Output: GeneratedFiles[]                      │
+│     │  └─ Output: distinct GeneratedFiles[]             │
 │     │                                                   │
-│     └─ Add @(_ConcordIOClientGeneratedFiles) to         │
+│     └─ RemoveDuplicates on generated paths, then add     │
+│        @(_ConcordIOClientGeneratedFilesDistinct) to      │
 │        <Compile> and <FileWrites>                       │
 │     ▼                                                   │
 │  CoreCompile (includes generated .g.cs files)           │
@@ -39,12 +43,18 @@ ConcordIO.AsyncApi.Client is a NuGet tool package that runs at build time in con
 
 ## Target Framework Strategy
 
-ConcordIO.AsyncApi.Client is multi-targeted to **.NET 9.0 and 10.0** to match the AsyncAPI dependency baseline.
+ConcordIO.AsyncApi.Client is multi-targeted to **.NET 8.0, 9.0, and 10.0** to support consuming projects across these versions.
 
 **Impact on Consumers**:
 
-- **Consuming projects targeting net9.0+** can use the MSBuild task at build time regardless of their TFM, because the task assembly is selected by the **MSBuild runtime**.
+- **Consuming projects targeting net8.0+** can use the MSBuild task at build time regardless of their TFM, because the task assembly is selected by the **MSBuild runtime**.
 - **The `.targets` file selects the task TFM from the MSBuild runtime version**, not from `$(TargetFramework)`, to avoid MetadataLoadContext-only loading when MSBuild runs on a different runtime than the project being built.
+
+**Task Selection Logic**:
+
+- .NET 8 MSBuild → loads `tools/net8.0/ConcordIO.AsyncApi.Client.dll`
+- .NET 9 MSBuild → loads `tools/net9.0/ConcordIO.AsyncApi.Client.dll`
+- .NET 10+ MSBuild → loads `tools/net10.0/ConcordIO.AsyncApi.Client.dll`
 
 ## Package Structure
 
@@ -56,12 +66,13 @@ ConcordIO.AsyncApi.Client.nupkg
 ├── buildTransitive/
 │   └── ConcordIO.AsyncApi.Client.props    # Imports build/props for transitive consumers
 └── tools/
+    ├── net8.0/
     ├── net9.0/
     └── net10.0/
         ├── ConcordIO.AsyncApi.Client.dll  # MSBuild task assembly
         ├── ConcordIO.AsyncApi.dll         # Core library (PrivateAssets=all)
         └── (NJsonSchema, Neuroglia, etc.) # Dependencies bundled as tools
-```text
+```
 
 ## Key Components
 
@@ -136,6 +147,7 @@ AsyncApiContractGenerator.Generate()  [in ConcordIO.AsyncApi]
 - Resolves the task assembly from the package `tools/$(_ConcordIOClientTaskTfm)` folder, where the task TFM is selected based on the MSBuild runtime version
 - Uses explicit task runtime/architecture hints (`CurrentRuntime` / `CurrentArchitecture`) to avoid MSBuild fallback task hosting
 - `ConcordIOGenerateContracts` — depends on `ResolveAssemblyReferences` to ensure `@(ReferencePath)` is populated, runs before `CoreCompile`, generates code, adds to `<Compile>`
+- The target deduplicates `@(ConcordIOAsyncApiContract)` inputs and generated file outputs using `RemoveDuplicates` to prevent duplicate compile includes and duplicate task processing when upstream targets re-emit items.
 - `ConcordIOCleanGeneratedContracts` — cleans generated directory after `Clean`
 
 **Transitive** (`buildTransitive/ConcordIO.AsyncApi.Client.props`):

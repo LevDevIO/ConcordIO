@@ -94,7 +94,7 @@ public class AsyncApiClientPackageIntegrationTests
 			because: "contracts should be generated");
 
 		// Verify generated files exist in the ConcordIO.AsyncApi.Generated folder
-		var generatedDir = Path.Combine(projectDir, "obj", "Debug", "net10.0", "ConcordIO.AsyncApi.Generated");
+		var generatedDir = Path.Combine(projectDir, "obj", "ConcordIO.AsyncApi.Generated");
 		Directory.Exists(generatedDir).Should().BeTrue(because: "generated output folder should exist");
 		var generatedFiles = Directory.GetFiles(generatedDir, "*.g.cs");
 		generatedFiles.Should().NotBeEmpty(because: "C# contract files should be generated");
@@ -181,7 +181,7 @@ public class AsyncApiClientPackageIntegrationTests
 		exitCode.Should().Be(0, because: $"build should succeed. Output:\n{output}");
 
 		// Look specifically in the ConcordIO.AsyncApi.Generated folder
-		var generatedDir = Path.Combine(projectDir, "obj", "Debug", "net10.0", "ConcordIO.AsyncApi.Generated");
+		var generatedDir = Path.Combine(projectDir, "obj", "ConcordIO.AsyncApi.Generated");
 		var generatedFiles = Directory.Exists(generatedDir)
 			? Directory.GetFiles(generatedDir, "*.g.cs")
 			: [];
@@ -203,7 +203,7 @@ public class AsyncApiClientPackageIntegrationTests
 		// Assert
 		exitCode.Should().Be(0, because: $"build should succeed. Output:\n{output}");
 
-		var generatedDir = Path.Combine(projectDir, "obj", "Debug", "net10.0", "ConcordIO.AsyncApi.Generated");
+		var generatedDir = Path.Combine(projectDir, "obj", "ConcordIO.AsyncApi.Generated");
 		var generatedFiles = Directory.Exists(generatedDir)
 			? Directory.GetFiles(generatedDir, "*.g.cs")
 			: [];
@@ -225,7 +225,7 @@ public class AsyncApiClientPackageIntegrationTests
 		// Assert
 		exitCode.Should().Be(0, because: $"build should succeed. Output:\n{output}");
 
-		var generatedDir = Path.Combine(projectDir, "obj", "Debug", "net10.0", "ConcordIO.AsyncApi.Generated");
+		var generatedDir = Path.Combine(projectDir, "obj", "ConcordIO.AsyncApi.Generated");
 		var generatedFiles = Directory.Exists(generatedDir)
 			? Directory.GetFiles(generatedDir, "*.g.cs")
 			: [];
@@ -247,7 +247,7 @@ public class AsyncApiClientPackageIntegrationTests
 		// Assert
 		exitCode.Should().Be(0, because: $"build should succeed. Output:\n{output}");
 
-		var generatedDir = Path.Combine(projectDir, "obj", "Debug", "net10.0", "ConcordIO.AsyncApi.Generated");
+		var generatedDir = Path.Combine(projectDir, "obj", "ConcordIO.AsyncApi.Generated");
 		var generatedFiles = Directory.Exists(generatedDir)
 			? Directory.GetFiles(generatedDir, "*.g.cs")
 			: [];
@@ -273,7 +273,7 @@ public class AsyncApiClientPackageIntegrationTests
 		// Assert
 		exitCode.Should().Be(0, because: $"build should succeed. Output:\n{output}");
 
-		var generatedDir = Path.Combine(projectDir, "obj", "Debug", "net10.0", "ConcordIO.AsyncApi.Generated");
+		var generatedDir = Path.Combine(projectDir, "obj", "ConcordIO.AsyncApi.Generated");
 		var generatedFiles = Directory.Exists(generatedDir)
 			? Directory.GetFiles(generatedDir, "*.g.cs")
 			: [];
@@ -295,7 +295,7 @@ public class AsyncApiClientPackageIntegrationTests
 		// Assert
 		exitCode.Should().Be(0, because: $"build should succeed. Output:\n{output}");
 
-		var generatedDir = Path.Combine(projectDir, "obj", "Debug", "net10.0", "ConcordIO.AsyncApi.Generated");
+		var generatedDir = Path.Combine(projectDir, "obj", "ConcordIO.AsyncApi.Generated");
 		var generatedFiles = Directory.Exists(generatedDir)
 			? Directory.GetFiles(generatedDir, "*.g.cs")
 			: [];

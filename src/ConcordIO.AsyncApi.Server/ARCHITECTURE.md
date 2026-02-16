@@ -36,23 +36,24 @@ ConcordIO.AsyncApi.Server is a NuGet tool package that runs after build in produ
 
 ## Target Framework Strategy
 
-ConcordIO.AsyncApi.Server is multi-targeted to **.NET 9.0 and 10.0** only, due to NuGet dependency constraints (Neuroglia.AsyncApi.Core requires net9.0+).
+ConcordIO.AsyncApi.Server is multi-targeted to **.NET 8.0, 9.0, and 10.0** to support producer projects across these versions.
 
 **Impact on Consumers**:
-- **Producer projects targeting net6.0, net7.0, or net8.0** can still generate AsyncAPI documents via custom tooling
-- **But cannot use the MSBuild task at build time** if their project targets net6.0–8.0
-- The `.targets` file dynamically resolves `$(TargetFramework)` to select the appropriate framework-specific task assembly
+
+- **Producer projects targeting net8.0+** can use the MSBuild task at build time
+- The `.targets` file dynamically resolves the MSBuild runtime to select the appropriate framework-specific task assembly
 
 ## Package Structure
 
-```
+```text
 ConcordIO.AsyncApi.Server.nupkg
 ├── build/
 │   ├── ConcordIO.AsyncApi.Server.props    # Default MSBuild properties
-│   └── ConcordIO.AsyncApi.Server.targets  # Task registration (uses dynamic $(TargetFramework) resolution)
+│   └── ConcordIO.AsyncApi.Server.targets  # Task registration (uses dynamic MSBuild runtime resolution)
 ├── buildTransitive/
 │   └── ConcordIO.AsyncApi.Server.props    # Imports build/props for transitive consumers
 └── tools/
+    ├── net8.0/
     ├── net9.0/
     └── net10.0/
         ├── ConcordIO.AsyncApi.Server.dll  # MSBuild task assembly
