@@ -1,50 +1,19 @@
-mode: Mainline
 branches:
   main:
     regex: ^main$
-    mode: ContinuousDelivery
-    tag: ''
+    label: ''
     increment: Inherit
-    prevent-increment-of-merged-branch-version: true
-    track-merge-target: false
-    source-branches: []
-    tracks-release-branches: false
-    is-release-branch: true
-    is-mainline: true
-    pre-release-weight: 55000
   feature:
     regex: ^features?[/-]
-    mode: ContinuousDelivery
-    tag: useBranchName
+    label: useBranchName
     increment: Inherit
-    prevent-increment-of-merged-branch-version: false
-    track-merge-target: false
-    source-branches: ['main']
-    tracks-release-branches: false
-    is-release-branch: false
-    is-mainline: false
-    pre-release-weight: 30000
   pull-request:
     regex: ^(pull|pull\-requests|pr)[/-]
-    mode: ContinuousDelivery
-    tag: PullRequest
+    label: PullRequest
     increment: Inherit
-    prevent-increment-of-merged-branch-version: false
-    track-merge-target: false
-    source-branches: ['main', 'feature']
-    tracks-release-branches: false
-    is-release-branch: false
-    is-mainline: false
-    pre-release-weight: 30000
-ignore:
-  sha: []
-merge-message-formats: {}
 major-version-bump-message: "^(feat|fix|docs|style|refactor|perf|test|chore)(\\([a-z]+\\))?!:"
 minor-version-bump-message: "^feat(\\([a-z]+\\))?:"
 patch-version-bump-message: "^(fix|docs|style|refactor|perf|test|chore)(\\([a-z]+\\))?:"
 no-bump-message: "^(build|ci)(\\([a-z]+\\))?:"
-legacy-semver-padding: 4
-build-metadata-padding: 4
-commits-since-version-source-padding: 4
 commit-message-incrementing: Enabled
 tag-prefix: '[vV]?'
