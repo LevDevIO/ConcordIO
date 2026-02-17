@@ -21,6 +21,32 @@ This project is in early design / prototype stage.
 
 ## Development
 
+### Versioning and Releases
+
+ConcordIO uses **Conventional Commits** and **GitVersion** for automated versioning and releases:
+
+- **Version determination**: Versions are automatically calculated from commit messages
+  - `feat:` → Minor version bump (e.g., 1.0.0 → 1.1.0)
+  - `fix:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, `chore:` → Patch version bump (e.g., 1.0.0 → 1.0.1)
+  - `feat!:`, `fix!:` (with `!`) → Major version bump for breaking changes (e.g., 1.0.0 → 2.0.0)
+  - `build:`, `ci:` → No version bump
+- **Commit format**: Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+  ```
+  <type>[optional scope]: <description>
+  
+  [optional body]
+  
+  [optional footer(s)]
+  ```
+- **Local development**: Projects use version `0.0.1-local` when building locally
+- **CI/CD**: The release workflow automatically:
+  1. Determines the version from commit history
+  2. Builds and tests all packages with the calculated version
+  3. Creates a GitHub Release with all packages
+  4. Publishes packages to NuGet.org
+
+**Note**: Do not include version numbers in `.csproj` files. Versions are managed through GitVersion configuration in `GitVersion.yml`.
+
 ### Code Formatting
 
 This repository uses automated code formatting to ensure consistency:
