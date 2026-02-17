@@ -127,13 +127,18 @@ ConcordIO packages are published to two NuGet sources:
 
 ### Version Calculation
 
-GitVersion uses mainline mode with these rules:
+We use [GitVersion](https://gitversion.net/) to calculate semantic versions from the Git history and our Conventional Commits.
 
-- Initial version starts at `0.1.0`
-- Each `feat:` commit bumps the minor version
-- Each `fix:`, `docs:`, etc. commit bumps the patch version
-- Any commit with `!` (breaking change) bumps the major version
-- `build:` and `ci:` commits don't bump the version
+The exact calculation rules (branch configuration and increment behavior) are defined in `GitVersion.yml` and may evolve over time. As a contributor, you can generally assume:
+
+- `feat:` commits typically result in a **minor** version bump
+- `fix:`, `docs:`, and similar non-breaking commits typically result in a **patch** version bump
+- Any commit marked as a breaking change using `!` (for example, `feat!: ...`) results in a **major** version bump
+- Other commit types (such as `build:` or `ci:`) do not affect the version
+
+**Note**: Scopes in commit messages can include lowercase letters, digits, and hyphens (e.g., `feat(async-api):`, `fix(v2):`).
+
+For detailed configuration, refer to `GitVersion.yml` in the repository root.
 
 ### Manual Releases
 

@@ -160,7 +160,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nuget-packages
-          path: ./artifacts/*.nupkg
+          path: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
           retention-days: 7
 
   check_tag:
@@ -218,7 +220,9 @@ jobs:
             ```bash
             dotnet tool install --global ConcordIO.Tool --version ${{ needs.version.outputs.version }}
             ```
-          files: ./artifacts/*.nupkg
+          files: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
           draft: false
           prerelease: false
 
@@ -252,6 +256,8 @@ jobs:
               --source https://nuget.pkg.github.com/LevDevIO/index.json \
               --skip-duplicate
           done
+          # GitHub Packages automatically includes symbol packages when pushing the main package
+          # The .snupkg files are included in the artifacts for manual download if needed
 
   publish-nuget-org:
     name: Publish to NuGet.org
@@ -285,3 +291,5 @@ jobs:
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
+          # NuGet.org automatically includes symbol packages when pushing the main package
+          # The .snupkg files are uploaded separately by the dotnet nuget push command
