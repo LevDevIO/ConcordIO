@@ -43,9 +43,15 @@ ConcordIO uses **Conventional Commits** and **GitVersion** for automated version
   1. Determines the version from commit history
   2. Builds and tests all packages with the calculated version
   3. Creates a GitHub Release with all packages
-  4. Publishes packages to NuGet.org
+  4. **Publishes packages to GitHub Packages (levdevio)** by default
+  5. Publishes to NuGet.org only via manual trigger (when ready for public release)
 
 **Note**: Do not include version numbers in `.csproj` files. Versions are managed through GitVersion configuration in `GitVersion.yml`.
+
+#### Package Sources
+
+- **GitHub Packages**: `https://nuget.pkg.github.com/LevDevIO/index.json` (default, published on every push to main)
+- **NuGet.org**: `https://api.nuget.org/v3/index.json` (manual trigger only)
 
 ### Code Formatting
 

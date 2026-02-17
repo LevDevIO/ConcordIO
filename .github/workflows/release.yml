@@ -4,6 +4,17 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      publish_to_nuget_org:
+        description: 'Publish to NuGet.org'
+        required: false
+        type: boolean
+        default: false
+      publish_to_github:
+        description: 'Publish to GitHub Packages'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -174,15 +185,15 @@ jobs:
           name: Release v${{ needs.version.outputs.version }}
           body: |
             ## Release v${{ needs.version.outputs.version }}
-            
+
             This release was automatically created from the main branch.
-            
+
             ### Packages
             - ConcordIO.Tool v${{ needs.version.outputs.version }}
             - ConcordIO.AsyncApi v${{ needs.version.outputs.version }}
             - ConcordIO.AsyncApi.Client v${{ needs.version.outputs.version }}
             - ConcordIO.AsyncApi.Server v${{ needs.version.outputs.version }}
-            
+
             ### Installation
             ```bash
             dotnet tool install --global ConcordIO.Tool --version ${{ needs.version.outputs.version }}
@@ -191,11 +202,48 @@ jobs:
           draft: false
           prerelease: false
 
-  publish:
+  publish-github:
+    name: Publish to GitHub Packages
+    needs: [version, pack]
+    runs-on: ubuntu-latest
+    # On push to main: always publish to GitHub Packages
+    # On workflow_dispatch: publish if explicitly enabled (default is true)
+    if: |
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to_github == 'true')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish to GitHub Packages
+        run: |
+          for package in ./artifacts/*.nupkg; do
+            echo "Publishing $package to GitHub Packages"
+            dotnet nuget push "$package" \
+              --api-key ${{ secrets.GITHUB_TOKEN }} \
+              --source https://nuget.pkg.github.com/LevDevIO/index.json \
+              --skip-duplicate
+          done
+
+  publish-nuget-org:
     name: Publish to NuGet.org
     needs: [version, release]
     runs-on: ubuntu-latest
-    if: needs.version.outputs.preReleaseTag == ''
+    # Only publish to NuGet.org if:
+    # 1. It's a stable version (no pre-release tag)
+    # 2. It's a manual trigger with publish_to_nuget_org enabled
+    if: |
+      needs.version.outputs.preReleaseTag == '' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.publish_to_nuget_org == 'true'
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -211,7 +259,7 @@ jobs:
       - name: Publish to NuGet.org
         run: |
           for package in ./artifacts/*.nupkg; do
-            echo "Publishing $package"
+            echo "Publishing $package to NuGet.org"
             dotnet nuget push "$package" \
               --api-key ${{ secrets.NUGET_API_KEY }} \
               --source https://api.nuget.org/v3/index.json \

@@ -109,7 +109,21 @@ Releases are fully automated via GitHub Actions:
    - Builds all packages with the new version
    - Runs all tests
    - Creates a GitHub Release with the packages
-   - Publishes packages to NuGet.org
+   - **Publishes packages to GitHub Packages (levdevio)** by default
+
+### Publishing Destinations
+
+ConcordIO packages are published to two NuGet sources:
+
+1. **GitHub Packages (levdevio)** - Default destination
+   - Published automatically on every push to `main`
+   - Source: `https://nuget.pkg.github.com/LevDevIO/index.json`
+   - Requires GitHub authentication to consume packages
+
+2. **NuGet.org** - Public NuGet gallery
+   - Published only via manual workflow trigger
+   - Requires `NUGET_API_KEY` secret to be configured
+   - Only stable versions (no pre-release tags) can be published
 
 ### Version Calculation
 
@@ -123,12 +137,17 @@ GitVersion uses mainline mode with these rules:
 
 ### Manual Releases
 
-In exceptional cases, maintainers can trigger a release manually:
+Maintainers can trigger releases manually with control over publish destinations:
 
 1. Go to Actions → Release workflow
 2. Click "Run workflow"
 3. Select the `main` branch
-4. Click "Run workflow"
+4. Choose publishing options:
+   - **Publish to GitHub Packages**: Enabled by default
+   - **Publish to NuGet.org**: Disabled by default (enable when ready for public release)
+5. Click "Run workflow"
+
+**Note**: Publishing to NuGet.org requires the `NUGET_API_KEY` secret to be configured in repository settings.
 
 ## Questions?
 
