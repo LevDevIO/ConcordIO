@@ -4,15 +4,17 @@ This document explains the internal design of the shared AsyncAPI library. For t
 
 ## Target Framework Strategy
 
-ConcordIO.AsyncApi is multi-targeted to **.NET 9.0 and 10.0** only, due to NuGet dependency constraints:
+ConcordIO.AsyncApi is multi-targeted to **.NET 8.0, 9.0, and 10.0** to support consuming projects and MSBuild tasks across these versions.
 
-- **Neuroglia.AsyncApi.Core 3.0.0** — Only supports net9.0 (excludes net6.0, net7.0, net8.0)
-- **Neuroglia.Serialization** — Only supports net8.0 and net9.0 (excludes net6.0, net7.0)
-- **Neuroglia.Serialization.YamlDotNet** — Only supports net8.0 and net9.0 (excludes net6.0, net7.0)
+**NuGet dependency compatibility**:
 
-**Implication**: Projects consuming ConcordIO.AsyncApi (Client/Server packages and tasks) are restricted to net9.0+.
+- **Neuroglia.AsyncApi.Core 3.0.6** — Supports net8.0, net9.0, net10.0+
+- **Neuroglia.Serialization 4.20.0** — Supports net6.0, net7.0, net8.0, net9.0+
+- **NJsonSchema 11.3.2** — Supports net6.0, net8.0, net9.0+
 
-The generated contract packages themselves remain **framework-agnostic** — consumers can target net6.0+ without restrictions, but the **generating tool** (ConcordIO.Tool) and **runtime tasks** (AsyncApi.Client, AsyncApi.Server) require net9.0+.
+**Implication**: Projects consuming ConcordIO.AsyncApi (Client/Server packages and tasks) can now target net8.0+.
+
+The generated contract packages themselves remain **framework-agnostic** — consumers can target net6.0+ without restrictions, but the **generating tool** (ConcordIO.Tool) and **runtime tasks** (AsyncApi.Client, AsyncApi.Server) require net8.0+.
 
 ## High-Level Overview
 
@@ -139,6 +141,7 @@ V3AsyncApiDocument
     ▼
 Collect schemas from components.schemas
     │  Extract x-dotnet-namespace for each schema
+    │  Extract enum definitions from schema `definitions` blocks
     │
     ▼
 Classify types: external vs. generate
@@ -164,6 +167,11 @@ ContractGenerationResult
 
 **Generated file naming:** `{Namespace}.g.cs`
 
+**Definition enum behavior:**
+
+- Shared object definitions are expected as top-level schemas to avoid duplicate generation.
+- Enum definitions embedded under a parent schema's `definitions` block are extracted and generated as standalone enum types so `$ref` properties (for example `#/definitions/DhlRateSyncCancellationReason`) compile correctly.
+
 ### ExternalTypeResolver
 
 Loads referenced assemblies and caches their exported types by full name. When the generator encounters a schema whose `x-dotnet-type` matches a cached type, it skips generation and adds a `using` statement instead.
@@ -188,7 +196,7 @@ Configurable code generation options:
 
 MassTransit constructs message URNs from the full type name:
 
-```
+```text
 Type:  MyService.Contracts.Events.OrderCreatedEvent
 URN:   urn:message:MyService.Contracts.Events:OrderCreatedEvent
 ```

@@ -13,6 +13,7 @@ A shared .NET library for AsyncAPI document generation (server) and C# contract 
 - **Type discovery**: Pattern-based discovery of event and command types from assemblies
 - **External type resolution**: Detect types already defined in referenced assemblies to avoid duplicate generation
 - **Cross-namespace support**: Preserve .NET namespaces via `x-dotnet-namespace` / `x-dotnet-type` extensions
+- **Definition enum support**: Generates enum types declared inside schema `definitions` blocks (for example `#/definitions/MyEnum`)
 
 ## Key Types
 

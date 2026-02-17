@@ -202,6 +202,7 @@ When making changes to the codebase, **always update the relevant documentation 
 - Tests invoke the CLI via `dotnet run --project ConcordIO.Tool.csproj -- <command>` to test the real user experience.
 - Example pattern: Generate package → Pack as NuGet → Reference in test project → Build test project → Verify MSBuild items.
 - Collection-based fixtures: `[Collection(IntegrationTestCollection.Name)]` for shared fixture lifetime.
+- If multi-targeting (`<TargetFrameworks>`) causes MSBuild/NSwag orchestration failures in E2E tests, **prefer single-target test projects** (`<TargetFramework>`) and split coverage into separate per-framework tests (net8.0, net9.0, net10.0) instead of debugging brittle multi-TFM test wiring.
 
 ### Snapshot Testing with Verify
 - Snapshot tests use `await Verify(output)` to compare against approved snapshots.

@@ -89,17 +89,14 @@ public partial class RootCommand
 		/// </summary>
 		internal IConsoleOutput Console => _console ??= new ConsoleOutput();
 
-		/// <summary>
-		/// Represents a parsed specification entry with file name and kind.
-		/// </summary>
-		private record SpecEntry(string FileName, string Kind);
-
 		private static readonly IReadOnlyList<string> ValidKinds = SpecKind.All;
 
 		public async Task<int> RunAsync()
 		{
 			// Parse spec entries
-			var specs = ParseSpecEntries(Spec);
+			var specs = SpecHelpers.ParseSpecEntries(Spec)
+				.Select(e => (FileName: e.FileName, Kind: e.Kind))
+				.ToList();
 			if (specs.Count == 0)
 			{
 				Console.WriteError("Error: At least one specification file is required.");
@@ -133,33 +130,6 @@ public partial class RootCommand
 
 			Console.WriteLine($"Successfully generated package(s) in: {Path.GetFullPath(Output)}");
 			return 0;
-		}
-
-		private List<SpecEntry> ParseSpecEntries(string[] specArgs)
-		{
-			var entries = new List<SpecEntry>();
-
-			foreach (var spec in specArgs)
-			{
-				var colonIndex = spec.LastIndexOf(':');
-
-				// Check if colon is part of a Windows path (e.g., C:\path)
-				if (colonIndex > 1 && spec.Length > colonIndex + 1)
-				{
-					var possibleKind = spec[(colonIndex + 1)..].ToLowerInvariant();
-					if (ValidKinds.Contains(possibleKind))
-					{
-						var filePath = spec[..colonIndex];
-						entries.Add(new SpecEntry(Path.GetFileName(filePath), possibleKind));
-						continue;
-					}
-				}
-
-				// No valid kind suffix, default to openapi
-				entries.Add(new SpecEntry(Path.GetFileName(spec), SpecKind.OpenApi));
-			}
-
-			return entries;
 		}
 
 		private async Task GenerateContractPackageAsync(Dictionary<string, List<string>> specsByKind, string description)
@@ -236,7 +206,8 @@ public partial class RootCommand
 			var stjOptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 			{
 				{ "NSwagJsonLibrary", "SystemTextJson" },
-				{ "NSwagJsonPolymorphicSerializationStyle", "SystemTextJson" }
+				{ "NSwagJsonPolymorphicSerializationStyle", "SystemTextJson" },
+				{ "NSwagGenerateNullableReferenceTypes", "false" }
 			};
 
 			if (!normalizedNswagOptions.Any(o => stjOptions.ContainsKey(o.Key)))

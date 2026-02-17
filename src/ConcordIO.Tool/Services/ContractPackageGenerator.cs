@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace ConcordIO.Tool.Services;
 
 /// <summary>
@@ -23,12 +25,19 @@ public class ContractPackageGenerator
 
 		var model = BuildContractModel(options);
 
-		return await GeneratePackageAsync(
+		var generatedPackage = await GeneratePackageAsync(
 			options.PackageId,
 			options.OutputDirectory,
 			"Contract.Contract.nuspec",
 			"Contract.Contracts.targets",
 			model);
+
+		var buildTransitiveDir = Path.Combine(options.OutputDirectory, "buildTransitive");
+		_fileSystem.CreateDirectory(buildTransitiveDir);
+		var buildTransitiveTargetsPath = Path.Combine(buildTransitiveDir, $"{options.PackageId}.targets");
+		await _fileSystem.WriteAllTextAsync(buildTransitiveTargetsPath, generatedPackage.TargetsContent);
+
+		return generatedPackage;
 	}
 
 	/// <summary>
@@ -112,6 +121,7 @@ public class ContractPackageGenerator
 			["description"] = options.Description,
 			["contract_package_id"] = options.ContractPackageId,
 			["contract_version"] = options.ContractVersion,
+			["tool_version"] = GetToolVersionOrThrow(),
 			["package_properties"] = options.PackageProperties,
 			["nswag_client_class_name"] = options.NSwagClientClassName,
 			["nswag_output_path"] = options.NSwagOutputPath,
@@ -121,6 +131,21 @@ public class ContractPackageGenerator
 			["has_proto"] = hasProto,
 			["has_asyncapi"] = hasAsyncApi
 		};
+	}
+
+	private static string GetToolVersionOrThrow()
+	{
+		var informationalVersion = typeof(ContractPackageGenerator).Assembly
+			.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
+			?.InformationalVersion;
+		var normalizedVersion = informationalVersion?.Split('+')[0];
+		if (string.IsNullOrWhiteSpace(normalizedVersion))
+		{
+			throw new InvalidOperationException(
+				"ConcordIO tool version metadata is missing. Ensure <Version> is set and assembly informational version is generated.");
+		}
+
+		return normalizedVersion;
 	}
 }
 

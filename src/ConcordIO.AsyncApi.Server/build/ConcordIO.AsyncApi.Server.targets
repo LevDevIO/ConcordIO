@@ -1,14 +1,25 @@
 <!-- ConcordIO.AsyncApi.Server.targets - Build integration -->
 <Project>
 
+  <!--
+    Internal: Locate the task assembly in the package tools folder
+    - _ConcordIOToolsDir (string): Absolute tools folder path for the current TargetFramework
+    - _ConcordIOTaskAssembly (string): Full path to ConcordIO.AsyncApi.Server.dll for UsingTask
+    - _ConcordIOTaskRuntime (string): MSBuild task runtime hint (CurrentRuntime by default)
+    - _ConcordIOTaskArchitecture (string): MSBuild task architecture hint (CurrentArchitecture by default)
+  -->
   <PropertyGroup>
     <_ConcordIOToolsDir>$(MSBuildThisFileDirectory)..\tools\$(TargetFramework)\</_ConcordIOToolsDir>
     <_ConcordIOTaskAssembly>$(_ConcordIOToolsDir)ConcordIO.AsyncApi.Server.dll</_ConcordIOTaskAssembly>
+    <_ConcordIOTaskRuntime>CurrentRuntime</_ConcordIOTaskRuntime>
+    <_ConcordIOTaskArchitecture>CurrentArchitecture</_ConcordIOTaskArchitecture>
   </PropertyGroup>
 
   <!-- Register the MSBuild task -->
   <UsingTask TaskName="ConcordIO.AsyncApi.Server.Tasks.GenerateAsyncApiTask" 
-             AssemblyFile="$(_ConcordIOTaskAssembly)" />
+             AssemblyFile="$(_ConcordIOTaskAssembly)"
+             Runtime="$(_ConcordIOTaskRuntime)"
+             Architecture="$(_ConcordIOTaskArchitecture)" />
 
   <!-- Generate AsyncAPI spec after build -->
   <Target Name="ConcordIOGenerateAsyncApi"

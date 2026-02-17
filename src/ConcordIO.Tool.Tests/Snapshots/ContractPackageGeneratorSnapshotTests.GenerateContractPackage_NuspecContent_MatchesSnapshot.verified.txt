@@ -18,7 +18,8 @@
   GENERATED STRUCTURE:
   - contentFiles/any/any/{spec}  - IDE visibility (allows viewing in Solution Explorer)
   - {kind}/{spec}                - Organized by spec type for MSBuild targets
-  - build/{package_id}.targets   - MSBuild integration exposing specs as items
+  - build/{package_id}.targets   - MSBuild integration exposing specs as items (direct reference)
+  - buildTransitive/{package_id}.targets - MSBuild integration for transitive references
   
   EXAMPLE OUTPUT:
   A package with openapi/petstore.yaml and asyncapi/events.yaml creates:
@@ -46,5 +47,6 @@
     <file src="petstore.yaml" target="openapi/petstore.yaml" />
     <!-- MSBuild targets file exposes specs as ConcordIOContract/ConcordIOAsyncApiContract items -->
     <file src="build/Acme.PetStore.Contracts.targets" target="build/Acme.PetStore.Contracts.targets" />
+    <file src="buildTransitive/Acme.PetStore.Contracts.targets" target="buildTransitive/Acme.PetStore.Contracts.targets" />
   </files>
 </package>

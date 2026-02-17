@@ -25,7 +25,7 @@
   
   OUTPUTS:
   ========
-  - {Namespace}.g.cs files in obj/{Config}/{TFM}/ConcordIO.AsyncApi.Generated/
+  - {Namespace}.g.cs files in obj/ConcordIO.AsyncApi.Generated/
   - Files are included in Compile and tracked by FileWrites for incremental builds
   
   EXTERNAL TYPE DETECTION:
@@ -48,17 +48,31 @@
 
   <!--
     Internal: Locate the task assembly in the package tools folder
-    - _ConcordIOClientToolsDir (string): Absolute tools folder path for the current TargetFramework
+    - _ConcordIOClientTaskTfm (string): Task TFM based on the MSBuild runtime (net8.0 fallback)
+    - _ConcordIOClientToolsDir (string): Absolute tools folder path for the task TFM
     - _ConcordIOClientTaskAssembly (string): Full path to ConcordIO.AsyncApi.Client.dll for UsingTask
+    - _ConcordIOClientTaskRuntime (string): MSBuild task runtime hint (CurrentRuntime by default)
+    - _ConcordIOClientTaskArchitecture (string): MSBuild task architecture hint (CurrentArchitecture by default)
   -->
   <PropertyGroup>
-    <_ConcordIOClientToolsDir>$(MSBuildThisFileDirectory)..\tools\$(TargetFramework)\</_ConcordIOClientToolsDir>
+    <!-- Task selection logic: choose most appropriate .NET runtime for the MSBuild host -->
+    <!-- Default: net8.0 (minimum supported framework) -->
+    <!-- .NET 9 MSBuild: Use net9.0 task assembly -->
+    <!-- .NET 10+ MSBuild: Use net10.0 task assembly -->
+    <_ConcordIOClientTaskTfm>net8.0</_ConcordIOClientTaskTfm>
+    <_ConcordIOClientTaskTfm Condition="'$(MSBuildRuntimeType)' == 'Core' and '$(MSBuildRuntimeVersion)' != '' and $([System.Version]::Parse('$(MSBuildRuntimeVersion)').Major) == 9">net9.0</_ConcordIOClientTaskTfm>
+    <_ConcordIOClientTaskTfm Condition="'$(MSBuildRuntimeType)' == 'Core' and '$(MSBuildRuntimeVersion)' != '' and $([System.Version]::Parse('$(MSBuildRuntimeVersion)').Major) &gt;= 10">net10.0</_ConcordIOClientTaskTfm>
+    <_ConcordIOClientToolsDir>$(MSBuildThisFileDirectory)..\tools\$(_ConcordIOClientTaskTfm)\</_ConcordIOClientToolsDir>
     <_ConcordIOClientTaskAssembly>$(_ConcordIOClientToolsDir)ConcordIO.AsyncApi.Client.dll</_ConcordIOClientTaskAssembly>
+    <_ConcordIOClientTaskRuntime>CurrentRuntime</_ConcordIOClientTaskRuntime>
+    <_ConcordIOClientTaskArchitecture>CurrentArchitecture</_ConcordIOClientTaskArchitecture>
   </PropertyGroup>
 
   <!-- Register the MSBuild task from the package -->
   <UsingTask TaskName="ConcordIO.AsyncApi.Client.Tasks.GenerateContractsTask" 
-             AssemblyFile="$(_ConcordIOClientTaskAssembly)" />
+             AssemblyFile="$(_ConcordIOClientTaskAssembly)"
+             Runtime="$(_ConcordIOClientTaskRuntime)"
+             Architecture="$(_ConcordIOClientTaskArchitecture)" />
 
   <!--
     Target: ConcordIOGenerateContracts
@@ -77,7 +91,7 @@
     <!-- Compute output directory (IntermediateOutputPath is available at target time) -->
     <PropertyGroup>
       <_ConcordIOClientOutputDir>$(ConcordIOClientOutputPath)</_ConcordIOClientOutputDir>
-      <_ConcordIOClientOutputDir Condition="'$(_ConcordIOClientOutputDir)' == ''">$(IntermediateOutputPath)ConcordIO.AsyncApi.Generated\</_ConcordIOClientOutputDir>
+      <_ConcordIOClientOutputDir Condition="'$(_ConcordIOClientOutputDir)' == ''">$(BaseIntermediateOutputPath)ConcordIO.AsyncApi.Generated\</_ConcordIOClientOutputDir>
     </PropertyGroup>
 
     <!-- Log progress (visible at normal verbosity) -->
@@ -87,8 +101,17 @@
 
     <!-- Collect referenced assemblies for external type detection -->
     <ItemGroup>
+      <_ConcordIOClientAsyncApiFiles Include="@(ConcordIOAsyncApiContract)" />
       <_ConcordIOClientReferencedAssemblies Include="@(ReferencePath)" />
     </ItemGroup>
+
+    <!--
+      Deduplicate AsyncAPI input files to avoid processing the same contract item
+      more than once when upstream targets re-emit ConcordIOAsyncApiContract items.
+    -->
+    <RemoveDuplicates Inputs="@(_ConcordIOClientAsyncApiFiles)">
+      <Output TaskParameter="Filtered" ItemName="_ConcordIOClientAsyncApiFilesDistinct" />
+    </RemoveDuplicates>
 
     <!-- 
       Execute the generation task
@@ -97,7 +120,7 @@
       Returns list of generated files via GeneratedFiles output parameter.
     -->
     <GenerateContractsTask
-        AsyncApiFiles="@(ConcordIOAsyncApiContract)"
+        AsyncApiFiles="@(_ConcordIOClientAsyncApiFilesDistinct)"
         OutputDirectory="$(_ConcordIOClientOutputDir)"
         ReferencedAssemblies="@(_ConcordIOClientReferencedAssemblies)"
         GenerateDataAnnotations="$(ConcordIOClientGenerateDataAnnotations)"
@@ -106,13 +129,18 @@
       <Output TaskParameter="GeneratedFiles" ItemName="_ConcordIOClientGeneratedFiles" />
     </GenerateContractsTask>
 
+    <!-- Deduplicate generated files before adding to Compile/FileWrites. -->
+    <RemoveDuplicates Inputs="@(_ConcordIOClientGeneratedFiles)">
+      <Output TaskParameter="Filtered" ItemName="_ConcordIOClientGeneratedFilesDistinct" />
+    </RemoveDuplicates>
+
     <!-- Add generated files to compilation and incremental build tracking -->
     <ItemGroup>
-      <Compile Include="@(_ConcordIOClientGeneratedFiles)" />
-      <FileWrites Include="@(_ConcordIOClientGeneratedFiles)" />
+      <Compile Include="@(_ConcordIOClientGeneratedFilesDistinct)" />
+      <FileWrites Include="@(_ConcordIOClientGeneratedFilesDistinct)" />
     </ItemGroup>
 
-    <Message Text="ConcordIO.Client: Generated @(_ConcordIOClientGeneratedFiles->Count()) file(s)" Importance="high" />
+    <Message Text="ConcordIO.Client: Generated @(_ConcordIOClientGeneratedFilesDistinct->Count()) file(s)" Importance="high" />
 
   </Target>
 
@@ -125,7 +153,7 @@
           AfterTargets="Clean">
     <PropertyGroup>
       <_ConcordIOClientOutputDir>$(ConcordIOClientOutputPath)</_ConcordIOClientOutputDir>
-      <_ConcordIOClientOutputDir Condition="'$(_ConcordIOClientOutputDir)' == ''">$(IntermediateOutputPath)ConcordIO.AsyncApi.Generated\</_ConcordIOClientOutputDir>
+      <_ConcordIOClientOutputDir Condition="'$(_ConcordIOClientOutputDir)' == ''">$(BaseIntermediateOutputPath)ConcordIO.AsyncApi.Generated\</_ConcordIOClientOutputDir>
     </PropertyGroup>
     
     <RemoveDir Directories="$(_ConcordIOClientOutputDir)" Condition="Exists('$(_ConcordIOClientOutputDir)')" />

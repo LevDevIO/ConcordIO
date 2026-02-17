@@ -170,13 +170,37 @@ public class AsyncApiContractGenerator
 		var schemas = document.Components?.Schemas ?? [];
 		var messages = document.Components?.Messages ?? [];
 
-		// Collect all types from schemas
+		// Collect all top-level types from schemas.
+		// NOTE: We intentionally do NOT extract types from each schema's "definitions" section.
+		// Definition types (e.g., RateSyncConfigId) that are referenced via $ref within schemas
+		// should already exist as separate top-level schemas in the AsyncAPI document if they need
+		// their own generated type. Extracting definitions would break $ref resolution because
+		// the extracted definition loses the parent schema's definitions context, causing
+		// NJsonSchema to fail with "Could not resolve the path '#/definitions/...'" errors.
+		// NJsonSchema generates definition types inline when processing the parent schema,
+		// and ExtractClassDefinition filters the output to only the target type.
 		var typesToProcess = new Dictionary<string, (string Namespace, object Schema)>(StringComparer.Ordinal);
 
 		foreach (var (name, schemaDef) in schemas)
 		{
 			var ns = GetNamespaceFromExtension(schemaDef.Schema);
-			typesToProcess[name] = (ns, schemaDef.Schema);
+
+			// Use the short type name (last segment after the last dot) as the key.
+			// Schema keys are fully-qualified names like "Contoso.Application.RateSync.Messages.RateSyncCompleted"
+			// but the generated C# class name should be just "DhlRateSyncCompleted".
+			var shortName = GetShortTypeName(name);
+			if (!typesToProcess.ContainsKey(shortName))
+			{
+				typesToProcess[shortName] = (ns, schemaDef.Schema);
+			}
+
+			foreach (var (definitionName, definitionSchema) in ExtractEnumDefinitions(schemaDef.Schema))
+			{
+				if (!typesToProcess.ContainsKey(definitionName))
+				{
+					typesToProcess[definitionName] = (ns, definitionSchema);
+				}
+			}
 		}
 
 		// Determine which types are external vs need generation
@@ -296,6 +320,11 @@ public class AsyncApiContractGenerator
 		// Convert the schema to a JsonSchema for NJsonSchema code generation
 		var jsonSchema = ConvertToJsonSchema(schema);
 
+		// NOTE: We intentionally keep jsonSchema.Definitions intact.
+		// NJsonSchema needs them to resolve $ref references (e.g., #/definitions/RateSyncConfigId).
+		// ExtractClassDefinition filters the NJsonSchema output to only the target type,
+		// skipping any definition types that NJsonSchema generates inline.
+
 		// Configure CSharp generator settings
 		var csharpSettings = new CSharpGeneratorSettings
 		{
@@ -345,21 +374,42 @@ public class AsyncApiContractGenerator
 		return JsonSchema.FromJsonAsync(jsonString).GetAwaiter().GetResult();
 	}
 
+	/// <summary>
+	/// Extracts only the class definition matching <paramref name="typeName"/> from NJsonSchema output.
+	/// </summary>
+	/// <param name="generatedCode">The full file output from NJsonSchema's <c>GenerateFile</c>.</param>
+	/// <param name="typeName">The specific type name to extract (e.g., "StartDhlRateSync").</param>
+	/// <returns>The C# class/record definition for the requested type only.</returns>
+	/// <remarks>
+	/// <para>
+	/// NJsonSchema generates ALL types in a schema file, including types from the
+	/// <c>definitions</c> section. When multiple message schemas reference the same
+	/// definition type (e.g., <c>RateSyncConfigId</c>), that definition appears in
+	/// the generated output of every parent schema.
+	/// </para>
+	/// <para>
+	/// This method solves the duplication problem by extracting ONLY the class whose
+	/// name matches <paramref name="typeName"/>. Definition types are generated
+	/// separately as top-level schemas.
+	/// </para>
+	/// </remarks>
 	private static string ExtractClassDefinition(string generatedCode, string typeName)
 	{
-		// NJsonSchema generates a full file with namespace and usings
-		// We need to extract just the class/record definition
+		// NJsonSchema generates a full file with namespace, usings, and potentially
+		// multiple type declarations (the main type + definition types). We need to
+		// find and extract ONLY the declaration matching typeName.
 		var lines = generatedCode.Split('\n');
 		var sb = new StringBuilder();
 		var inClass = false;
 		var braceCount = 0;
 		var foundOpeningBrace = false;
+		var pendingAttribute = new StringBuilder();
 
-		foreach (var line in lines)
+		for (var i = 0; i < lines.Length; i++)
 		{
-			var trimmed = line.TrimStart();
+			var trimmed = lines[i].TrimStart();
 
-			// Skip using statements and namespace declarations
+			// Skip using statements, namespace declarations, pragmas, and top-level comments
 			if (trimmed.StartsWith("using ") ||
 				trimmed.StartsWith("namespace ") ||
 				trimmed.StartsWith("#pragma ") ||
@@ -368,45 +418,66 @@ public class AsyncApiContractGenerator
 				continue;
 			}
 
-			// Skip empty lines before we've started capturing
+			// Skip empty lines when not inside the target class
 			if (!inClass && string.IsNullOrWhiteSpace(trimmed))
 			{
 				continue;
 			}
 
-			// Start capturing when we hit the class/record definition
-			if (!inClass && (trimmed.StartsWith("public class ") ||
-							trimmed.StartsWith("public partial class ") ||
-							trimmed.StartsWith("public record ") ||
-							trimmed.StartsWith("public sealed class ") ||
-							trimmed.StartsWith("[System.")))  // Also capture attributes
+			if (!inClass)
 			{
-				inClass = true;
+				// Buffer attribute lines (they precede the class declaration)
+				if (trimmed.StartsWith("["))
+				{
+					pendingAttribute.AppendLine(lines[i].TrimEnd());
+					continue;
+				}
+
+				// Check if this line declares the type we're looking for
+				if (IsTypeDeclaration(trimmed) && IsTargetType(trimmed, typeName))
+				{
+					inClass = true;
+					// Include any buffered attributes
+					if (pendingAttribute.Length > 0)
+					{
+						sb.Append(pendingAttribute);
+					}
+				}
+				else if (IsTypeDeclaration(trimmed))
+				{
+					// This is a different declaration (e.g., a definition type) — skip it and its body
+					pendingAttribute.Clear();
+					SkipClassBody(lines, ref i);
+					continue;
+				}
+				else
+				{
+					// Not a class or attribute — discard buffered attributes
+					pendingAttribute.Clear();
+					continue;
+				}
 			}
 
 			if (inClass)
 			{
-				sb.AppendLine(line.TrimEnd());
+				sb.AppendLine(lines[i].TrimEnd());
 
-				// Check for single-line record without braces (e.g., "public record Foo(int X);")
+				// Handle single-line record: "public record Foo(int X);"
 				if (trimmed.Contains("record") && trimmed.TrimEnd().EndsWith(";") && !trimmed.Contains("{"))
 				{
-					// This is a single-line record definition, we're done
 					break;
 				}
 
-				// Track braces to know when the class ends
-				braceCount += line.Count(c => c == '{');
-				braceCount -= line.Count(c => c == '}');
+				// Track braces to find the end of the class body
+				braceCount += lines[i].Count(c => c == '{');
+				braceCount -= lines[i].Count(c => c == '}');
 
-				// Mark that we've found at least one opening brace
-				if (line.Contains('{'))
+				if (lines[i].Contains('{'))
 				{
 					foundOpeningBrace = true;
 				}
 
-				// Only break when we've found the opening brace and matched all braces
-				if (foundOpeningBrace && braceCount == 0 && sb.Length > 0)
+				if (foundOpeningBrace && braceCount == 0)
 				{
 					break;
 				}
@@ -415,13 +486,167 @@ public class AsyncApiContractGenerator
 
 		var result = sb.ToString().Trim();
 
-		// If extraction failed or we have an incomplete class, generate a simple POCO
-		if (string.IsNullOrEmpty(result) || (!result.Contains('{') && !result.Contains("record")) || (!result.Contains('}') && !result.TrimEnd().EndsWith(";")))
+		// If extraction failed, generate a minimal POCO so compilation doesn't break
+		if (string.IsNullOrEmpty(result) ||
+			(!result.Contains('{') && !result.Contains("record")) ||
+			(!result.Contains('}') && !result.TrimEnd().EndsWith(";")))
 		{
 			return $"public partial class {typeName}\n{{\n}}";
 		}
 
 		return result;
+	}
+
+	/// <summary>
+	/// Determines whether a trimmed source line is a class, record, or enum declaration.
+	/// </summary>
+	private static bool IsTypeDeclaration(string trimmedLine)
+	{
+		return trimmedLine.StartsWith("public class ") ||
+			   trimmedLine.StartsWith("public partial class ") ||
+			   trimmedLine.StartsWith("public record ") ||
+			   trimmedLine.StartsWith("public sealed class ") ||
+			   trimmedLine.StartsWith("public enum ");
+	}
+
+	/// <summary>
+	/// Checks whether a class declaration line declares the target type by name.
+	/// </summary>
+	/// <param name="trimmedLine">The trimmed source line containing the class declaration.</param>
+	/// <param name="typeName">The type name to look for.</param>
+	/// <returns><c>true</c> if the line declares a class/record named <paramref name="typeName"/>.</returns>
+	private static bool IsTargetType(string trimmedLine, string typeName)
+	{
+		// After "public [partial] class " or "public record ", the next token is the type name.
+		// It may be followed by whitespace, '{', '(', ':', or end of line.
+		var searchPatterns = new[]
+		{
+			$"class {typeName}",
+			$"record {typeName}",
+			$"enum {typeName}"
+		};
+
+		foreach (var pattern in searchPatterns)
+		{
+			var idx = trimmedLine.IndexOf(pattern, StringComparison.Ordinal);
+			if (idx < 0)
+				continue;
+
+			var afterName = idx + pattern.Length;
+			// The type name must be followed by a delimiter or end of line
+			if (afterName >= trimmedLine.Length ||
+				trimmedLine[afterName] == ' ' ||
+				trimmedLine[afterName] == '{' ||
+				trimmedLine[afterName] == '(' ||
+				trimmedLine[afterName] == ':' ||
+				trimmedLine[afterName] == '\r' ||
+				trimmedLine[afterName] == '\n')
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private static IEnumerable<(string Name, object Schema)> ExtractEnumDefinitions(object schema)
+	{
+		if (schema is JsonElement element &&
+			element.ValueKind == JsonValueKind.Object &&
+			element.TryGetProperty("definitions", out var definitionsElement) &&
+			definitionsElement.ValueKind == JsonValueKind.Object)
+		{
+			foreach (var definition in definitionsElement.EnumerateObject())
+			{
+				if (IsEnumSchema(definition.Value))
+				{
+					yield return (definition.Name, definition.Value);
+				}
+			}
+			yield break;
+		}
+
+		if (schema is IDictionary<string, object> dictionary &&
+			dictionary.TryGetValue("definitions", out var definitionsObject) &&
+			definitionsObject is IDictionary<string, object> definitions)
+		{
+			foreach (var (definitionName, definitionSchema) in definitions)
+			{
+				if (IsEnumSchema(definitionSchema))
+				{
+					yield return (definitionName, definitionSchema);
+				}
+			}
+		}
+	}
+
+	private static bool IsEnumSchema(object schema)
+	{
+		if (schema is JsonElement element && element.ValueKind == JsonValueKind.Object)
+		{
+			return element.TryGetProperty("enum", out var enumElement) &&
+				enumElement.ValueKind == JsonValueKind.Array &&
+				enumElement.GetArrayLength() > 0;
+		}
+
+		if (schema is IDictionary<string, object> dictionary &&
+			dictionary.TryGetValue("enum", out var enumObject))
+		{
+			if (enumObject is JsonElement enumElement)
+			{
+				return enumElement.ValueKind == JsonValueKind.Array && enumElement.GetArrayLength() > 0;
+			}
+
+			if (enumObject is IEnumerable<object> enumValues)
+			{
+				return enumValues.Any();
+			}
+
+			if (enumObject is IEnumerable<int> intValues)
+			{
+				return intValues.Any();
+			}
+		}
+
+		return false;
+	}
+
+	/// <summary>
+	/// Advances the line index past the body of a class/record declaration.
+	/// </summary>
+	/// <remarks>
+	/// Used to skip over definition types that we don't want to extract.
+	/// Handles both brace-delimited bodies and single-line records ending with <c>;</c>.
+	/// </remarks>
+	private static void SkipClassBody(string[] lines, ref int i)
+	{
+		var braceCount = 0;
+		var foundBrace = false;
+
+		for (; i < lines.Length; i++)
+		{
+			var line = lines[i];
+			var trimmed = line.TrimStart();
+
+			// Single-line record: "public record Foo(int X);"
+			if (!foundBrace && trimmed.Contains("record") && trimmed.TrimEnd().EndsWith(";") && !trimmed.Contains("{"))
+			{
+				return;
+			}
+
+			braceCount += line.Count(c => c == '{');
+			braceCount -= line.Count(c => c == '}');
+
+			if (line.Contains('{'))
+			{
+				foundBrace = true;
+			}
+
+			if (foundBrace && braceCount == 0)
+			{
+				return;
+			}
+		}
 	}
 
 	private static string GetNamespaceFromExtension(object schema)
@@ -446,4 +671,29 @@ public class AsyncApiContractGenerator
 
 		return string.Empty;
 	}
+
+	/// <summary>
+	/// Extracts the short type name from a potentially fully-qualified schema key.
+	/// </summary>
+	/// <param name="schemaKey">
+	/// The schema key, which may be a fully-qualified name like
+	/// <c>Contoso.Application.RateSync.Messages.RateSyncCompleted</c>
+	/// or a simple name like <c>DhlRateSyncCompleted</c>.
+	/// </param>
+	/// <returns>
+	/// The short type name (e.g., <c>DhlRateSyncCompleted</c>).
+	/// If the key contains dots, returns the segment after the last dot.
+	/// </returns>
+	/// <remarks>
+	/// AsyncAPI schema keys in <c>components/schemas</c> are typically fully-qualified
+	/// .NET type names. The namespace portion is provided separately via the
+	/// <c>x-dotnet-namespace</c> extension, so we only need the short class name
+	/// for C# code generation.
+	/// </remarks>
+	private static string GetShortTypeName(string schemaKey)
+	{
+		var lastDot = schemaKey.LastIndexOf('.');
+		return lastDot >= 0 ? schemaKey[(lastDot + 1)..] : schemaKey;
+	}
+
 }

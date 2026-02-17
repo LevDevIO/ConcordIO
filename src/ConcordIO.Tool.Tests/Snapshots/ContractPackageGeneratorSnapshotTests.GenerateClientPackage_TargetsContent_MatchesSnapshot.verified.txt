@@ -17,8 +17,8 @@
   
   TARGET EXECUTION ORDER:
   1. Package restore creates ConcordIOContract/ConcordIOAsyncApiContract items
-  2. AfterTargets="ResolvePackageAssets" - these targets run
-  3. Items are enriched with code generation metadata
+  2. BeforeTargets="GenerateOpenApiCode" - OpenAPI references are materialized for NSwag
+  3. AfterTargets="ResolvePackageAssets" - AsyncAPI metadata enrichment runs
   4. Code generators (NSwag, ConcordIO.AsyncApi.Client) consume the items
   
   TROUBLESHOOTING:
@@ -35,23 +35,24 @@
       
       OUTPUT: {nswag_output_path}.cs containing typed HTTP client
     -->
-    <Target Name="ConcordIOAddOpenApiReferenceForNSwag" 
-            AfterTargets="ResolvePackageAssets"
+        <Target Name="ConcordIOAddOpenApiReferenceForNSwag"
+          BeforeTargets="GenerateOpenApiCode"
             Condition="'@(ConcordIOContract)' != ''">
         <ItemGroup>
             <!-- Filter to specs from this contract package with openapi kind -->
-            <OpenApiReference Include="@(ConcordIOContract)" 
+            <OpenApiReference Include="@(ConcordIOContract)"
                               Condition="'%(ConcordIOContract.PackageId)' == 'Acme.PetStore.Contracts' And '%(ConcordIOContract.Kind)' == 'openapi'">
+                <!-- Standard MSBuild metadata (no prefix needed) -->
                 <CodeGenerator>NSwagCSharp</CodeGenerator>
                 <ClassName>PetStoreClient</ClassName>
                 <OutputPath>PetStoreClient.cs</OutputPath>
-                <!-- Custom NSwag option: NSwagJsonLibrary -->
+                <!-- NSwag generator option: NSwagJsonLibrary (prefix required for NSwag-specific settings) -->
                 <NSwagJsonLibrary>SystemTextJson</NSwagJsonLibrary>
-                <!-- Custom NSwag option: NSwagJsonPolymorphicSerializationStyle -->
+                <!-- NSwag generator option: NSwagJsonPolymorphicSerializationStyle (prefix required for NSwag-specific settings) -->
                 <NSwagJsonPolymorphicSerializationStyle>SystemTextJson</NSwagJsonPolymorphicSerializationStyle>
-                <!-- Custom NSwag option: NSwagGenerateExceptionClasses -->
+                <!-- NSwag generator option: NSwagGenerateExceptionClasses (prefix required for NSwag-specific settings) -->
                 <NSwagGenerateExceptionClasses>true</NSwagGenerateExceptionClasses>
-                <!-- Custom NSwag option: NSwagInjectHttpClient -->
+                <!-- NSwag generator option: NSwagInjectHttpClient (prefix required for NSwag-specific settings) -->
                 <NSwagInjectHttpClient>true</NSwagInjectHttpClient>
             </OpenApiReference>
         </ItemGroup>

@@ -9,6 +9,7 @@
   - client_package_id:    The client package ID (e.g., "MyService.Contracts.Client")
   - contract_package_id:  The referenced contract package ID
   - contract_version:     The contract package version to depend on
+  - tool_version:         The ConcordIO.Tool version used to generate the package
   - version:              The client package version
   - authors:              Package author(s)
   - description:          Package description
@@ -26,7 +27,7 @@
   - NSwag.ApiDescription.Client: For OpenAPI → C# HTTP clients
 {{~ end ~}}
 {{~ if has_asyncapi ~}}
-  - ConcordIO.AsyncApi.Client:   For AsyncAPI → C# message contracts
+  - ConcordIO.AsyncApi.Client:   For AsyncAPI → C# message contracts (min = tool version)
 {{~ end ~}}
   
   Dependencies use exclude="compile,runtime" to prevent shipping generator assemblies.
@@ -51,7 +52,7 @@
 {{~ end ~}}
 {{~ if has_asyncapi ~}}
             <!-- ConcordIO generates message contracts from AsyncAPI specs -->
-            <dependency id="ConcordIO.AsyncApi.Client" version="0.1.*" include="build" exclude="compile,runtime"/>
+            <dependency id="ConcordIO.AsyncApi.Client" version="[{{ tool_version }},)" include="build" exclude="compile,runtime"/>
 {{~ end ~}}
         </dependencies>
     </metadata>
