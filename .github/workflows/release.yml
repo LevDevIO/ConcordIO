@@ -1,0 +1,219 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.gitversion.outputs.semVer }}
+      major: ${{ steps.gitversion.outputs.major }}
+      minor: ${{ steps.gitversion.outputs.minor }}
+      patch: ${{ steps.gitversion.outputs.patch }}
+      preReleaseTag: ${{ steps.gitversion.outputs.preReleaseTag }}
+      preReleaseLabel: ${{ steps.gitversion.outputs.preReleaseLabel }}
+      commitsSinceVersionSource: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}
+      assemblyVersion: ${{ steps.gitversion.outputs.assemblySemVer }}
+      fileVersion: ${{ steps.gitversion.outputs.assemblySemFileVer }}
+      informationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # GitVersion needs full history
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: '6.x'
+
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
+        with:
+          useConfigFile: true
+
+      - name: Display GitVersion outputs
+        run: |
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
+          echo "AssemblySemFileVer: ${{ steps.gitversion.outputs.assemblySemFileVer }}"
+          echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
+
+  build-and-test:
+    name: Build & Test
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore src/ConcordIO.Tool.sln
+
+      - name: Build with version
+        run: |
+          dotnet build src/ConcordIO.Tool.sln --no-restore \
+            /p:Version=${{ needs.version.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.version.outputs.assemblyVersion }} \
+            /p:FileVersion=${{ needs.version.outputs.fileVersion }} \
+            /p:InformationalVersion=${{ needs.version.outputs.informationalVersion }} \
+            /p:PackageVersion=${{ needs.version.outputs.version }}
+
+      - name: Run unit & integration tests
+        run: dotnet test src/ConcordIO.Tool.sln --no-build --filter "FullyQualifiedName!~E2E"
+
+  e2e-tests:
+    name: E2E Tests
+    needs: [version, build-and-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install Mono (for nuget.exe)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-complete
+
+      - name: Install nuget.exe
+        run: |
+          sudo curl -o /usr/local/bin/nuget.exe https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+          printf '#!/bin/bash\nmono /usr/local/bin/nuget.exe "$@"\n' | sudo tee /usr/local/bin/nuget > /dev/null
+          sudo chmod +x /usr/local/bin/nuget
+
+      - name: Restore
+        run: dotnet restore src/ConcordIO.Tool.sln
+
+      - name: Build with version
+        run: |
+          dotnet build src/ConcordIO.Tool.sln --no-restore \
+            /p:Version=${{ needs.version.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.version.outputs.assemblyVersion }} \
+            /p:FileVersion=${{ needs.version.outputs.fileVersion }} \
+            /p:InformationalVersion=${{ needs.version.outputs.informationalVersion }} \
+            /p:PackageVersion=${{ needs.version.outputs.version }}
+
+      - name: Run E2E tests
+        run: dotnet test src/ConcordIO.Tool.sln --no-build --filter "FullyQualifiedName~E2E"
+
+  pack:
+    name: Pack NuGet Packages
+    needs: [version, build-and-test, e2e-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore src/ConcordIO.Tool.sln
+
+      - name: Pack packages
+        run: |
+          dotnet pack src/ConcordIO.Tool.sln --no-restore --configuration Release \
+            /p:Version=${{ needs.version.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.version.outputs.assemblyVersion }} \
+            /p:FileVersion=${{ needs.version.outputs.fileVersion }} \
+            /p:InformationalVersion=${{ needs.version.outputs.informationalVersion }} \
+            /p:PackageVersion=${{ needs.version.outputs.version }} \
+            --output ./artifacts
+
+      - name: List artifacts
+        run: ls -lah ./artifacts/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts/*.nupkg
+          retention-days: 7
+
+  release:
+    name: Create GitHub Release
+    needs: [version, pack]
+    runs-on: ubuntu-latest
+    if: needs.version.outputs.preReleaseTag == ''
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version.outputs.version }}
+          name: Release v${{ needs.version.outputs.version }}
+          body: |
+            ## Release v${{ needs.version.outputs.version }}
+            
+            This release was automatically created from the main branch.
+            
+            ### Packages
+            - ConcordIO.Tool v${{ needs.version.outputs.version }}
+            - ConcordIO.AsyncApi v${{ needs.version.outputs.version }}
+            - ConcordIO.AsyncApi.Client v${{ needs.version.outputs.version }}
+            - ConcordIO.AsyncApi.Server v${{ needs.version.outputs.version }}
+            
+            ### Installation
+            ```bash
+            dotnet tool install --global ConcordIO.Tool --version ${{ needs.version.outputs.version }}
+            ```
+          files: ./artifacts/*.nupkg
+          draft: false
+          prerelease: false
+
+  publish:
+    name: Publish to NuGet.org
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    if: needs.version.outputs.preReleaseTag == ''
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish to NuGet.org
+        run: |
+          for package in ./artifacts/*.nupkg; do
+            echo "Publishing $package"
+            dotnet nuget push "$package" \
+              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done

@@ -8,7 +8,6 @@
 
     <!-- NuGet Package settings -->
     <PackageId>ConcordIO.AsyncApi</PackageId>
-    <Version>0.2.0</Version>
     <Authors>LevDev</Authors>
     <Description>Core library for AsyncAPI document parsing, code generation, and contract management.</Description>
     <RepositoryUrl>https://github.com/LevDevIO/ConcordIO</RepositoryUrl>

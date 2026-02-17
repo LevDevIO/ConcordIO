@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <!-- Version is determined by GitVersion during CI/CD builds -->
+    <!-- For local development, use a default version if not set -->
+    <Version Condition="'$(Version)' == ''">0.0.1-local</Version>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">$(Version)</PackageVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
+    
+    <!-- AssemblyVersion and FileVersion must be in numeric format (no pre-release tags) -->
+    <!-- Default to 0.0.1.0 for local builds -->
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">0.0.1.0</AssemblyVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">0.0.1.0</FileVersion>
+  </PropertyGroup>
+</Project>
