@@ -11,9 +11,9 @@ branches:
     regex: ^(pull|pull\-requests|pr)[/-]
     label: PullRequest
     increment: Inherit
-major-version-bump-message: "^(feat|fix|docs|style|refactor|perf|test|chore)(\\([a-z]+\\))?!:"
-minor-version-bump-message: "^feat(\\([a-z]+\\))?:"
-patch-version-bump-message: "^(fix|docs|style|refactor|perf|test|chore)(\\([a-z]+\\))?:"
-no-bump-message: "^(build|ci)(\\([a-z]+\\))?:"
+major-version-bump-message: "^(feat|fix|docs|style|refactor|perf|test|chore)(\\([a-z0-9\\-]+\\))?!:"
+minor-version-bump-message: "^feat(\\([a-z0-9\\-]+\\))?:"
+patch-version-bump-message: "^(fix|docs|style|refactor|perf|test|chore)(\\([a-z0-9\\-]+\\))?:"
+no-bump-message: "^(build|ci)(\\([a-z0-9\\-]+\\))?:"
 commit-message-incrementing: Enabled
 tag-prefix: '[vV]?'
