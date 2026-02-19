@@ -647,7 +647,6 @@ Now that you've published your first contract:
 - [Tutorial: Consuming a Contract Package](./consuming-contract.md) - Learn how to use your published contract
 - [Tutorial: CI/CD Setup](./cicd-setup.md) - Automate the process
 - [**Example: Auto-Generate OpenAPI from ASP.NET Core**](../examples/README.md#auto-generating-openapi-from-aspnet-core-api) - Generate specs from API code (recommended)
-- [**Example: Using Kiota for Client Generation**](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) - Modern client alternative to NSwag
 - [CLI Tool Guide](../../src/ConcordIO.Tool/README.md) - Complete command reference
 - [AsyncAPI Server Package](../../src/ConcordIO.AsyncApi.Server/README.md) - Server-side AsyncAPI generation
 - [Examples](../examples/README.md) - More complete examples

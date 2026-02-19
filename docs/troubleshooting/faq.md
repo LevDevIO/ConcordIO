@@ -168,7 +168,7 @@ Typically no. Contract packages are content-only and don't reference other packa
 
 Client packages do have dependencies:
 - The corresponding contract package
-- Code generator packages (NSwag by default, or Kiota as alternative, ConcordIO.AsyncApi.Client for AsyncAPI, etc.)
+- Code generator packages (NSwag for OpenAPI, ConcordIO.AsyncApi.Client for AsyncAPI, etc.)
 
 ## Code Generation
 
@@ -322,38 +322,19 @@ ConcordIO **uses** NSwag by default for OpenAPI client generation. ConcordIO add
 - Multi-spec support
 - Consistent workflow across protocol types
 
-**Note**: You can also use [Kiota](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) as an alternative to NSwag for more modern client generation.
-
 ### Can I use my existing NSwag configuration?
 
 Yes! ConcordIO client packages create `OpenApiReference` items that NSwag consumes. Your existing NSwag setup should work with minimal changes.
-
-### Can I use Kiota instead of NSwag?
-
-Absolutely! While ConcordIO's default client packages use NSwag, you can generate clients with [Microsoft.OpenApi.Kiota](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) instead:
-
-1. Extract the spec: `concordio get-spec --package-id Your.Api --version 1.0.0`
-2. Generate with Kiota: `kiota generate --openapi spec.json --language csharp`
-
-Kiota offers:
-- ✅ Modern fluent API design
-- ✅ Built-in middleware pipeline (auth, retry, logging)
-- ✅ Better nullable reference type support
-- ✅ Official Microsoft tooling
-
-See the [complete Kiota example](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag).
 
 ### Do I need to learn NSwag?
 
 Basic usage works without NSwag knowledge. For advanced customization, understanding NSwag options helps. See the [CLI Tool Guide](../../src/ConcordIO.Tool/README.md) for NSwag defaults and the [Consuming Contract Tutorial](../tutorials/consuming-contract.md) for customization examples.
 
-Alternatively, use [Kiota](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) which has a simpler, more modern API.
-
 ### Why do multi-target projects have issues?
 
 NSwag's MSBuild integration sometimes skips generation during outer/inner build dispatch with `<TargetFrameworks>`. This is a known NSwag limitation, not specific to ConcordIO.
 
-**Workaround**: Use single `<TargetFramework>` for projects consuming OpenAPI clients, or use [Kiota](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) which handles multi-targeting better.
+**Workaround**: Use single `<TargetFramework>` for projects consuming OpenAPI clients.
 
 See [Known Limitations](./known-limitations.md#openapi-multi-tfm).
 
