@@ -107,40 +107,42 @@ jobs:
 
           # Create sidebar (flat wiki page names — no subdirectory paths)
           cat > _Sidebar.md << 'EOF'
-## ConcordIO Documentation
+          ## ConcordIO Documentation
 
-### Getting Started
-* [Quick Start](getting-started-quick-start)
-* [Installation](getting-started-installation)
-* [When to Use](getting-started-when-to-use)
-* [Core Concepts](getting-started-concepts)
+          ### Getting Started
+          * [Quick Start](getting-started-quick-start)
+          * [Installation](getting-started-installation)
+          * [When to Use](getting-started-when-to-use)
+          * [Core Concepts](getting-started-concepts)
 
-### Tutorials
-* [Publishing First Contract](tutorials-publishing-first-contract)
-* [Consuming Contract](tutorials-consuming-contract)
-* [CI/CD Setup](tutorials-cicd-setup)
+          ### Tutorials
+          * [Publishing First Contract](tutorials-publishing-first-contract)
+          * [Consuming Contract](tutorials-consuming-contract)
+          * [CI/CD Setup](tutorials-cicd-setup)
 
-### Examples
-* [Example Projects](examples-README)
+          ### Examples
+          * [Example Projects](examples-README)
 
-### AI & Automation
-* [AI Prompts](ai-prompts-README)
+          ### AI & Automation
+          * [AI Prompts](ai-prompts-README)
 
-### Troubleshooting
-* [FAQ](troubleshooting-faq)
-* [Common Issues](troubleshooting-common-issues)
-* [Known Limitations](troubleshooting-known-limitations)
+          ### Troubleshooting
+          * [FAQ](troubleshooting-faq)
+          * [Common Issues](troubleshooting-common-issues)
+          * [Known Limitations](troubleshooting-known-limitations)
 
-### Resources
-* [Main Repository](https://github.com/${{ github.repository }})
-* [Contributing](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md)
-EOF
+          ### Resources
+          * [Main Repository](https://github.com/${{ github.repository }})
+          * [Contributing](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md)
+          EOF
+          sed -i 's/^          //' _Sidebar.md
 
           # Create footer
           cat > _Footer.md << 'EOF'
----
-**ConcordIO** | [GitHub](https://github.com/${{ github.repository }}) | [Issues](https://github.com/${{ github.repository }}/issues) | [Releases](https://github.com/${{ github.repository }}/releases)
-EOF
+          ---
+          **ConcordIO** | [GitHub](https://github.com/${{ github.repository }}) | [Issues](https://github.com/${{ github.repository }}/issues) | [Releases](https://github.com/${{ github.repository }}/releases)
+          EOF
+          sed -i 's/^          //' _Footer.md
       
       - name: Check for changes
         id: check_changes
