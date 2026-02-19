@@ -2,13 +2,27 @@
 
 ConcordIO is an open source, **NuGet-first** contract management toolchain for **.NET**, focused on making API contracts easy to **publish**, **consume**, and **govern**.
 
+## 📚 Documentation
+
+**[→ View Complete Documentation](./docs/README.md)**
+
+### Quick Links
+- [🚀 Quick Start Guide](./docs/getting-started/quick-start.md) - Get up and running in 5 minutes
+- [📦 Installation](./docs/getting-started/installation.md) - Installation instructions
+- [🎯 When to Use ConcordIO](./docs/getting-started/when-to-use.md) - Use cases and scenarios
+- [💡 Examples](./docs/examples/README.md) - Complete working examples
+- [🤖 AI Prompts](./docs/ai-prompts/README.md) - Ready-to-use prompts for AI assistants
+- [❓ FAQ](./docs/troubleshooting/faq.md) - Frequently asked questions
+- [🐛 Troubleshooting](./docs/troubleshooting/common-issues.md) - Common issues and solutions
+
 ## Vision
 
-ConcordIO will provide a CLI (distributed as a NuGet / .NET tool) and build integration that helps teams:
+ConcordIO provides a CLI (distributed as a NuGet / .NET tool) and build integration that helps teams:
 
 - **Package API contracts** into NuGet packages:
   - **OpenAPI** (JSON/YAML)
   - **Protocol Buffers** (`.proto`)
+  - **AsyncAPI** (JSON/YAML)
 - **Generate clients at build time** by consuming contract packages, using MSBuild integration (`.props` / `.targets`) so projects can produce strongly-typed clients without copying specs into each repo.
 - **Detect contract changes** by comparing the current contract against an existing published NuGet package:
   - report **breaking vs non-breaking** changes
@@ -17,7 +31,7 @@ ConcordIO will provide a CLI (distributed as a NuGet / .NET tool) and build inte
 
 ## Status
 
-This project is in early design / prototype stage.
+This project is in active development. See the [releases page](https://github.com/LevDevIO/ConcordIO/releases) for current status.
 
 ## Development
 
