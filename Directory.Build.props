@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!--
       Version
-      -------
+
       - Purpose:
           Logical product version used throughout the solution. This is the canonical
           semantic version that other version properties (PackageVersion, InformationalVersion)
@@ -26,7 +26,7 @@
 
     <!--
       PackageVersion
-      --------------
+
       - Purpose:
           NuGet package version written into .nupkg metadata. This is the version
           that consumers see and reference.
@@ -47,7 +47,7 @@
 
     <!--
       InformationalVersion
-      --------------------
+
       - Purpose:
           Human‑readable version string stored in assembly metadata (Product Version),
           often including pre‑release labels or commit information.
@@ -65,10 +65,10 @@
             instead of relying solely on $(Version).
     -->
     <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
-    
+
     <!--
       AssemblyVersion
-      ---------------
+
       - Purpose:
           CLR binding version for the compiled assembly. This must be a numeric,
           four‑part version (Major.Minor.Build.Revision) with no pre‑release labels.
@@ -91,7 +91,7 @@
 
     <!--
       FileVersion
-      -----------
+
       - Purpose:
           OS‑level file version stored in the PE file (Win32 FileVersion). This is
           what Windows Explorer and many monitoring tools display.
