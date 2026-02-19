@@ -116,7 +116,7 @@ Exit code:
 - [📦 Installation Guide](./installation.md) - Detailed installation options
 - [🎯 When to Use ConcordIO](./when-to-use.md) - Understanding use cases
 - [🏗️ Core Concepts](./concepts.md) - Deep dive into concepts
-- [🛠️ CLI Tool Guide](../user-guides/cli-tool.md) - Complete CLI reference
+- [🛠️ CLI Tool Guide](../../src/ConcordIO.Tool/README.md) - Complete CLI reference
 - [📝 Publishing Tutorial](../tutorials/publishing-first-contract.md) - Detailed walkthrough
 
 ## Common Commands Cheat Sheet

@@ -298,7 +298,7 @@ dotnet tool list --global
 - [🚀 Quick Start Guide](./quick-start.md) - Get started in 5 minutes
 - [🎯 When to Use ConcordIO](./when-to-use.md) - Understanding use cases
 - [🏗️ Core Concepts](./concepts.md) - Learn the fundamentals
-- [🛠️ CLI Tool Guide](../user-guides/cli-tool.md) - Complete CLI reference
+- [🛠️ CLI Tool Guide](../../src/ConcordIO.Tool/README.md) - Complete CLI reference
 
 ## Getting Help
 

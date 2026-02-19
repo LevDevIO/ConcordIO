@@ -603,7 +603,8 @@ public class BookService : IBookService
 ## Next Steps
 
 - [Tutorial: CI/CD Setup](./cicd-setup.md) - Automate contract updates
-- [Client Customization Guide](../user-guides/client-customization.md) - Advanced client configuration
+- [CLI Tool Guide](../../src/ConcordIO.Tool/README.md) - Complete CLI reference
+- [AsyncAPI Client Package](../../src/ConcordIO.AsyncApi.Client/README.md) - AsyncAPI client customization
 - [Troubleshooting Guide](../troubleshooting/common-issues.md) - More solutions
 - [Examples](../examples/README.md) - Complete working examples
 

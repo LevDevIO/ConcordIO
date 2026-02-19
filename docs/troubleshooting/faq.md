@@ -133,7 +133,7 @@ Yes! For OpenAPI clients, use MSBuild target to update `OpenApiReference` metada
 </Target>
 ```
 
-See [Client Customization Guide](../user-guides/client-customization.md).
+See the [Consuming Contract Tutorial](../tutorials/consuming-contract.md) for detailed examples.
 
 ### Where is the generated code?
 
@@ -172,7 +172,7 @@ For OpenAPI:
 - Making optional fields required
 - Removing enum values
 
-See [Breaking Change Detection Guide](../user-guides/breaking-changes.md).
+See the [CLI Tool Guide](../../src/ConcordIO.Tool/README.md) for the `breaking` command usage.
 
 ### How does breaking change detection work?
 
@@ -229,7 +229,7 @@ Use MSBuild properties with namespace patterns:
 </PropertyGroup>
 ```
 
-See [AsyncAPI Contracts Guide](../user-guides/asyncapi-contracts.md).
+See [AsyncAPI Server Package](../../src/ConcordIO.AsyncApi.Server/README.md) for details.
 
 ### Why JSON instead of YAML for AsyncAPI?
 
@@ -264,7 +264,7 @@ Yes! ConcordIO client packages create `OpenApiReference` items that NSwag consum
 
 ### Do I need to learn NSwag?
 
-Basic usage works without NSwag knowledge. For advanced customization, understanding NSwag options helps. See [NSwag Options Reference](../reference/nswag-options.md).
+Basic usage works without NSwag knowledge. For advanced customization, understanding NSwag options helps. See the [CLI Tool Guide](../../src/ConcordIO.Tool/README.md) for NSwag defaults and the [Consuming Contract Tutorial](../tutorials/consuming-contract.md) for customization examples.
 
 ### Why do multi-target projects have issues?
 
@@ -324,7 +324,7 @@ Recommended approach:
 2. Use tools like GitVersion or semantic-release for version bumping
 3. Trigger package generation and publishing
 
-See [Package Versioning Strategy](../advanced/versioning-strategy.md).
+See the [CI/CD Tutorial](../tutorials/cicd-setup.md) for a complete implementation.
 
 ## Troubleshooting
 

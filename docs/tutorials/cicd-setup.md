@@ -737,8 +737,8 @@ You've learned how to:
 
 ## Next Steps
 
-- [Package Versioning Strategy](../advanced/versioning-strategy.md) - Deep dive into versioning
-- [Multi-Team Workflows](../advanced/multi-team.md) - Enterprise setups
-- [Security Best Practices](../advanced/security.md) - Secure your pipelines
+- [Publishing First Contract Tutorial](./publishing-first-contract.md) - Package creation basics
+- [Consuming Contract Tutorial](./consuming-contract.md) - Using published contracts
+- [Examples](../examples/README.md) - More CI/CD patterns
 
 **Congratulations!** Your contract management is now fully automated!

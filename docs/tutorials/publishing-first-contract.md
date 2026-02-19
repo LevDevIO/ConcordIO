@@ -646,8 +646,9 @@ Now that you've published your first contract:
 
 - [Tutorial: Consuming a Contract Package](./consuming-contract.md) - Learn how to use your published contract
 - [Tutorial: CI/CD Setup](./cicd-setup.md) - Automate the process
-- [Client Customization Guide](../user-guides/client-customization.md) - Customize generated clients
-- [Breaking Change Detection Guide](../user-guides/breaking-changes.md) - Deep dive into breaking changes
+- [CLI Tool Guide](../../src/ConcordIO.Tool/README.md) - Complete command reference
+- [AsyncAPI Server Package](../../src/ConcordIO.AsyncApi.Server/README.md) - Server-side AsyncAPI generation
+- [Examples](../examples/README.md) - More complete examples
 
 ## Summary
 

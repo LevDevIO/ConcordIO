@@ -750,7 +750,12 @@ See [Tutorial: CI/CD Setup](../tutorials/cicd-setup.md) for complete examples.
 
 ## Multi-Team Workflow
 
-See [Advanced: Multi-Team Workflows](../advanced/multi-team.md) for complete examples.
+Multi-team workflows involve coordinating contract updates across multiple development teams. Key patterns include:
+
+- Centralized contract repositories
+- Team-specific NuGet feeds or feed views
+- Breaking change approval workflows
+- Automated notifications
 
 ---
 

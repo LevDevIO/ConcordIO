@@ -359,8 +359,9 @@ Now that you understand the concepts:
 
 - [🚀 Quick Start Guide](./quick-start.md) - Try it yourself
 - [📝 Tutorial: Publishing Your First Contract](../tutorials/publishing-first-contract.md) - Step-by-step walkthrough
-- [🛠️ CLI Tool Guide](../user-guides/cli-tool.md) - Command reference
-- [🎨 Client Customization](../user-guides/client-customization.md) - Customize generated code
+- [🛠️ CLI Tool Guide](../../src/ConcordIO.Tool/README.md) - Command reference
+- [📄 AsyncAPI Client](../../src/ConcordIO.AsyncApi.Client/README.md) - Client customization for AsyncAPI
+- [📄 Tutorial: Consuming Contracts](../tutorials/consuming-contract.md) - Client customization for OpenAPI
 
 ## Questions?
 

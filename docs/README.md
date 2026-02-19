@@ -11,19 +11,15 @@ Welcome to the ConcordIO documentation! This comprehensive guide will help you u
 - [🏗️ Core Concepts](./getting-started/concepts.md) - Understanding contract packages, clients, and breaking changes
 
 ### User Guides
-- [🛠️ CLI Tool Guide](./user-guides/cli-tool.md) - Complete reference for the `concordio` CLI
-- [📄 OpenAPI Contracts](./user-guides/openapi-contracts.md) - Working with OpenAPI specifications
-- [⚡ AsyncAPI Contracts](./user-guides/asyncapi-contracts.md) - Working with AsyncAPI specifications
-- [🔌 Protocol Buffers](./user-guides/protocol-buffers.md) - Working with gRPC/Proto contracts
-- [🔍 Breaking Change Detection](./user-guides/breaking-changes.md) - Using the breaking command effectively
-- [🎨 Client Customization](./user-guides/client-customization.md) - Customizing generated clients
+- [🛠️ CLI Tool Guide](../src/ConcordIO.Tool/README.md) - Complete reference for the `concordio` CLI
+- [📄 AsyncAPI Client Package](../src/ConcordIO.AsyncApi.Client/README.md) - MSBuild task for generating C# from AsyncAPI specs
+- [⚡ AsyncAPI Server Package](../src/ConcordIO.AsyncApi.Server/README.md) - MSBuild task for generating AsyncAPI specs from .NET types
+- [📚 AsyncAPI Library](../src/ConcordIO.AsyncApi/README.md) - Shared AsyncAPI generation library
 
 ### Tutorials
 - [📝 Tutorial: Publishing Your First API Contract](./tutorials/publishing-first-contract.md)
 - [🔄 Tutorial: Consuming a Contract Package](./tutorials/consuming-contract.md)
 - [🚦 Tutorial: Setting Up CI/CD with Breaking Change Detection](./tutorials/cicd-setup.md)
-- [📨 Tutorial: AsyncAPI Messaging with MassTransit](./tutorials/asyncapi-masstransit.md)
-- [⚙️ Tutorial: Multi-Spec Packages](./tutorials/multi-spec-packages.md)
 
 ### Examples
 - [💡 Example Projects](./examples/README.md) - Complete working examples
@@ -39,18 +35,11 @@ Welcome to the ConcordIO documentation! This comprehensive guide will help you u
   - Troubleshooting Issues
   - Code Reviews
 
-### Reference
-- [📖 CLI Command Reference](./reference/cli-commands.md) - Complete command documentation
-- [⚙️ MSBuild Properties Reference](./reference/msbuild-properties.md) - All configurable properties
-- [🎯 NSwag Options Reference](./reference/nswag-options.md) - OpenAPI client customization options
-- [📋 Exit Codes](./reference/exit-codes.md) - Understanding command exit codes
-
-### Advanced Topics
-- [🔐 Security Best Practices](./advanced/security.md)
-- [📦 Package Versioning Strategy](./advanced/versioning-strategy.md)
-- [🏢 Multi-Team Workflows](./advanced/multi-team.md)
-- [🔧 Custom MSBuild Integration](./advanced/custom-msbuild.md)
-- [🐛 Debugging Generated Code](./advanced/debugging.md)
+### Architecture & Design
+- [🏗️ CLI Tool Architecture](../src/ConcordIO.Tool/ARCHITECTURE.md) - Internal design of the CLI tool
+- [🏗️ AsyncAPI Library Architecture](../src/ConcordIO.AsyncApi/ARCHITECTURE.md) - Core AsyncAPI generation design
+- [🏗️ AsyncAPI Client Architecture](../src/ConcordIO.AsyncApi.Client/ARCHITECTURE.md) - MSBuild task design for client generation
+- [🏗️ AsyncAPI Server Architecture](../src/ConcordIO.AsyncApi.Server/ARCHITECTURE.md) - MSBuild task design for spec generation
 
 ### Troubleshooting
 - [❓ FAQ](./troubleshooting/faq.md) - Frequently asked questions
@@ -59,8 +48,6 @@ Welcome to the ConcordIO documentation! This comprehensive guide will help you u
 
 ### Contributing
 - [🤝 Contributing Guide](../CONTRIBUTING.md) - How to contribute to ConcordIO
-- [🏗️ Architecture Overview](./contributing/architecture.md) - Understanding the codebase
-- [🧪 Testing Guide](./contributing/testing.md) - Running and writing tests
 
 ## 🔗 Quick Links
 
