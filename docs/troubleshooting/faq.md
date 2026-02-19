@@ -8,6 +8,26 @@ Common questions about ConcordIO, answered.
 
 ConcordIO is a .NET CLI tool and NuGet-based contract management toolchain. It helps teams package API contracts (OpenAPI, AsyncAPI, Protocol Buffers) as NuGet packages, generate clients automatically, and detect breaking changes.
 
+### Does ConcordIO get deployed to production?
+
+**No, absolutely not.** ConcordIO is strictly a **development-time and build-time toolchain**. It consists of:
+
+- **CLI tool** that runs during your development workflow
+- **MSBuild tasks** that execute during compilation
+
+**What happens at build time:**
+- ConcordIO generates client code and types from contracts
+- The generated code is compiled into your application
+- ConcordIO itself is NOT included in your binaries
+
+**What does NOT happen:**
+- ❌ ConcordIO is NOT bundled into your application
+- ❌ ConcordIO is NOT deployed to production
+- ❌ ConcordIO does NOT run at application runtime
+- ❌ No ConcordIO dependencies leak into your production code
+
+Think of ConcordIO like a compiler or code generator—it's only used during the build process, not at runtime.
+
 ### Is ConcordIO open source?
 
 Yes! ConcordIO is licensed under the Apache License 2.0. Source code is available on [GitHub](https://github.com/LevDevIO/ConcordIO).

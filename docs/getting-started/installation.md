@@ -2,6 +2,9 @@
 
 Complete installation instructions for ConcordIO tools and packages.
 
+> ⚠️ **Development-Time Toolchain**  
+> ConcordIO is a **build-time dependency only**. It runs during compilation and CI/CD to generate code, but **does NOT deploy to production**. The tools and tasks execute during the build process and are not bundled into your application binaries.
+
 ## Prerequisites
 
 ### Required

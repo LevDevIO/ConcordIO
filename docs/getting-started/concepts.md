@@ -2,6 +2,9 @@
 
 Understanding ConcordIO's key concepts will help you use it effectively. This guide explains the fundamental building blocks.
 
+> ⚠️ **Important: Build-Time Only**  
+> Before diving into concepts, understand that **ConcordIO is a development and build-time toolchain**. It generates code during compilation but does not get included in your runtime binaries. Think of it as a sophisticated code generator—like Roslyn source generators or T4 templates—that runs during the build process.
+
 ## 📦 Contract Packages
 
 **What**: NuGet packages containing API specification files
@@ -75,6 +78,26 @@ MyApi.Contract.Client.1.0.0.nupkg
 Updates `<ConcordIOAsyncApiContract>` metadata → Task generates C# types
 
 **Key Point**: Client packages are **development dependencies** — they affect build but don't ship with your app.
+
+### Development Dependency Pattern
+
+Client packages use the `<PrivateAssets>all</PrivateAssets>` pattern, which means:
+
+```xml
+<PackageReference Include="MyApi.Contract.Client" Version="1.0.0">
+  <PrivateAssets>all</PrivateAssets>
+</PackageReference>
+```
+
+**What this means:**
+- ✅ Package is used during build to generate code
+- ✅ Generated code is compiled into your application
+- ❌ ConcordIO packages are NOT included in your output
+- ❌ No ConcordIO dependencies in your production binaries
+
+**What gets deployed:**
+- Your application code + generated client code
+- No ConcordIO tools or MSBuild tasks
 
 ## 🔍 Specification Kinds
 

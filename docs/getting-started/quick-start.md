@@ -2,6 +2,9 @@
 
 Get up and running with ConcordIO in 5 minutes! This guide walks you through installing the tool and publishing your first API contract.
 
+> 💡 **What is ConcordIO?**  
+> ConcordIO is a **development-time toolchain** (CLI + MSBuild tasks) that generates client code from API contracts at build time. It does NOT run at application runtime or get deployed to production—only the generated code is compiled into your application.
+
 ## Prerequisites
 
 - ✅ **.NET 10 SDK** or later installed

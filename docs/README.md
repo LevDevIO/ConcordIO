@@ -4,6 +4,19 @@ Welcome to the ConcordIO documentation! This comprehensive guide will help you u
 
 > 💡 **Tip**: This documentation is also available on [GitHub Wiki](https://github.com/LevDevIO/ConcordIO/wiki) for easier browsing. The Wiki is automatically synced with the repository.
 
+> ⚠️ **Important: Development-Time Toolchain Only**  
+> ConcordIO is strictly a **development and build-time dependency**. It consists of:
+> - **CLI tool** for generating contract packages
+> - **MSBuild tasks** that run during compilation to generate code
+> 
+> **ConcordIO does NOT**:
+> - ❌ Get bundled into your application binaries
+> - ❌ Deploy to production environments
+> - ❌ Run at application runtime
+> - ❌ Leak into your production code
+> 
+> All code generation happens at build time, and only the generated output (client code, types) is compiled into your application—not ConcordIO itself.
+
 ## 📚 Table of Contents
 
 ### Getting Started

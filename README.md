@@ -2,6 +2,8 @@
 
 ConcordIO is an open source, **NuGet-first** contract management toolchain for **.NET**, focused on making API contracts easy to **publish**, **consume**, and **govern**.
 
+> ⚠️ **Important**: ConcordIO is a **development-time and build-time toolchain only**. It consists of MSBuild tasks and a CLI tool that run during compilation and CI/CD. **ConcordIO does NOT get bundled into your runtime binaries or deployed to production**. It's a dev/build dependency that generates code at compile time but does not leak into your production code or deployments.
+
 ## 📚 Documentation
 
 **[→ View Complete Documentation](./docs/README.md)** | **[📖 Browse on Wiki](https://github.com/LevDevIO/ConcordIO/wiki)**
