@@ -81,6 +81,8 @@ Consumers need to update their MSBuild imports.
 - Write tests for all new features and bug fixes
 - Run unit tests: `dotnet test src/ConcordIO.Tool.sln --filter "FullyQualifiedName!~E2E"`
 - Run E2E tests: `dotnet test src/ConcordIO.Tool.sln --filter "FullyQualifiedName~E2E"`
+- E2E tests that build temporary projects restore AsyncAPI packages from the local test feed using the exact packed version (including pre-release versions).
+- E2E test projects use a single target framework (net10.0) to avoid multi-TFM MSBuild orchestration issues.
 
 ## Documentation
 

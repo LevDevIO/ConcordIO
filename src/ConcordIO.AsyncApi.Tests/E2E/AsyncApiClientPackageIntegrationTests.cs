@@ -354,14 +354,14 @@ public class AsyncApiClientPackageIntegrationTests
 		var csproj = $"""
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+		<TargetFramework>net10.0</TargetFramework>
 		<OutputType>Library</OutputType>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>{propertyOverridesXml}
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ConcordIO.AsyncApi.Client" Version="*" />
+		<PackageReference Include="ConcordIO.AsyncApi.Client" Version="{_fixture.ClientPackageVersion}" />
 	</ItemGroup>
   
 	<ItemGroup>
@@ -408,17 +408,17 @@ public class AsyncApiClientPackageIntegrationTests
 		var projectDir = Path.Combine(_fixture.TestDir, projectName);
 		Directory.CreateDirectory(projectDir);
 
-		var csproj = """
+		var csproj = $"""
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+		<TargetFramework>net10.0</TargetFramework>
 		<OutputType>Library</OutputType>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ConcordIO.AsyncApi.Client" Version="*" />
+		<PackageReference Include="ConcordIO.AsyncApi.Client" Version="{_fixture.ClientPackageVersion}" />
 	</ItemGroup>
 </Project>
 """;
@@ -454,17 +454,17 @@ public class AsyncApiClientPackageIntegrationTests
 			Path.Combine(projectDir, "commands.yaml"),
 			GetSampleAsyncApiSpec("yaml", "MyService.Contracts.Commands", "CreateOrderCommand"));
 
-		var csproj = """
+		var csproj = $"""
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+		<TargetFramework>net10.0</TargetFramework>
 		<OutputType>Library</OutputType>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ConcordIO.AsyncApi.Client" Version="*" />
+		<PackageReference Include="ConcordIO.AsyncApi.Client" Version="{_fixture.ClientPackageVersion}" />
 	</ItemGroup>
   
 	<ItemGroup>
