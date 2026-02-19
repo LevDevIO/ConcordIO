@@ -1,20 +1,14 @@
-mode: Mainline
-branches:
-  main:
-    regex: ^main$
-    label: ''
-    increment: Inherit
-  feature:
-    regex: ^features?[/-]
-    label: useBranchName
-    increment: Inherit
-  pull-request:
-    regex: ^(pull|pull\-requests|pr)[/-]
-    label: PullRequest
-    increment: Inherit
+workflow: GitHubFlow/v1
+mode: ContinuousDeployment
+tag-prefix: '[vV]?'
 major-version-bump-message: "^(feat|fix|docs|style|refactor|perf|test|chore)(\\([a-z0-9\\-]+\\))?!:"
 minor-version-bump-message: "^feat(\\([a-z0-9\\-]+\\))?:"
 patch-version-bump-message: "^(fix|docs|style|refactor|perf|test|chore)(\\([a-z0-9\\-]+\\))?:"
 no-bump-message: "^(build|ci)(\\([a-z0-9\\-]+\\))?:"
 commit-message-incrementing: Enabled
-tag-prefix: '[vV]?'
+branches:
+  main:
+    label: ''
+  feature:
+    regex: ^features?[/-]
+    label: useBranchName
