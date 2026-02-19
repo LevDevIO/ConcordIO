@@ -126,6 +126,10 @@ ConcordIO packages are published to two NuGet sources:
    - Source: `https://nuget.pkg.github.com/LevDevIO/index.json`
    - Requires GitHub authentication to consume packages
 
+**NuGet.config**
+
+The repository root includes a `NuGet.config` that adds the GitHub Packages source. For this public repository, consuming packages from GitHub Packages does not require authentication.
+
 2. **NuGet.org** - Public NuGet gallery
    - Published only via manual workflow trigger
    - Requires `NUGET_API_KEY` secret to be configured
