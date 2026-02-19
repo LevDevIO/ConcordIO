@@ -79,10 +79,7 @@ jobs:
         run: dotnet tool install --global ConcordIO.Tool
       
       - name: Install NuGet CLI
-        run: |
-          curl -o nuget.exe https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
-          sudo mv nuget.exe /usr/local/bin/nuget
-          sudo chmod +x /usr/local/bin/nuget
+        uses: NuGet/setup-nuget@v2
       
       - name: Check for breaking changes
         id: breaking
@@ -638,7 +635,28 @@ Update `.github/workflows/publish-contracts.yml`:
 
 ## Best Practices
 
-### 1. Use Separate Feeds per Environment
+### 1. Pin Third-Party Actions to Commit SHAs
+
+⚠️ **Security**: When using third-party GitHub Actions, pin them to specific commit SHAs instead of mutable version tags to prevent supply chain attacks:
+
+```yaml
+# ❌ Insecure: Mutable tag can be retargeted
+- uses: gittools/actions/gitversion/setup@v0
+
+# ✅ Secure: Pinned to specific commit SHA
+- uses: gittools/actions/gitversion/setup@6da9f3f8e5c89fb0488288a2f2b2ef18b69a1dc4  # v0.10.2
+```
+
+**Why this matters**: If a third-party action repository is compromised or a tag is retargeted, arbitrary code could run in your workflow with access to secrets and write permissions. Pin to commit SHAs and update them deliberately as part of your dependency management.
+
+**Examples from this tutorial**:
+- `gittools/actions/gitversion/*` - Used for version calculation
+- `slackapi/slack-github-action` - Used for notifications
+- `conventional-changelog/standard-version` - Used for changelog generation
+
+Use [Dependabot](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/keeping-your-actions-up-to-date-with-dependabot) to keep action SHAs updated automatically.
+
+### 2. Use Separate Feeds per Environment
 
 ```bash
 # Development
@@ -651,14 +669,14 @@ dotnet nuget push *.nupkg --source https://staging-feed.example.com
 dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json
 ```
 
-### 2. Pin Dependencies in CI
+### 3. Pin Dependencies in CI
 
 ```yaml
 - name: Install ConcordIO
   run: dotnet tool install --global ConcordIO.Tool --version 0.8.0  # Pin version
 ```
 
-### 3. Cache NuGet Packages
+### 4. Cache NuGet Packages
 
 ```yaml
 - name: Cache NuGet packages
@@ -670,17 +688,18 @@ dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json
       ${{ runner.os }}-nuget-
 ```
 
-### 4. Validate Specs Before Publishing
+### 5. Validate Specs Before Publishing
 
 ```yaml
 - name: Validate OpenAPI Spec
   run: npx @stoplight/spectral-cli lint specs/api.yaml
 ```
 
-### 5. Generate Changelog Automatically
+### 6. Generate Changelog Automatically
 
 ```yaml
 - name: Generate Changelog
+  # ⚠️ Security: Pin to commit SHA in production
   uses: conventional-changelog/standard-version@v9
 ```
 

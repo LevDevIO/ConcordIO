@@ -14,6 +14,8 @@ on:
 jobs:
   sync-wiki:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout main repository
@@ -49,7 +51,12 @@ jobs:
           
           # Convert links for wiki format
           find . -name "*.md" -type f | while read -r file; do
-            # Remove .md extensions from relative links
+            # Remove .md extensions from relative links (including anchors)
+            # [text](../path/file.md) -> [text](path/file)
+            # [text](file.md#section) -> [text](file#section)
+            sed -i 's|\(\[[^]]*\](\)\.\./\([^)#]*\)\.md#\([^)]*\))|\1\2#\3)|g' "$file"
+            sed -i 's|\(\[[^]]*\](\)\./\([^)#]*\)\.md#\([^)]*\))|\1\2#\3)|g' "$file"
+            sed -i 's|\(\[[^]]*\](\)\([^/ )#]*\)\.md#\([^)]*\))|\1\2#\3)|g' "$file"
             sed -i 's|\(\[[^]]*\](\)\.\./\([^)]*\)\.md)|\1\2)|g' "$file"
             sed -i 's|\(\[[^]]*\](\)\./\([^)]*\)\.md)|\1\2)|g' "$file"
             sed -i 's|\(\[[^]]*\](\)\([^/)]*\)\.md)|\1\2)|g' "$file"

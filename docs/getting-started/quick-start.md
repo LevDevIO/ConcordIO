@@ -174,8 +174,24 @@ choco install nuget.commandline
 # macOS (via Homebrew)
 brew install nuget
 
-# Linux (via wget)
-wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+# Linux (via Mono + nuget.exe + wrapper)
+# 1) Install Mono (example for Debian/Ubuntu)
+sudo apt-get update
+sudo apt-get install -y mono-runtime
+
+# 2) Download nuget.exe to a user-local directory
+mkdir -p "$HOME/.nuget-cli"
+wget -O "$HOME/.nuget-cli/nuget.exe" https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+
+# 3) Create a 'nuget' wrapper script
+cat > "$HOME/.nuget-cli/nuget" << 'EOF'
+#!/usr/bin/env bash
+exec mono "$HOME/.nuget-cli/nuget.exe" "$@"
+EOF
+chmod +x "$HOME/.nuget-cli/nuget"
+
+# 4) Add to PATH for the current shell session
+export PATH="$HOME/.nuget-cli:$PATH"
 ```
 
 ### Missing generated client types

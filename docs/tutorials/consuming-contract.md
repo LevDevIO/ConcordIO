@@ -139,11 +139,19 @@ try
         }
     }
 
-    // Get a specific book
-    var bookId = response.Books.First().Id;
-    Console.WriteLine($"\nFetching book {bookId}...");
-    var book = await client.GetBookAsync(bookId);
-    Console.WriteLine($"Got: {book.Title}");
+    // Get a specific book (if any exist)
+    var firstBook = response.Books.FirstOrDefault();
+    if (firstBook is null)
+    {
+        Console.WriteLine("\nNo books available to fetch individually.");
+    }
+    else
+    {
+        var bookId = firstBook.Id;
+        Console.WriteLine($"\nFetching book {bookId}...");
+        var book = await client.GetBookAsync(bookId);
+        Console.WriteLine($"Got: {book.Title}");
+    }
     
     // Create a new book
     Console.WriteLine("\nCreating a new book...");

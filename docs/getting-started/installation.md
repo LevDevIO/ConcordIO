@@ -149,7 +149,27 @@ Or in `NuGet.config`:
 </configuration>
 ```
 
-For this public repository, consuming packages from GitHub Packages does not require authentication.
+**Authentication**: While this repository is public, GitHub Packages typically requires authentication even for consuming public packages. You may need to configure a Personal Access Token (PAT) with `read:packages` scope:
+
+1. Create a PAT: https://github.com/settings/tokens/new (select `read:packages` scope)
+2. Add to `NuGet.config`:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="github-levdevio" value="https://nuget.pkg.github.com/LevDevIO/index.json" />
+  </packageSources>
+  <packageSourceCredentials>
+    <github-levdevio>
+      <add key="Username" value="YOUR_GITHUB_USERNAME" />
+      <add key="ClearTextPassword" value="YOUR_PAT_TOKEN" />
+    </github-levdevio>
+  </packageSourceCredentials>
+</configuration>
+```
+
+Alternatively, use the `dotnet nuget add source` command with `--username` and `--password` flags.
 
 ### NuGet.org (Public Releases)
 

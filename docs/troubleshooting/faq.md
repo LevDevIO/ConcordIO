@@ -77,7 +77,26 @@ For `generate` and `pack` commands, NuGet CLI is not required.
 
 - **Windows**: `choco install nuget.commandline`
 - **macOS**: `brew install nuget`
-- **Linux**: Download from [nuget.org](https://www.nuget.org/downloads)
+- **Linux**: Install Mono and run `nuget.exe` via a wrapper:
+  ```bash
+  # Install Mono (example for Debian/Ubuntu)
+  sudo apt-get update
+  sudo apt-get install -y mono-runtime
+
+  # Download nuget.exe
+  wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -O nuget.exe
+
+  # Create a convenience wrapper script called 'nuget'
+  cat > nuget << 'EOF'
+  #!/usr/bin/env bash
+  exec mono "$(dirname "$0")/nuget.exe" "$@"
+  EOF
+  chmod +x nuget
+  
+  # Add to PATH or move to a location on PATH
+  sudo mv nuget /usr/local/bin/
+  sudo mv nuget.exe /usr/local/bin/
+  ```
 
 ## Contract Packages
 

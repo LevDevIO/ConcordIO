@@ -40,7 +40,14 @@ cd "$WIKI_DIR"
 
 # Pull latest changes from wiki
 echo "📥 Pulling latest changes from wiki..."
-git pull origin master || git pull origin main || true
+if git ls-remote --exit-code --heads origin master >/dev/null 2>&1; then
+    git pull origin master
+elif git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
+    git pull origin main
+else
+    echo "⚠️  Warning: Neither 'master' nor 'main' branch exists on the wiki remote"
+    echo "This is normal for a new wiki. Continuing with sync..."
+fi
 
 # Clean the wiki directory (except .git)
 echo "🧹 Cleaning wiki directory..."
@@ -62,17 +69,28 @@ convert_links() {
     local file="$1"
     echo "  Converting links in: $file"
     
+    # Detect OS for sed compatibility
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        SED_CMD="sed -i ''"
+    else
+        SED_CMD="sed -i"
+    fi
+    
     # Convert relative .md links to wiki format (remove .md extension)
-    # [text](./path/file.md) -> [text](path/file)
-    # [text](../path/file.md) -> [text](path/file)
-    sed -i 's|\(\[[^]]*\](\)\.\./\([^)]*\)\.md)|\1\2)|g' "$file"
-    sed -i 's|\(\[[^]]*\](\)\./\([^)]*\)\.md)|\1\2)|g' "$file"
-    sed -i 's|\(\[[^]]*\](\)\([^/)]*\)\.md)|\1\2)|g' "$file"
+    # Handle anchors first: [text](file.md#section) -> [text](file#section)
+    $SED_CMD 's|\(\[[^]]*\](\)\.\./\([^)#]*\)\.md#\([^)]*\))|\1\2#\3)|g' "$file"
+    $SED_CMD 's|\(\[[^]]*\](\)\./\([^)#]*\)\.md#\([^)]*\))|\1\2#\3)|g' "$file"
+    $SED_CMD 's|\(\[[^]]*\](\)\([^/ )#]*\)\.md#\([^)]*\))|\1\2#\3)|g' "$file"
+    
+    # Then handle links without anchors: [text](./path/file.md) -> [text](path/file)
+    $SED_CMD 's|\(\[[^]]*\](\)\.\./\([^)]*\)\.md)|\1\2)|g' "$file"
+    $SED_CMD 's|\(\[[^]]*\](\)\./\([^)]*\)\.md)|\1\2)|g' "$file"
+    $SED_CMD 's|\(\[[^]]*\](\)\([^/)]*\)\.md)|\1\2)|g' "$file"
     
     # Convert links to files in src/ to point to main repository
     # [text](../../src/...) -> [text](https://github.com/LevDevIO/ConcordIO/tree/main/src/...)
-    sed -i 's|\(\[[^]]*\](\)\.\./\.\./src/\([^)]*\))|\1https://github.com/LevDevIO/ConcordIO/tree/main/src/\2)|g' "$file"
-    sed -i 's|\(\[[^]]*\](\)\.\./src/\([^)]*\))|\1https://github.com/LevDevIO/ConcordIO/tree/main/src/\2)|g' "$file"
+    $SED_CMD 's|\(\[[^]]*\](\)\.\./\.\./src/\([^)]*\))|\1https://github.com/LevDevIO/ConcordIO/tree/main/src/\2)|g' "$file"
+    $SED_CMD 's|\(\[[^]]*\](\)\.\./src/\([^)]*\))|\1https://github.com/LevDevIO/ConcordIO/tree/main/src/\2)|g' "$file"
 }
 
 # Convert links in all markdown files

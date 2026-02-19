@@ -147,8 +147,8 @@ To enable the wiki integration:
 ## Documentation
 
 For detailed information, see:
-- [WIKI_SETUP.md](../docs/WIKI_SETUP.md) - Complete setup guide
-- [WIKI_MAINTENANCE.md](../docs/WIKI_MAINTENANCE.md) - Maintenance reference
+- [WIKI_SETUP.md](docs/WIKI_SETUP.md) - Complete setup guide
+- [WIKI_MAINTENANCE.md](docs/WIKI_MAINTENANCE.md) - Maintenance reference
 
 ## Questions?
 
