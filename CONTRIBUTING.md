@@ -129,7 +129,7 @@ ConcordIO packages are published to two NuGet sources:
 
 We use [GitVersion](https://gitversion.net/) to calculate semantic versions from the Git history and our Conventional Commits.
 
-The exact calculation rules (branch configuration and increment behavior) are defined in `GitVersion.yml` and may evolve over time. As a contributor, you can generally assume:
+Initial version is set by a tag on `main` (e.g., `v0.8.0`). The exact calculation rules (branch configuration and increment behavior) are defined in `GitVersion.yml` and may evolve over time. As a contributor, you can generally assume:
 
 - `feat:` commits typically result in a **minor** version bump
 - `fix:`, `docs:`, and similar non-breaking commits typically result in a **patch** version bump
