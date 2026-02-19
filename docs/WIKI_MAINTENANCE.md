@@ -19,14 +19,21 @@ If you need to manually sync documentation to the wiki:
 ### Option 1: Run Script Locally
 
 ```bash
-# From repository root
+# From repository root (macOS/Linux)
+./scripts/sync-to-wiki.sh
+```
+
+```bash
+# From repository root (Windows, Git Bash)
 ./scripts/sync-to-wiki.sh
 ```
 
 **Prerequisites:**
 - Wiki must be enabled on GitHub
 - You must have write access to the repository
-- Wiki repository must be cloned at `../ConcordIO.wiki`
+- Python must be available (`python3` or `python`)
+- Wiki repository is cloned at `../ConcordIO.wiki` by default
+  - Override with `WIKI_DIR=/custom/path` if needed
 
 ### Option 2: Trigger GitHub Actions
 
@@ -67,9 +74,11 @@ If the wiki has never been synced before:
 ### What Gets Synced
 
 - All markdown files in `docs/`
-- Directory structure is preserved
+- Directory structure is flattened to the wiki root
+  - Example: `getting-started/quick-start.md` -> `getting-started-quick-start.md`
 - `docs/README.md` becomes wiki `Home.md`
 - Links are automatically converted for wiki format
+- Internal wiki links are validated during sync (fail-fast on broken links)
 
 ### What Doesn't Get Synced
 
@@ -135,26 +144,21 @@ The sync process automatically converts links:
 After sync, the wiki should have:
 
 ```
-Home.md                     (from docs/README.md)
-_Sidebar.md                 (navigation)
-_Footer.md                  (footer links)
-getting-started/
-  ├── quick-start.md
-  ├── installation.md
-  ├── when-to-use.md
-  └── concepts.md
-tutorials/
-  ├── publishing-first-contract.md
-  ├── consuming-contract.md
-  └── cicd-setup.md
-troubleshooting/
-  ├── faq.md
-  ├── common-issues.md
-  └── known-limitations.md
-examples/
-  └── README.md
-ai-prompts/
-  └── README.md
+Home.md                          (from docs/README.md)
+_Sidebar.md                      (navigation)
+_Footer.md                       (footer links)
+getting-started-quick-start.md
+getting-started-installation.md
+getting-started-when-to-use.md
+getting-started-concepts.md
+tutorials-publishing-first-contract.md
+tutorials-consuming-contract.md
+tutorials-cicd-setup.md
+troubleshooting-faq.md
+troubleshooting-common-issues.md
+troubleshooting-known-limitations.md
+examples-README.md
+ai-prompts-README.md
 ```
 
 ## Best Practices

@@ -7,7 +7,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DOCS_DIR="$REPO_ROOT/docs"
-WIKI_DIR="$REPO_ROOT/../ConcordIO.wiki"
+WIKI_DIR="${WIKI_DIR:-$REPO_ROOT/../ConcordIO.wiki}"
+PYTHON_BIN="${PYTHON_BIN:-}"
 
 echo "========================================="
 echo "ConcordIO Wiki Sync Script"
@@ -20,11 +21,24 @@ if [ ! -d "$DOCS_DIR" ]; then
     exit 1
 fi
 
+# Resolve Python executable before modifying the wiki directory
+if [ -z "$PYTHON_BIN" ]; then
+    if command -v python3 >/dev/null 2>&1; then
+        PYTHON_BIN="python3"
+    elif command -v python >/dev/null 2>&1; then
+        PYTHON_BIN="python"
+    else
+        echo "❌ Error: Python is required but was not found (python3 or python)"
+        exit 1
+    fi
+fi
+
 # Check if wiki repository is cloned
 if [ ! -d "$WIKI_DIR" ]; then
     echo "📥 Wiki repository not found. Cloning..."
-    cd "$REPO_ROOT/.."
-    git clone https://github.com/LevDevIO/ConcordIO.wiki.git
+    mkdir -p "$(dirname "$WIKI_DIR")"
+    cd "$(dirname "$WIKI_DIR")"
+    git clone https://github.com/LevDevIO/ConcordIO.wiki.git "$(basename "$WIKI_DIR")"
     
     if [ ! -d "$WIKI_DIR" ]; then
         echo "❌ Error: Failed to clone wiki repository"
@@ -57,7 +71,7 @@ find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 # GitHub Wiki does not support subdirectory pages; all pages must be at the root.
 # Subdirectory paths are flattened: getting-started/quick-start.md -> getting-started-quick-start.md
 echo "📋 Flattening and copying documentation files with link conversion..."
-python3 - "$DOCS_DIR" "$WIKI_DIR" << 'PYEOF'
+"$PYTHON_BIN" - "$DOCS_DIR" "$WIKI_DIR" << 'PYEOF'
 import os
 import re
 import sys
@@ -87,10 +101,15 @@ def convert_link(src_abs, link):
     if '#' in link:
         link, anchor = link.split('#', 1)
         anchor = '#' + anchor
-    if not link or not link.endswith('.md'):
+    if not link:
+        return link + anchor
+    candidate = link
+    if not link.endswith('.md') and '.' not in os.path.basename(link):
+        candidate = link + '.md'
+    if not candidate.endswith('.md'):
         return link + anchor
     src_dir = os.path.dirname(src_abs)
-    abs_target = os.path.abspath(os.path.join(src_dir, link))
+    abs_target = os.path.abspath(os.path.join(src_dir, candidate))
     # Link points into the docs tree: use flattened wiki page name
     if abs_target in path_to_wiki:
         return path_to_wiki[abs_target] + anchor
@@ -115,6 +134,35 @@ for abs_path, wiki_name in sorted(path_to_wiki.items()):
     print(f'  Wrote: {wiki_name}.md')
 
 print(f'Processed {len(path_to_wiki)} files')
+
+wiki_pages = set(path_to_wiki.values()) | {'Home', '_Sidebar', '_Footer'}
+broken_links = []
+link_pattern = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
+
+def is_external(target):
+    return target.startswith(('http://', 'https://', 'mailto:', '#'))
+
+def has_extension(target):
+    return '.' in os.path.basename(target)
+
+for abs_path, wiki_name in sorted(path_to_wiki.items()):
+    dest = os.path.join(wiki_dir, wiki_name + '.md')
+    with open(dest, 'r', encoding='utf-8') as f:
+        content = f.read()
+    for match in link_pattern.finditer(content):
+        target = match.group(2)
+        if '#' in target:
+            target = target.split('#', 1)[0]
+        if not target or is_external(target) or has_extension(target):
+            continue
+        if target not in wiki_pages:
+            broken_links.append((wiki_name, match.group(2)))
+
+if broken_links:
+    print('❌ Broken wiki links detected:')
+    for page, link in broken_links:
+        print(f'  {page}.md -> {link}')
+    raise SystemExit(1)
 PYEOF
 
 # Create Home.md from the flattened README

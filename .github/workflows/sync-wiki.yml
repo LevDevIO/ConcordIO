@@ -6,8 +6,8 @@ on:
     branches:
       - main
     paths:
-      - 'docs/**'
-  
+      - "docs/**"
+
   # Allow manual trigger
   workflow_dispatch:
 
@@ -16,165 +16,27 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout main repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      
+
       - name: Checkout wiki repository
         uses: actions/checkout@v4
         with:
           repository: ${{ github.repository }}.wiki
           path: wiki
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      
+
       - name: Sync documentation to wiki
+        env:
+          WIKI_DIR: ${{ github.workspace }}/wiki
         run: |
-          # Clean wiki directory (except .git)
-          cd wiki
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-
-          # Flatten docs into wiki root and convert links.
-          # GitHub Wiki does not support subdirectory pages; all pages must be at the
-          # root of the wiki repository.  Subdirectory paths are joined with hyphens:
-          #   getting-started/quick-start.md -> getting-started-quick-start.md
-          # All relative .md links are resolved and rewritten to the flat wiki names.
-          # Links that point outside the docs tree (e.g. src/) become GitHub blob URLs.
-          cat > /tmp/sync_wiki.py << 'PYEOF'
-          import os, re, sys
-
-          docs_dir  = os.path.abspath(sys.argv[1])
-          wiki_dir  = os.path.abspath(sys.argv[2])
-          repo_root = os.path.dirname(docs_dir)
-          github_repo = sys.argv[3]
-
-          # Build mapping: abs path -> wiki page name (without .md)
-          path_to_wiki = {}
-          for root, dirs, files in os.walk(docs_dir):
-              for fname in files:
-                  if fname.endswith('.md'):
-                      abs_path = os.path.abspath(os.path.join(root, fname))
-                      rel = os.path.relpath(abs_path, docs_dir)
-                      wiki_name = rel.replace(os.sep, '-').replace('/', '-')[:-3]
-                      path_to_wiki[abs_path] = wiki_name
-
-          def convert_link(src_abs, link):
-              if link.startswith(('http://', 'https://', '#', 'mailto:')):
-                  return link
-              anchor = ''
-              if '#' in link:
-                  link, anchor = link.split('#', 1)
-                  anchor = '#' + anchor
-              if not link or not link.endswith('.md'):
-                  return link + anchor
-              abs_target = os.path.abspath(os.path.join(os.path.dirname(src_abs), link))
-              if abs_target in path_to_wiki:
-                  return path_to_wiki[abs_target] + anchor
-              if abs_target.startswith(repo_root + os.sep) or abs_target == repo_root:
-                  github_rel = os.path.relpath(abs_target, repo_root).replace(os.sep, '/')
-                  return f'https://github.com/{github_repo}/blob/main/{github_rel}{anchor}'
-              return link + anchor
-
-          for abs_path, wiki_name in sorted(path_to_wiki.items()):
-              with open(abs_path, 'r', encoding='utf-8') as f:
-                  content = f.read()
-              def replace_match(m, _s=abs_path):
-                  return '[' + m.group(1) + '](' + convert_link(_s, m.group(2)) + ')'
-              content = re.sub(r'\[([^\]]*)\]\(([^)]+)\)', replace_match, content)
-              dest = os.path.join(wiki_dir, wiki_name + '.md')
-              with open(dest, 'w', encoding='utf-8') as f:
-                  f.write(content)
-              print(f'  Wrote: {wiki_name}.md')
-
-          print(f'Processed {len(path_to_wiki)} files')
-          PYEOF
-
-          # Strip the leading indentation added by the YAML heredoc
-          sed -i 's/^          //' /tmp/sync_wiki.py
-          python3 /tmp/sync_wiki.py "$(pwd)/../docs" "$(pwd)" "${{ github.repository }}"
-
-          # Create Home.md from the flattened README
-          if [ -f "README.md" ]; then
-            cp README.md Home.md
-          fi
-
-          # Create sidebar (flat wiki page names — no subdirectory paths)
-          cat > _Sidebar.md << 'EOF'
-          ## ConcordIO Documentation
-
-          ### Getting Started
-          * [Quick Start](getting-started-quick-start)
-          * [Installation](getting-started-installation)
-          * [When to Use](getting-started-when-to-use)
-          * [Core Concepts](getting-started-concepts)
-
-          ### Tutorials
-          * [Publishing First Contract](tutorials-publishing-first-contract)
-          * [Consuming Contract](tutorials-consuming-contract)
-          * [CI/CD Setup](tutorials-cicd-setup)
-
-          ### Examples
-          * [Example Projects](examples-README)
-
-          ### AI & Automation
-          * [AI Prompts](ai-prompts-README)
-
-          ### Troubleshooting
-          * [FAQ](troubleshooting-faq)
-          * [Common Issues](troubleshooting-common-issues)
-          * [Known Limitations](troubleshooting-known-limitations)
-
-          ### Resources
-          * [Main Repository](https://github.com/${{ github.repository }})
-          * [Contributing](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md)
-          EOF
-          sed -i 's/^          //' _Sidebar.md
-
-          # Create footer
-          cat > _Footer.md << 'EOF'
-          ---
-          **ConcordIO** | [GitHub](https://github.com/${{ github.repository }}) | [Issues](https://github.com/${{ github.repository }}/issues) | [Releases](https://github.com/${{ github.repository }}/releases)
-          EOF
-          sed -i 's/^          //' _Footer.md
-      
-      - name: Check for changes
-        id: check_changes
-        run: |
-          cd wiki
-          if [ -z "$(git status --porcelain)" ]; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "No changes detected"
-          else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Changes detected:"
-            git status --short
-          fi
-      
-      - name: Commit and push changes
-        if: steps.check_changes.outputs.has_changes == 'true'
-        run: |
-          cd wiki
-          git add .
-          git commit -m "docs: sync from main repository
-
-          Updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          Source commit: ${{ github.sha }}
-          Workflow: ${{ github.workflow }}"
-          
-          git push origin master || git push origin main
-      
-      - name: Summary
-        run: |
-          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
-            echo "✅ Wiki updated successfully"
-            echo "View at: https://github.com/${{ github.repository }}/wiki"
-          else
-            echo "✅ Wiki already up to date"
-          fi
+          bash scripts/sync-to-wiki.sh
