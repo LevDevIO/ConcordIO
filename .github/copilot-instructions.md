@@ -8,6 +8,10 @@ ConcordIO is a .NET CLI tool and NuGet-based contract management toolchain. It g
 
 **EVERY code change MUST include corresponding documentation updates. No exceptions.**
 
+## ⚠️ MANDATORY: Conventional Commits
+
+**Always use Conventional Commits for all commits.** Examples: `ci: update workflows`, `docs: refresh README`, `fix: correct timeout handling`.
+
 ### Rules for ALL Changes
 
 1. **XML Documentation**: Every public class, method, property, and interface MUST have XML doc comments with:

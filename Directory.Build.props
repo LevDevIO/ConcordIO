@@ -1,0 +1,113 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Version
+
+      - Purpose:
+          Logical product version used throughout the solution. This is the canonical
+          semantic version that other version properties (PackageVersion, InformationalVersion)
+          flow from.
+      - Consumers:
+          * NuGet packing (`dotnet pack` / `msbuild /t:Pack`) when PackageVersion is not
+            explicitly overridden.
+          * Assembly metadata in SDK-style projects that rely on the SDK defaults.
+      - Default / behavior:
+          * In CI/CD, GitVersion is expected to set $(Version) to a concrete semantic
+            version (e.g. 1.2.3, 1.2.3-beta.1).
+          * For local development, if $(Version) is empty, we default to "0.0.1-local"
+            to make it obvious that the build is not intended for publishing.
+      - Troubleshooting:
+          * If you see packages published as "0.0.1-local", your CI pipeline is not
+            configuring GitVersion correctly, or this default is being used in a
+            publishing context. Fix the pipeline to stamp a real version and/or
+            explicitly set Version before packing.
+    -->
+    <Version Condition="'$(Version)' == ''">0.0.1-local</Version>
+
+    <!--
+      PackageVersion
+
+      - Purpose:
+          NuGet package version written into .nupkg metadata. This is the version
+          that consumers see and reference.
+      - Consumers:
+          * NuGet clients (dotnet, nuget.exe, Visual Studio) via the .nupkg metadata.
+          * Any tools/scripts that parse the package version for deployment or rollout.
+      - Default / behavior:
+          * If $(PackageVersion) is not explicitly set, it falls back to $(Version).
+            This keeps Version as the single source of truth.
+      - Troubleshooting:
+          * To test a local build without colliding with CI packages, override
+            PackageVersion on the command line:
+              msbuild /p:PackageVersion=1.2.3-local.1
+          * Never rely on the implicit "0.0.1-local" default for published packages.
+            Always set a concrete version in CI before packing.
+    -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">$(Version)</PackageVersion>
+
+    <!--
+      InformationalVersion
+
+      - Purpose:
+          Human‑readable version string stored in assembly metadata (Product Version),
+          often including pre‑release labels or commit information.
+      - Consumers:
+          * Assembly metadata viewers and diagnostics tools.
+          * Error reports and logs that surface the "Product Version".
+      - Default / behavior:
+          * If $(InformationalVersion) is not set, we reuse $(Version) so that all
+            version surfaces stay consistent by default.
+          * Unlike AssemblyVersion/FileVersion, this property may contain pre‑release
+            labels (e.g. "1.2.3-beta.1+abcdef").
+      - Troubleshooting:
+          * If you need richer information (e.g. commit SHA), configure your CI/CD
+            pipeline or Directory.Build.props to stamp a custom InformationalVersion
+            instead of relying solely on $(Version).
+    -->
+    <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
+
+    <!--
+      AssemblyVersion
+
+      - Purpose:
+          CLR binding version for the compiled assembly. This must be a numeric,
+          four‑part version (Major.Minor.Build.Revision) with no pre‑release labels.
+      - Consumers:
+          * .NET runtime assembly binding and load context.
+          * Strong‑name identity for signed assemblies.
+      - Default / behavior:
+          * For local builds, if $(AssemblyVersion) is not set, we use "0.0.1.0"
+            as a stable, numeric version that satisfies the CLR format.
+          * CI/CD pipelines may override this to align with a specific versioning
+            scheme (e.g. only changing Major/Minor across breaking changes).
+      - Troubleshooting:
+          * Do not include pre‑release labels or metadata here—MSBuild and the CLR
+            require a purely numeric value and will fail or behave unpredictably
+            if given invalid input.
+          * If you need fine‑grained versioning, prefer changing FileVersion and/or
+            InformationalVersion instead of AssemblyVersion.
+    -->
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">0.0.1.0</AssemblyVersion>
+
+    <!--
+      FileVersion
+
+      - Purpose:
+          OS‑level file version stored in the PE file (Win32 FileVersion). This is
+          what Windows Explorer and many monitoring tools display.
+      - Consumers:
+          * Windows shell "File version" property.
+          * Deployment and diagnostics tooling that reads PE version info.
+      - Default / behavior:
+          * If $(FileVersion) is not set, we default to "0.0.1.0" for local builds,
+            matching AssemblyVersion to keep things simple.
+      - Troubleshooting:
+          * Must be a numeric, four‑part version (Major.Minor.Build.Revision).
+            Pre‑release labels are not allowed.
+          * If you need to track every build distinctly, consider stamping a unique
+            FileVersion in CI (e.g. including the build number) while keeping
+            AssemblyVersion more stable.
+    -->
+    <FileVersion Condition="'$(FileVersion)' == ''">0.0.1.0</FileVersion>
+  </PropertyGroup>
+</Project>

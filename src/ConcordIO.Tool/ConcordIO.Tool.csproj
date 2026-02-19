@@ -17,7 +17,6 @@
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>concordio</ToolCommandName>
 		<PackageId>ConcordIO.Tool</PackageId>
-		<Version>0.2.0</Version>
 		<Authors>LevDev</Authors>
 		<Description>CLI tool for generating OpenAPI and Protobuf contract packages</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>

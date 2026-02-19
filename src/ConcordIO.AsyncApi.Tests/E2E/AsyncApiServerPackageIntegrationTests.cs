@@ -350,14 +350,14 @@ public class AsyncApiServerPackageIntegrationTests
 		var csproj = $"""
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+		<TargetFramework>net10.0</TargetFramework>
 		<OutputType>Library</OutputType>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>{propertyOverridesXml}
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ConcordIO.AsyncApi.Server" Version="*" />
+		<PackageReference Include="ConcordIO.AsyncApi.Server" Version="{_fixture.ServerPackageVersion}" />
 	</ItemGroup>
 </Project>
 """;

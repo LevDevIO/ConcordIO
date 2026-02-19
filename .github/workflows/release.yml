@@ -1,0 +1,330 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish_to_nuget_org:
+        description: 'Publish to NuGet.org'
+        required: false
+        type: boolean
+        default: false
+      publish_to_github:
+        description: 'Publish to GitHub Packages'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.gitversion.outputs.semVer }}
+      major: ${{ steps.gitversion.outputs.major }}
+      minor: ${{ steps.gitversion.outputs.minor }}
+      patch: ${{ steps.gitversion.outputs.patch }}
+      preReleaseTag: ${{ steps.gitversion.outputs.preReleaseTag }}
+      preReleaseLabel: ${{ steps.gitversion.outputs.preReleaseLabel }}
+      commitsSinceVersionSource: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}
+      assemblyVersion: ${{ steps.gitversion.outputs.assemblySemVer }}
+      fileVersion: ${{ steps.gitversion.outputs.assemblySemFileVer }}
+      informationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # GitVersion needs full history
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: '6.x'
+
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
+        with:
+          useConfigFile: true
+
+      - name: Display GitVersion outputs
+        run: |
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
+          echo "AssemblySemFileVer: ${{ steps.gitversion.outputs.assemblySemFileVer }}"
+          echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
+
+  build-and-test:
+    name: Build & Test
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore src/ConcordIO.Tool.sln
+
+      - name: Build with version
+        run: |
+          dotnet build src/ConcordIO.Tool.sln --no-restore \
+            /p:Version=${{ needs.version.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.version.outputs.assemblyVersion }} \
+            /p:FileVersion=${{ needs.version.outputs.fileVersion }} \
+            /p:InformationalVersion=${{ needs.version.outputs.informationalVersion }} \
+            /p:PackageVersion=${{ needs.version.outputs.version }}
+
+      - name: Run unit & integration tests
+        run: dotnet test src/ConcordIO.Tool.sln --no-build --filter "FullyQualifiedName!~E2E"
+
+  e2e-tool-tests:
+    name: E2E Tests (Tool)
+    needs: [version, build-and-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install Mono (for nuget.exe)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-complete
+
+      - name: Install nuget.exe
+        run: |
+          sudo curl -o /usr/local/bin/nuget.exe https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+          printf '#!/bin/bash\nmono /usr/local/bin/nuget.exe "$@"\n' | sudo tee /usr/local/bin/nuget > /dev/null
+          sudo chmod +x /usr/local/bin/nuget
+
+      - name: Restore
+        run: dotnet restore src/ConcordIO.Tool.sln
+
+      - name: Build with version
+        run: |
+          dotnet build src/ConcordIO.Tool.sln --no-restore \
+            /p:Version=${{ needs.version.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.version.outputs.assemblyVersion }} \
+            /p:FileVersion=${{ needs.version.outputs.fileVersion }} \
+            /p:InformationalVersion=${{ needs.version.outputs.informationalVersion }} \
+            /p:PackageVersion=${{ needs.version.outputs.version }}
+
+      - name: Run E2E tests
+        run: dotnet test src/ConcordIO.Tool.Tests/ConcordIO.Tool.Tests.csproj --no-build --filter "FullyQualifiedName~E2E"
+
+  e2e-asyncapi-tests:
+    name: E2E Tests (AsyncApi)
+    needs: [version, build-and-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore src/ConcordIO.Tool.sln
+
+      - name: Build with version
+        run: |
+          dotnet build src/ConcordIO.Tool.sln --no-restore \
+            /p:Version=${{ needs.version.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.version.outputs.assemblyVersion }} \
+            /p:FileVersion=${{ needs.version.outputs.fileVersion }} \
+            /p:InformationalVersion=${{ needs.version.outputs.informationalVersion }} \
+            /p:PackageVersion=${{ needs.version.outputs.version }}
+
+      - name: Run E2E tests
+        run: dotnet test src/ConcordIO.AsyncApi.Tests/ConcordIO.AsyncApi.Tests.csproj --no-build --filter "FullyQualifiedName~E2E"
+
+  pack:
+    name: Pack NuGet Packages
+    needs: [version, build-and-test, e2e-tool-tests, e2e-asyncapi-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore src/ConcordIO.Tool.sln
+
+      - name: Pack packages
+        run: |
+          dotnet pack src/ConcordIO.Tool.sln --no-restore --configuration Release \
+            /p:Version=${{ needs.version.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.version.outputs.assemblyVersion }} \
+            /p:FileVersion=${{ needs.version.outputs.fileVersion }} \
+            /p:InformationalVersion=${{ needs.version.outputs.informationalVersion }} \
+            /p:PackageVersion=${{ needs.version.outputs.version }} \
+            --output ./artifacts
+
+      - name: List artifacts
+        run: ls -lah ./artifacts/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
+          retention-days: 7
+
+  check_tag:
+    name: Check if release tag exists
+    needs: [version]
+    runs-on: ubuntu-latest
+    outputs:
+      tag_exists: ${{ steps.check.outputs.tag_exists }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for existing tag
+        id: check
+        run: |
+          TAG_REF="refs/tags/v${{ needs.version.outputs.version }}"
+          if git ls-remote --exit-code --tags origin "$TAG_REF" > /dev/null 2>&1; then
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    name: Create GitHub Release
+    needs: [version, pack, check_tag]
+    runs-on: ubuntu-latest
+    if: needs.version.outputs.preReleaseTag == '' && needs.check_tag.outputs.tag_exists != 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version.outputs.version }}
+          name: Release v${{ needs.version.outputs.version }}
+          body: |
+            ## Release v${{ needs.version.outputs.version }}
+
+            This release was automatically created from the main branch.
+
+            ### Packages
+            - ConcordIO.Tool v${{ needs.version.outputs.version }}
+            - ConcordIO.AsyncApi v${{ needs.version.outputs.version }}
+            - ConcordIO.AsyncApi.Client v${{ needs.version.outputs.version }}
+            - ConcordIO.AsyncApi.Server v${{ needs.version.outputs.version }}
+
+            ### Installation
+            ```bash
+            dotnet tool install --global ConcordIO.Tool --version ${{ needs.version.outputs.version }}
+            ```
+          files: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
+          draft: false
+          prerelease: false
+
+  publish-github:
+    name: Publish to GitHub Packages
+    needs: [version, pack]
+    runs-on: ubuntu-latest
+    # On push to main: always publish to GitHub Packages
+    # On workflow_dispatch: publish if explicitly enabled (default is true)
+    if: |
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to_github == 'true')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish to GitHub Packages
+        run: |
+          for package in ./artifacts/*.nupkg; do
+            echo "Publishing $package to GitHub Packages"
+            dotnet nuget push "$package" \
+              --api-key ${{ secrets.GITHUB_TOKEN }} \
+              --source https://nuget.pkg.github.com/LevDevIO/index.json \
+              --skip-duplicate
+          done
+          # GitHub Packages automatically includes symbol packages when pushing the main package
+          # The .snupkg files are included in the artifacts for manual download if needed
+
+  publish-nuget-org:
+    name: Publish to NuGet.org
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    # Only publish to NuGet.org if:
+    # 1. It's a stable version (no pre-release tag)
+    # 2. It's a manual trigger with publish_to_nuget_org enabled
+    if: |
+      needs.version.outputs.preReleaseTag == '' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.publish_to_nuget_org == 'true'
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish to NuGet.org
+        run: |
+          for package in ./artifacts/*.nupkg; do
+            echo "Publishing $package to NuGet.org"
+            dotnet nuget push "$package" \
+              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+          for symbols in ./artifacts/*.snupkg; do
+            echo "Publishing $symbols to NuGet.org"
+            dotnet nuget push "$symbols" \
+              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+          # NuGet.org requires symbol packages to be pushed explicitly
