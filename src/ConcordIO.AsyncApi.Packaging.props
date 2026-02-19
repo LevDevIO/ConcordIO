@@ -1,15 +1,26 @@
 <Project>
   <PropertyGroup>
     <!-- Common NuGet Package settings for MSBuild tool packages -->
-    <IsTool>true</IsTool>
+    <!-- IsTool: bool, marks the package as a .NET tool. Must remain false for MSBuild task packages. Default: false. -->
+    <IsTool>false</IsTool>
+    <!-- DevelopmentDependency: bool, prevents assets from flowing transitively by default. Default: false. -->
     <DevelopmentDependency>true</DevelopmentDependency>
+    <!-- IncludeBuildOutput: bool, disabled to avoid partial outputs and duplicates. Default: false. -->
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- SuppressDependenciesWhenPacking: bool, omits dependency metadata in the .nupkg. Default: false. -->
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- GeneratePackageOnBuild: bool, avoids packing during normal build. Default: false. -->
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
-    <!-- Build output goes to tools/{tfm} folder -->
+    <!-- BuildOutputTargetFolder: string, destination for build outputs inside the package. Default: lib/ -->
     <BuildOutputTargetFolder>tools/$(TargetFramework)</BuildOutputTargetFolder>
+    <!-- CopyLocalLockFileAssemblies: bool, includes runtime dependencies alongside the task. Default: false. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <!-- TargetsForTfmSpecificContentInPackage: target list, adds TFM-specific files to the nupkg. -->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);ConcordIOPackTaskOutputs</TargetsForTfmSpecificContentInPackage>
+    <!-- TargetsForTfmSpecificDebugSymbolsInPackage: target list, adds TFM-specific PDBs to the symbols package. -->
+    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);ConcordIOPackTaskDebugSymbols</TargetsForTfmSpecificDebugSymbolsInPackage>
   </PropertyGroup>
 
   <!-- Include props and targets files in the package -->
@@ -18,9 +29,25 @@
     <None Include="$(MSBuildProjectDirectory)/buildTransitive/**/*" Pack="true" PackagePath="buildTransitive" />
   </ItemGroup>
 
-  <!-- Include tools in the package after build -->
-  <ItemGroup>
-    <None Include="$(TargetDir)**/*" Pack="true" PackagePath="tools/$(TargetFramework)/" />
-  </ItemGroup>
+  <!-- Pack task assemblies + runtime dependencies from the TFM output directory. -->
+  <Target Name="ConcordIOPackTaskOutputs" DependsOnTargets="Build">
+    <ItemGroup>
+      <_ConcordIOTaskOutputFiles Include="$(TargetDir)*.dll" />
+      <_ConcordIOTaskOutputFiles Include="$(TargetDir)*.pdb" />
+      <_ConcordIOTaskOutputFiles Include="$(TargetDir)*.xml" />
+      <_ConcordIOTaskOutputFiles Include="$(TargetDir)*.deps.json" />
+      <_ConcordIOTaskOutputFiles Include="$(TargetDir)*.runtimeconfig.json" />
+      <TfmSpecificPackageFile Include="@(_ConcordIOTaskOutputFiles)" PackagePath="tools/$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Pack PDBs into the symbols package when IncludeSymbols is enabled. -->
+  <Target Name="ConcordIOPackTaskDebugSymbols" DependsOnTargets="Build">
+    <ItemGroup>
+      <TfmSpecificDebugSymbolsFile Include="$(TargetDir)*.pdb">
+        <TargetFramework>$(TargetFramework)</TargetFramework>
+      </TfmSpecificDebugSymbolsFile>
+    </ItemGroup>
+  </Target>
 
 </Project>

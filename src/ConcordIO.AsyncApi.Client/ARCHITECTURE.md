@@ -74,7 +74,7 @@ ConcordIO.AsyncApi.Client.nupkg
         └── (NJsonSchema, Neuroglia, etc.) # Dependencies bundled as tools
 ```
 
-    Packaging uses forward-slash-normalized include patterns anchored to the project directory for the `build/` and `buildTransitive/` assets. The task assemblies are packed from `$(TargetDir)` into `tools/{tfm}` to ensure the MSBuild task is present in the expected path after build across Windows and Linux during `dotnet pack`.
+    Packaging uses forward-slash-normalized include patterns anchored to the project directory for the `build/` and `buildTransitive/` assets. The package is not a .NET tool (`IsTool=false`) so task assets land directly under `tools/{tfm}`. Build outputs are packed by `ConcordIOPackTaskOutputs`, registered via `TargetsForTfmSpecificContentInPackage`, which bundles the task assembly and all output dependencies (including `ConcordIO.AsyncApi.dll`) from `$(TargetDir)` into `tools/$(TargetFramework)` for each TFM. PDBs are packed into the symbols package by `ConcordIOPackTaskDebugSymbols`, registered via `TargetsForTfmSpecificDebugSymbolsInPackage`.
 
 ## Key Components
 
