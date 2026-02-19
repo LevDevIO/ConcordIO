@@ -20,6 +20,7 @@
     <Authors>LevDev</Authors>
     <Description>MSBuild integration for generating AsyncAPI specifications from .NET MassTransit message contracts at build time.</Description>
     <PackageTags>asyncapi;masstransit;contracts;messaging;codegen</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/LevDevIO/ConcordIO</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
@@ -34,6 +35,10 @@
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.14.8" PrivateAssets="all" ExcludeAssets="Runtime" />
     <!-- SourceLink for GitHub repository -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

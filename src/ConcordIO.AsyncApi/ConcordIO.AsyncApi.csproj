@@ -10,6 +10,7 @@
     <PackageId>ConcordIO.AsyncApi</PackageId>
     <Authors>LevDev</Authors>
     <Description>Core library for AsyncAPI document parsing, code generation, and contract management.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/LevDevIO/ConcordIO</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
@@ -26,6 +27,10 @@
   <ItemGroup>
     <!-- SourceLink for GitHub repository -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

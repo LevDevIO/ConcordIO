@@ -2,6 +2,8 @@
 
 A shared .NET library for AsyncAPI document generation (server) and C# contract code generation (client). Provides the core types, services, and abstractions used by `ConcordIO.AsyncApi.Server` and `ConcordIO.AsyncApi.Client`.
 
+This README is included as the NuGet package readme.
+
 > **Note:** This library is not consumed directly by end users. It is referenced internally by the Server and Client MSBuild task packages.
 
 ## Features

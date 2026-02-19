@@ -2,6 +2,8 @@
 
 An MSBuild task package that generates C# contract types from AsyncAPI specifications at build time. Designed for consumers of MassTransit message contract packages — install the package and get strongly-typed message classes generated automatically on build.
 
+This README is included as the NuGet package readme.
+
 ## Installation
 
 Add the package reference to your consumer project:

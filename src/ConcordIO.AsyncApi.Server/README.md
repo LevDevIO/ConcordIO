@@ -2,6 +2,8 @@
 
 An MSBuild task package that generates AsyncAPI 3.x specifications from .NET MassTransit message contracts at build time. Install it in a project that defines message types, and an AsyncAPI document is generated automatically on every build.
 
+This README is included as the NuGet package readme.
+
 ## Installation
 
 Add the package reference to your contracts project:

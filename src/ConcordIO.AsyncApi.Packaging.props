@@ -3,12 +3,12 @@
     <!-- Common NuGet Package settings for MSBuild tool packages -->
     <IsTool>true</IsTool>
     <DevelopmentDependency>true</DevelopmentDependency>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
-    <!-- Build output goes to tools folder -->
-    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <!-- Build output goes to tools/{tfm} folder -->
+    <BuildOutputTargetFolder>tools/$(TargetFramework)</BuildOutputTargetFolder>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
@@ -18,8 +18,4 @@
     <None Include="$(MSBuildProjectDirectory)/buildTransitive/**/*" Pack="true" PackagePath="buildTransitive" />
   </ItemGroup>
 
-  <!-- Include tools in the package -->
-  <ItemGroup>
-    <None Include="$(OutputPath)**/*" Pack="true" PackagePath="tools/$(TargetFramework)" />
-  </ItemGroup>
 </Project>
