@@ -3,7 +3,7 @@
     <!-- Common NuGet Package settings for MSBuild tool packages -->
     <IsTool>true</IsTool>
     <DevelopmentDependency>true</DevelopmentDependency>
-    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
@@ -16,6 +16,11 @@
   <ItemGroup>
     <None Include="$(MSBuildProjectDirectory)/build/**/*" Pack="true" PackagePath="build" />
     <None Include="$(MSBuildProjectDirectory)/buildTransitive/**/*" Pack="true" PackagePath="buildTransitive" />
+  </ItemGroup>
+
+  <!-- Include tools in the package after build -->
+  <ItemGroup>
+    <None Include="$(TargetDir)**/*" Pack="true" PackagePath="tools/$(TargetFramework)/" />
   </ItemGroup>
 
 </Project>
