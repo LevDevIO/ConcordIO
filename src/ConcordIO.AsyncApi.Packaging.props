@@ -14,12 +14,12 @@
 
   <!-- Include props and targets files in the package -->
   <ItemGroup>
-    <None Include="build\**\*" Pack="true" PackagePath="build" />
-    <None Include="buildTransitive\**\*" Pack="true" PackagePath="buildTransitive" />
+    <None Include="$(MSBuildProjectDirectory)/build/**/*" Pack="true" PackagePath="build" />
+    <None Include="$(MSBuildProjectDirectory)/buildTransitive/**/*" Pack="true" PackagePath="buildTransitive" />
   </ItemGroup>
 
   <!-- Include tools in the package -->
   <ItemGroup>
-    <None Include="$(OutputPath)\**\*" Pack="true" PackagePath="tools\$(TargetFramework)" />
+    <None Include="$(OutputPath)**/*" Pack="true" PackagePath="tools/$(TargetFramework)" />
   </ItemGroup>
 </Project>

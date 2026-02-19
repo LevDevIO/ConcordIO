@@ -74,6 +74,8 @@ ConcordIO.AsyncApi.Client.nupkg
         └── (NJsonSchema, Neuroglia, etc.) # Dependencies bundled as tools
 ```
 
+    Packaging uses forward-slash-normalized include patterns anchored to the project directory and output path so the `build/`, `buildTransitive/`, and `tools/` assets are included consistently across Windows and Linux during `dotnet pack`.
+
 ## Key Components
 
 ### GenerateContractsTask (MSBuild Task)
