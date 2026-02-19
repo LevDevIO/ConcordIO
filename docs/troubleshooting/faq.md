@@ -137,13 +137,38 @@ Yes! Use standard `dotnet nuget push` with your feed URL and credentials:
 dotnet nuget push *.nupkg --source https://your-feed.com/nuget --api-key YOUR_KEY
 ```
 
+### Can I auto-generate OpenAPI specs from my ASP.NET Core API?
+
+Yes! Instead of manually writing OpenAPI YAML files, use **Microsoft.Extensions.ApiDescription.Server** to automatically generate specs from your API at build time:
+
+1. Add to your ASP.NET Core project:
+   ```xml
+   <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="8.0.0">
+     <PrivateAssets>all</PrivateAssets>
+   </PackageReference>
+   ```
+
+2. Build generates `obj/Debug/net10.0/YourApi.json`
+
+3. Package with ConcordIO:
+   ```bash
+   concordio pack --spec obj/Debug/net10.0/YourApi.json --package-id Your.Api --version 1.0.0
+   ```
+
+**Benefits:**
+- ✅ Specs always match your implementation
+- ✅ XML comments become OpenAPI descriptions
+- ✅ Automatic updates when controllers change
+
+See the [complete example](../examples/README.md#auto-generating-openapi-from-aspnet-core-api).
+
 ### Do contract packages have dependencies?
 
 Typically no. Contract packages are content-only and don't reference other packages.
 
 Client packages do have dependencies:
 - The corresponding contract package
-- Code generator packages (NSwag, ConcordIO.AsyncApi.Client, etc.)
+- Code generator packages (NSwag by default, or Kiota as alternative, ConcordIO.AsyncApi.Client for AsyncAPI, etc.)
 
 ## Code Generation
 
@@ -290,26 +315,45 @@ Yes! Use the `concordio pack` command with `--spec file.yaml:asyncapi`, or use `
 
 ### What's the difference between ConcordIO and NSwag?
 
-ConcordIO **uses** NSwag for OpenAPI client generation. ConcordIO adds:
+ConcordIO **uses** NSwag by default for OpenAPI client generation. ConcordIO adds:
 - Contract package management
 - NuGet distribution
 - Breaking change detection
 - Multi-spec support
 - Consistent workflow across protocol types
 
+**Note**: You can also use [Kiota](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) as an alternative to NSwag for more modern client generation.
+
 ### Can I use my existing NSwag configuration?
 
 Yes! ConcordIO client packages create `OpenApiReference` items that NSwag consumes. Your existing NSwag setup should work with minimal changes.
+
+### Can I use Kiota instead of NSwag?
+
+Absolutely! While ConcordIO's default client packages use NSwag, you can generate clients with [Microsoft.OpenApi.Kiota](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) instead:
+
+1. Extract the spec: `concordio get-spec --package-id Your.Api --version 1.0.0`
+2. Generate with Kiota: `kiota generate --openapi spec.json --language csharp`
+
+Kiota offers:
+- ✅ Modern fluent API design
+- ✅ Built-in middleware pipeline (auth, retry, logging)
+- ✅ Better nullable reference type support
+- ✅ Official Microsoft tooling
+
+See the [complete Kiota example](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag).
 
 ### Do I need to learn NSwag?
 
 Basic usage works without NSwag knowledge. For advanced customization, understanding NSwag options helps. See the [CLI Tool Guide](../../src/ConcordIO.Tool/README.md) for NSwag defaults and the [Consuming Contract Tutorial](../tutorials/consuming-contract.md) for customization examples.
 
+Alternatively, use [Kiota](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) which has a simpler, more modern API.
+
 ### Why do multi-target projects have issues?
 
 NSwag's MSBuild integration sometimes skips generation during outer/inner build dispatch with `<TargetFrameworks>`. This is a known NSwag limitation, not specific to ConcordIO.
 
-**Workaround**: Use single `<TargetFramework>` for projects consuming OpenAPI clients.
+**Workaround**: Use single `<TargetFramework>` for projects consuming OpenAPI clients, or use [Kiota](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) which handles multi-targeting better.
 
 See [Known Limitations](./known-limitations.md#openapi-multi-tfm).
 

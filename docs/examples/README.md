@@ -7,6 +7,8 @@ Complete working examples demonstrating ConcordIO usage patterns.
 | Example | Spec Type | Use Case | Complexity |
 |---------|-----------|----------|------------|
 | [REST API with OpenAPI](#rest-api-with-openapi) | OpenAPI | HTTP REST clients | ⭐ Beginner |
+| [**Auto-Generate OpenAPI from ASP.NET**](#auto-generating-openapi-from-aspnet-core-api) | OpenAPI | Spec from API code | ⭐⭐ Intermediate |
+| [**Kiota Client Generation**](#using-kiota-for-client-generation-alternative-to-nswag) | OpenAPI | Modern client alternative | ⭐⭐ Intermediate |
 | [Messaging with AsyncAPI](#messaging-with-asyncapi) | AsyncAPI | Event-driven architecture | ⭐⭐ Intermediate |
 | [gRPC Service](#grpc-service-with-protocol-buffers) | Protocol Buffers | gRPC communication | ⭐⭐ Intermediate |
 | [Multi-Protocol Service](#multi-protocol-service) | Mixed | Complex microservice | ⭐⭐⭐ Advanced |
@@ -312,6 +314,632 @@ jobs:
           dotnet nuget push *.nupkg \
             --source https://api.nuget.org/v3/index.json \
             --api-key ${{ secrets.NUGET_API_KEY }}
+```
+
+---
+
+## Auto-Generating OpenAPI from ASP.NET Core API
+
+### Scenario
+
+Instead of manually writing OpenAPI specs, use **Microsoft.Extensions.ApiDescription.Server** to automatically generate specs from your ASP.NET Core API at build time, then package them with ConcordIO.
+
+**Benefits:**
+- Specs always match implementation
+- No manual YAML/JSON writing
+- Automatic updates when controllers change
+- Type-safe contracts from code
+
+### Project Structure
+
+```
+BookStoreApi/
+├── src/
+│   ├── BookStore.Api/              # ASP.NET Core API
+│   │   ├── Controllers/
+│   │   │   └── BooksController.cs
+│   │   ├── Models/
+│   │   │   └── Book.cs
+│   │   └── BookStore.Api.csproj
+│   ├── BookStore.Contracts/        # Generated spec packaging
+│   │   └── BookStore.Contracts.csproj
+│   └── BookStore.Consumer/         # Client consumer
+│       └── BookStore.Consumer.csproj
+```
+
+### Step 1: Create ASP.NET Core API
+
+`src/BookStore.Api/Models/Book.cs`:
+
+```csharp
+namespace BookStore.Api.Models;
+
+/// <summary>
+/// Represents a book in the store
+/// </summary>
+public class Book
+{
+    /// <summary>
+    /// Unique identifier
+    /// </summary>
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// Book title
+    /// </summary>
+    public required string Title { get; set; }
+
+    /// <summary>
+    /// Author name
+    /// </summary>
+    public required string Author { get; set; }
+
+    /// <summary>
+    /// International Standard Book Number
+    /// </summary>
+    public string? Isbn { get; set; }
+
+    /// <summary>
+    /// Publication year
+    /// </summary>
+    public int? PublicationYear { get; set; }
+
+    /// <summary>
+    /// Price in USD
+    /// </summary>
+    public decimal Price { get; set; }
+}
+
+public class CreateBookRequest
+{
+    public required string Title { get; set; }
+    public required string Author { get; set; }
+    public string? Isbn { get; set; }
+    public int? PublicationYear { get; set; }
+    public decimal Price { get; set; }
+}
+
+public class BooksResponse
+{
+    public List<Book> Books { get; set; } = new();
+    public int Total { get; set; }
+}
+```
+
+`src/BookStore.Api/Controllers/BooksController.cs`:
+
+```csharp
+using BookStore.Api.Models;
+using Microsoft.AspNetCore.Mvc;
+
+namespace BookStore.Api.Controllers;
+
+/// <summary>
+/// API for managing books
+/// </summary>
+[ApiController]
+[Route("api/[controller]")]
+[Produces("application/json")]
+public class BooksController : ControllerBase
+{
+    private static readonly List<Book> _books = new();
+
+    /// <summary>
+    /// List all books
+    /// </summary>
+    /// <param name="limit">Maximum number of results</param>
+    /// <returns>List of books</returns>
+    [HttpGet]
+    [ProducesResponseType(typeof(BooksResponse), StatusCodes.Status200OK)]
+    public ActionResult<BooksResponse> GetBooks([FromQuery] int limit = 20)
+    {
+        var books = _books.Take(limit).ToList();
+        return Ok(new BooksResponse
+        {
+            Books = books,
+            Total = _books.Count
+        });
+    }
+
+    /// <summary>
+    /// Get a specific book by ID
+    /// </summary>
+    /// <param name="id">Book ID</param>
+    /// <returns>The requested book</returns>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(Book), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult<Book> GetBook(Guid id)
+    {
+        var book = _books.FirstOrDefault(b => b.Id == id);
+        if (book == null)
+            return NotFound();
+
+        return Ok(book);
+    }
+
+    /// <summary>
+    /// Create a new book
+    /// </summary>
+    /// <param name="request">Book details</param>
+    /// <returns>Created book</returns>
+    [HttpPost]
+    [ProducesResponseType(typeof(Book), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult<Book> CreateBook([FromBody] CreateBookRequest request)
+    {
+        var book = new Book
+        {
+            Id = Guid.NewGuid(),
+            Title = request.Title,
+            Author = request.Author,
+            Isbn = request.Isbn,
+            PublicationYear = request.PublicationYear,
+            Price = request.Price
+        };
+
+        _books.Add(book);
+        return CreatedAtAction(nameof(GetBook), new { id = book.Id }, book);
+    }
+
+    /// <summary>
+    /// Delete a book
+    /// </summary>
+    /// <param name="id">Book ID</param>
+    /// <returns>No content</returns>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult DeleteBook(Guid id)
+    {
+        var book = _books.FirstOrDefault(b => b.Id == id);
+        if (book == null)
+            return NotFound();
+
+        _books.Remove(book);
+        return NoContent();
+    }
+}
+```
+
+### Step 2: Configure OpenAPI Generation
+
+`src/BookStore.Api/BookStore.Api.csproj`:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    
+    <!-- Enable OpenAPI doc generation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Swagger/OpenAPI support -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+    
+    <!-- Auto-generate OpenAPI spec at build time -->
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="8.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>
+```
+
+`src/BookStore.Api/Program.cs`:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Version = "v1.0.0",
+        Title = "BookStore API",
+        Description = "API for managing books"
+    });
+
+    // Include XML comments in OpenAPI
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+});
+
+var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+```
+
+### Step 3: Build to Generate OpenAPI Spec
+
+```bash
+cd src/BookStore.Api
+dotnet build
+```
+
+This generates `obj/Debug/net10.0/BookStore.Api.json` automatically!
+
+### Step 4: Package the Generated Spec
+
+Create `src/BookStore.Contracts/BookStore.Contracts.csproj`:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Don't build this project, just use for packaging -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>
+```
+
+```bash
+cd src/BookStore.Contracts
+
+# Use the generated spec from the API project
+concordio pack \
+  --spec ../BookStore.Api/obj/Debug/net10.0/BookStore.Api.json \
+  --package-id Contoso.BookStore.Api \
+  --version 1.0.0 \
+  --authors "BookStore Team" \
+  --description "BookStore API contracts (auto-generated from ASP.NET Core)"
+```
+
+Output:
+```
+✓ Contoso.BookStore.Api.1.0.0.nupkg
+✓ Contoso.BookStore.Api.Client.1.0.0.nupkg
+```
+
+### Step 5: Automate in CI/CD
+
+`.github/workflows/publish-api-contracts.yml`:
+
+```yaml
+name: Publish API Contracts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/BookStore.Api/**'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build API (generates OpenAPI spec)
+        run: |
+          cd src/BookStore.Api
+          dotnet build --configuration Release
+
+      - name: Install ConcordIO
+        run: dotnet tool install --global ConcordIO.Tool
+
+      - name: Package contracts
+        run: |
+          cd src/BookStore.Contracts
+          concordio pack \
+            --spec ../BookStore.Api/obj/Release/net10.0/BookStore.Api.json \
+            --package-id Contoso.BookStore.Api \
+            --version 1.0.${{ github.run_number }}
+
+      - name: Publish to NuGet
+        run: |
+          cd src/BookStore.Contracts
+          dotnet nuget push *.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ secrets.NUGET_API_KEY }}
+```
+
+### Benefits of This Approach
+
+✅ **Single Source of Truth**: API code is the spec  
+✅ **Always In Sync**: Spec regenerates on every build  
+✅ **Type Safety**: XML comments become OpenAPI descriptions  
+✅ **Zero Manual YAML**: No hand-written specs to maintain  
+✅ **Automatic Updates**: Controller changes automatically update spec  
+
+---
+
+## Using Kiota for Client Generation (Alternative to NSwag)
+
+### Scenario
+
+Use **Microsoft.OpenApi.Kiota.Builder** (Kiota) instead of NSwag for generating strongly-typed API clients. Kiota offers:
+- Modern C# patterns (async/await, nullable reference types)
+- Built-in dependency injection support
+- Middleware pipeline for auth, logging, retry
+- Better error handling
+
+### Project Structure
+
+```
+BookStore.Consumer.Kiota/
+├── BookStore.Consumer.Kiota.csproj
+└── Program.cs
+```
+
+### Step 1: Create Consumer Project
+
+```bash
+mkdir BookStore.Consumer.Kiota
+cd BookStore.Consumer.Kiota
+dotnet new console
+```
+
+### Step 2: Add Kiota CLI Tool
+
+```bash
+# Install Kiota globally
+dotnet tool install --global Microsoft.OpenApi.Kiota
+
+# Or as local tool
+dotnet new tool-manifest
+dotnet tool install Microsoft.OpenApi.Kiota
+```
+
+### Step 3: Get OpenAPI Spec from Contract Package
+
+**Option A: Extract from Published Package**
+
+```bash
+# Download and extract contract package
+dotnet nuget install Contoso.BookStore.Api --version 1.0.0 --output-directory ./packages
+
+# Find the spec file
+cp packages/Contoso.BookStore.Api.1.0.0/openapi/BookStore.Api.json ./openapi.json
+```
+
+**Option B: Use ConcordIO's get-spec Command**
+
+```bash
+# Install ConcordIO if not already installed
+dotnet tool install --global ConcordIO.Tool
+
+# Extract spec from package
+concordio get-spec \
+  --package-id Contoso.BookStore.Api \
+  --version 1.0.0 \
+  --output ./openapi.json
+```
+
+### Step 4: Generate Client with Kiota
+
+```bash
+# Generate Kiota client
+kiota generate \
+  --openapi ./openapi.json \
+  --language csharp \
+  --class-name BookStoreApiClient \
+  --namespace-name Contoso.BookStore.Client \
+  --output ./Generated/BookStore
+
+# This creates Generated/BookStore/ with:
+# - Models/ (DTOs)
+# - BookStoreApiClient.cs (main client)
+# - Various builder classes for fluent API
+```
+
+### Step 5: Configure Project Dependencies
+
+`BookStore.Consumer.Kiota.csproj`:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Kiota runtime dependencies -->
+    <PackageReference Include="Microsoft.Kiota.Http.HttpClientLibrary" Version="1.12.0" />
+    <PackageReference Include="Microsoft.Kiota.Serialization.Json" Version="1.12.0" />
+    <PackageReference Include="Microsoft.Kiota.Serialization.Text" Version="1.12.0" />
+    <PackageReference Include="Microsoft.Kiota.Serialization.Form" Version="1.12.0" />
+    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.12.0" />
+    
+    <!-- For dependency injection (optional but recommended) -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Include generated code -->
+    <Compile Include="Generated/**/*.cs" />
+  </ItemGroup>
+</Project>
+```
+
+### Step 6: Use Generated Kiota Client
+
+`Program.cs`:
+
+```csharp
+using Contoso.BookStore.Client;
+using Contoso.BookStore.Client.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Kiota.Abstractions.Authentication;
+using Microsoft.Kiota.Http.HttpClientLibrary;
+
+// Set up dependency injection (recommended pattern)
+var services = new ServiceCollection();
+
+// Configure HTTP client with base URL
+services.AddHttpClient("BookStoreApi", client =>
+{
+    client.BaseAddress = new Uri("https://api.bookstore.example.com");
+});
+
+// Register Kiota client
+services.AddSingleton<IAuthenticationProvider, AnonymousAuthenticationProvider>();
+services.AddSingleton(sp =>
+{
+    var authProvider = sp.GetRequiredService<IAuthenticationProvider>();
+    var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient("BookStoreApi");
+    var requestAdapter = new HttpClientRequestAdapter(authProvider, httpClient: httpClient);
+    return new BookStoreApiClient(requestAdapter);
+});
+
+var serviceProvider = services.BuildServiceProvider();
+var client = serviceProvider.GetRequiredService<BookStoreApiClient>();
+
+// ===== Use the client =====
+
+// List books
+Console.WriteLine("📚 Fetching books...");
+var booksResponse = await client.Api.Books.GetAsync(requestConfig =>
+{
+    requestConfig.QueryParameters.Limit = 10;
+});
+
+if (booksResponse?.Books != null)
+{
+    Console.WriteLine($"Found {booksResponse.Total} books:");
+    foreach (var book in booksResponse.Books)
+    {
+        Console.WriteLine($"  - {book.Title} by {book.Author} (${book.Price})");
+    }
+}
+
+// Get specific book
+var firstBook = booksResponse?.Books?.FirstOrDefault();
+if (firstBook != null)
+{
+    Console.WriteLine($"\n📖 Fetching book details for: {firstBook.Title}");
+    var bookDetails = await client.Api.Books[firstBook.Id].GetAsync();
+    Console.WriteLine($"  ISBN: {bookDetails?.Isbn ?? "N/A"}");
+    Console.WriteLine($"  Year: {bookDetails?.PublicationYear?.ToString() ?? "N/A"}");
+}
+
+// Create a new book
+Console.WriteLine("\n✏️  Creating new book...");
+var newBookRequest = new CreateBookRequest
+{
+    Title = "The Pragmatic Programmer",
+    Author = "Andrew Hunt",
+    Isbn = "978-0135957059",
+    PublicationYear = 2019,
+    Price = 39.99m
+};
+
+var createdBook = await client.Api.Books.PostAsync(newBookRequest);
+Console.WriteLine($"✅ Created: {createdBook?.Title} (ID: {createdBook?.Id})");
+
+// Delete a book
+if (createdBook?.Id != null)
+{
+    Console.WriteLine($"\n🗑️  Deleting book {createdBook.Id}...");
+    await client.Api.Books[createdBook.Id].DeleteAsync();
+    Console.WriteLine("✅ Deleted successfully");
+}
+```
+
+### Step 7: Advanced - MSBuild Integration
+
+For automatic client regeneration, create a custom MSBuild target:
+
+`BookStore.Consumer.Kiota.csproj`:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    
+    <!-- Kiota configuration -->
+    <KiotaSpecFile>openapi.json</KiotaSpecFile>
+    <KiotaOutputDirectory>Generated/BookStore</KiotaOutputDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Kiota.Http.HttpClientLibrary" Version="1.12.0" />
+    <PackageReference Include="Microsoft.Kiota.Serialization.Json" Version="1.12.0" />
+    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Contract package (optional: get spec from package) -->
+    <PackageReference Include="Contoso.BookStore.Api" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(KiotaOutputDirectory)/**/*.cs" />
+  </ItemGroup>
+
+  <!-- Custom target to run Kiota before compilation -->
+  <Target Name="GenerateKiotaClient" BeforeTargets="CoreCompile" Condition="Exists('$(KiotaSpecFile)')">
+    <Message Importance="high" Text="Generating Kiota client from $(KiotaSpecFile)..." />
+    <Exec Command="kiota generate --openapi $(KiotaSpecFile) --language csharp --class-name BookStoreApiClient --namespace-name Contoso.BookStore.Client --output $(KiotaOutputDirectory)" />
+  </Target>
+</Project>
+```
+
+### Kiota vs NSwag Comparison
+
+| Feature | Kiota | NSwag |
+|---------|-------|-------|
+| **Language Support** | C#, TypeScript, Java, Python, Go | C#, TypeScript |
+| **Code Style** | Modern, fluent API | Traditional typed clients |
+| **Async/Await** | ✅ Full support | ✅ Full support |
+| **Nullable References** | ✅ First-class | ⚠️ Requires configuration |
+| **DI Integration** | ✅ Built-in | ⚠️ Manual setup |
+| **Middleware** | ✅ Built-in (auth, retry, logging) | ⚠️ Manual |
+| **Error Handling** | ✅ Structured exceptions | ⚠️ Basic |
+| **MSBuild Integration** | ⚠️ Custom target needed | ✅ Built-in via NuGet |
+| **Learning Curve** | ⚠️ Steeper (new patterns) | ✅ Straightforward |
+| **Microsoft Support** | ✅ Official Microsoft | ✅ Community (Microsoft Graph) |
+
+### When to Use Kiota
+
+✅ **Use Kiota when:**
+- Building new greenfield projects
+- Need middleware pipeline (auth, retry, logging)
+- Want modern C# patterns
+- Using Microsoft Graph or other Microsoft APIs
+- Need multi-language client support
+
+❌ **Stick with NSwag when:**
+- Simple HTTP clients without middleware
+- Existing NSwag-based projects
+- Need quick setup with minimal config
+- Using ConcordIO's default client packages (already NSwag)
+
+### Hybrid Approach: Best of Both
+
+You can use both in the same project:
+
+```xml
+<ItemGroup>
+  <!-- Use ConcordIO's NSwag client for some APIs -->
+  <PackageReference Include="Contoso.SimpleApi.Client" Version="1.0.0" />
+  
+  <!-- Generate Kiota client for APIs needing advanced features -->
+  <!-- (Extract spec, run kiota generate manually) -->
+</ItemGroup>
 ```
 
 ---

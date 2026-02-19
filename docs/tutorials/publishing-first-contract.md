@@ -646,9 +646,42 @@ Now that you've published your first contract:
 
 - [Tutorial: Consuming a Contract Package](./consuming-contract.md) - Learn how to use your published contract
 - [Tutorial: CI/CD Setup](./cicd-setup.md) - Automate the process
+- [**Example: Auto-Generate OpenAPI from ASP.NET Core**](../examples/README.md#auto-generating-openapi-from-aspnet-core-api) - Generate specs from API code (recommended)
+- [**Example: Using Kiota for Client Generation**](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) - Modern client alternative to NSwag
 - [CLI Tool Guide](../../src/ConcordIO.Tool/README.md) - Complete command reference
 - [AsyncAPI Server Package](../../src/ConcordIO.AsyncApi.Server/README.md) - Server-side AsyncAPI generation
 - [Examples](../examples/README.md) - More complete examples
+
+## Alternative Approach: Auto-Generate Specs from ASP.NET Core
+
+Instead of manually writing OpenAPI YAML files, consider using **Microsoft.Extensions.ApiDescription.Server** to automatically generate OpenAPI specs from your ASP.NET Core API at build time:
+
+**Benefits:**
+- ✅ Specs always match your implementation
+- ✅ No manual YAML/JSON writing
+- ✅ XML comments become OpenAPI descriptions
+- ✅ Automatic updates when controllers change
+
+**Quick Setup:**
+
+1. Add to your ASP.NET Core API project:
+   ```xml
+   <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="8.0.0">
+     <PrivateAssets>all</PrivateAssets>
+   </PackageReference>
+   ```
+
+2. Build generates `obj/Debug/net10.0/YourApi.json`
+
+3. Package the generated spec:
+   ```bash
+   concordio pack \
+     --spec obj/Debug/net10.0/YourApi.json \
+     --package-id Your.Api \
+     --version 1.0.0
+   ```
+
+**See the complete example**: [Auto-Generating OpenAPI from ASP.NET Core API](../examples/README.md#auto-generating-openapi-from-aspnet-core-api)
 
 ## Summary
 
@@ -659,5 +692,6 @@ You've learned how to:
 - ✅ Version contracts with SemVer
 - ✅ Detect breaking changes
 - ✅ Automate with CI/CD
+- ✅ Explore automatic spec generation from code
 
 **Congratulations!** You're now ready to manage API contracts with ConcordIO.

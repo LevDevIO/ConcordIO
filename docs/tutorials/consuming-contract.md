@@ -608,9 +608,58 @@ public class BookService : IBookService
 <PackageReference Include="Contoso.BookStore.Api.Client" Version="1.0.0" />
 ```
 
+## Alternative: Using Kiota Instead of NSwag
+
+By default, ConcordIO client packages use **NSwag** for code generation. For modern projects needing advanced features, consider using **Microsoft.OpenApi.Kiota** instead:
+
+**Advantages of Kiota:**
+- ✅ Modern fluent API design
+- ✅ Built-in middleware pipeline (auth, retry, logging)
+- ✅ Better nullable reference type support
+- ✅ Dependency injection ready out-of-the-box
+- ✅ Official Microsoft tooling
+
+**How to use Kiota with ConcordIO:**
+
+1. **Extract the OpenAPI spec from contract package**:
+   ```bash
+   concordio get-spec \
+     --package-id Contoso.BookStore.Api \
+     --version 1.0.0 \
+     --output ./openapi.json
+   ```
+
+2. **Install Kiota CLI**:
+   ```bash
+   dotnet tool install --global Microsoft.OpenApi.Kiota
+   ```
+
+3. **Generate Kiota client**:
+   ```bash
+   kiota generate \
+     --openapi ./openapi.json \
+     --language csharp \
+     --class-name BookStoreApiClient \
+     --namespace-name Contoso.BookStore.Client \
+     --output ./Generated/BookStore
+   ```
+
+4. **Add Kiota dependencies**:
+   ```xml
+   <ItemGroup>
+     <PackageReference Include="Microsoft.Kiota.Http.HttpClientLibrary" Version="1.12.0" />
+     <PackageReference Include="Microsoft.Kiota.Serialization.Json" Version="1.12.0" />
+     <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.12.0" />
+   </ItemGroup>
+   ```
+
+**See the complete example**: [Using Kiota for Client Generation](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag)
+
 ## Next Steps
 
 - [Tutorial: CI/CD Setup](./cicd-setup.md) - Automate contract updates
+- [**Example: Auto-Generate OpenAPI from ASP.NET Core**](../examples/README.md#auto-generating-openapi-from-aspnet-core-api) - Generate specs from code
+- [**Example: Using Kiota Instead of NSwag**](../examples/README.md#using-kiota-for-client-generation-alternative-to-nswag) - Modern client generation
 - [CLI Tool Guide](../../src/ConcordIO.Tool/README.md) - Complete CLI reference
 - [AsyncAPI Client Package](../../src/ConcordIO.AsyncApi.Client/README.md) - AsyncAPI client customization
 - [Troubleshooting Guide](../troubleshooting/common-issues.md) - More solutions
@@ -625,5 +674,6 @@ You've learned how to:
 - ✅ Customize client generation
 - ✅ Handle errors and edge cases
 - ✅ Follow best practices
+- ✅ Explore alternatives like Kiota
 
 **Congratulations!** You're now consuming API contracts effectively with ConcordIO.
