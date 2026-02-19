@@ -2,6 +2,8 @@
 
 Welcome to the ConcordIO documentation! This comprehensive guide will help you understand, install, and use ConcordIO's contract management toolchain for .NET.
 
+> 💡 **Tip**: This documentation is also available on [GitHub Wiki](https://github.com/LevDevIO/ConcordIO/wiki) for easier browsing. The Wiki is automatically synced with the repository.
+
 ## 📚 Table of Contents
 
 ### Getting Started

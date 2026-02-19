@@ -1,0 +1,132 @@
+name: Sync Documentation to Wiki
+
+on:
+  # Trigger on documentation changes
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      
+      - name: Checkout wiki repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Sync documentation to wiki
+        run: |
+          # Clean wiki directory (except .git)
+          cd wiki
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          
+          # Copy documentation
+          cp -r ../docs/* .
+          
+          # Create Home.md from README.md
+          if [ -f "README.md" ]; then
+            cp README.md Home.md
+          fi
+          
+          # Convert links for wiki format
+          find . -name "*.md" -type f | while read -r file; do
+            # Remove .md extensions from relative links
+            sed -i 's|\(\[[^]]*\](\)\.\./\([^)]*\)\.md)|\1\2)|g' "$file"
+            sed -i 's|\(\[[^]]*\](\)\./\([^)]*\)\.md)|\1\2)|g' "$file"
+            sed -i 's|\(\[[^]]*\](\)\([^/)]*\)\.md)|\1\2)|g' "$file"
+            
+            # Convert src/ links to main repository links
+            sed -i 's|\(\[[^]]*\](\)\.\./\.\./src/\([^)]*\))|\1https://github.com/${{ github.repository }}/tree/main/src/\2)|g' "$file"
+            sed -i 's|\(\[[^]]*\](\)\.\./src/\([^)]*\))|\1https://github.com/${{ github.repository }}/tree/main/src/\2)|g' "$file"
+          done
+          
+          # Create sidebar
+          cat > _Sidebar.md << 'EOF'
+          ## ConcordIO Documentation
+
+          ### Getting Started
+          * [Quick Start](getting-started/quick-start)
+          * [Installation](getting-started/installation)
+          * [When to Use](getting-started/when-to-use)
+          * [Core Concepts](getting-started/concepts)
+
+          ### Tutorials
+          * [Publishing First Contract](tutorials/publishing-first-contract)
+          * [Consuming Contract](tutorials/consuming-contract)
+          * [CI/CD Setup](tutorials/cicd-setup)
+
+          ### Examples
+          * [Example Projects](examples/README)
+
+          ### AI & Automation
+          * [AI Prompts](ai-prompts/README)
+
+          ### Troubleshooting
+          * [FAQ](troubleshooting/faq)
+          * [Common Issues](troubleshooting/common-issues)
+          * [Known Limitations](troubleshooting/known-limitations)
+
+          ### Resources
+          * [Main Repository](https://github.com/${{ github.repository }})
+          * [Contributing](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md)
+          EOF
+          
+          # Create footer
+          cat > _Footer.md << 'EOF'
+          ---
+          **ConcordIO** | [GitHub](https://github.com/${{ github.repository }}) | [Issues](https://github.com/${{ github.repository }}/issues) | [Releases](https://github.com/${{ github.repository }}/releases)
+          EOF
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          cd wiki
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected:"
+            git status --short
+          fi
+      
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          cd wiki
+          git add .
+          git commit -m "docs: sync from main repository
+
+          Updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          Source commit: ${{ github.sha }}
+          Workflow: ${{ github.workflow }}"
+          
+          git push origin master || git push origin main
+      
+      - name: Summary
+        run: |
+          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
+            echo "✅ Wiki updated successfully"
+            echo "View at: https://github.com/${{ github.repository }}/wiki"
+          else
+            echo "✅ Wiki already up to date"
+          fi

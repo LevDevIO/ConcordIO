@@ -4,7 +4,9 @@ ConcordIO is an open source, **NuGet-first** contract management toolchain for *
 
 ## 📚 Documentation
 
-**[→ View Complete Documentation](./docs/README.md)**
+**[→ View Complete Documentation](./docs/README.md)** | **[📖 Browse on Wiki](https://github.com/LevDevIO/ConcordIO/wiki)**
+
+> **Note**: Documentation is available both in the repository (`docs/` folder) and on GitHub Wiki for easier browsing. Both sources are kept in sync automatically.
 
 ### Quick Links
 - [🚀 Quick Start Guide](./docs/getting-started/quick-start.md) - Get up and running in 5 minutes
