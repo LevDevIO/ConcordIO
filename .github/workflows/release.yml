@@ -87,11 +87,11 @@ jobs:
       - name: Run unit & integration tests
         run: dotnet test src/ConcordIO.Tool.sln --no-build --filter "FullyQualifiedName!~E2E"
 
-  e2e-tests:
-    name: E2E Tests
+  e2e-tool-tests:
+    name: E2E Tests (Tool)
     needs: [version, build-and-test]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -125,11 +125,40 @@ jobs:
             /p:PackageVersion=${{ needs.version.outputs.version }}
 
       - name: Run E2E tests
-        run: dotnet test src/ConcordIO.Tool.sln --no-build --filter "FullyQualifiedName~E2E"
+        run: dotnet test src/ConcordIO.Tool.Tests/ConcordIO.Tool.Tests.csproj --no-build --filter "FullyQualifiedName~E2E"
+
+  e2e-asyncapi-tests:
+    name: E2E Tests (AsyncApi)
+    needs: [version, build-and-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore src/ConcordIO.Tool.sln
+
+      - name: Build with version
+        run: |
+          dotnet build src/ConcordIO.Tool.sln --no-restore \
+            /p:Version=${{ needs.version.outputs.version }} \
+            /p:AssemblyVersion=${{ needs.version.outputs.assemblyVersion }} \
+            /p:FileVersion=${{ needs.version.outputs.fileVersion }} \
+            /p:InformationalVersion=${{ needs.version.outputs.informationalVersion }} \
+            /p:PackageVersion=${{ needs.version.outputs.version }}
+
+      - name: Run E2E tests
+        run: dotnet test src/ConcordIO.AsyncApi.Tests/ConcordIO.AsyncApi.Tests.csproj --no-build --filter "FullyQualifiedName~E2E"
 
   pack:
     name: Pack NuGet Packages
-    needs: [version, build-and-test, e2e-tests]
+    needs: [version, build-and-test, e2e-tool-tests, e2e-asyncapi-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
