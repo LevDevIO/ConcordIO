@@ -320,5 +320,11 @@ jobs:
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
-          # NuGet.org automatically includes symbol packages when pushing the main package
-          # The .snupkg files are uploaded separately by the dotnet nuget push command
+          for symbols in ./artifacts/*.snupkg; do
+            echo "Publishing $symbols to NuGet.org"
+            dotnet nuget push "$symbols" \
+              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+          # NuGet.org requires symbol packages to be pushed explicitly
