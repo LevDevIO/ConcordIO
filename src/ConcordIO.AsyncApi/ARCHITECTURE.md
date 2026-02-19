@@ -1,6 +1,6 @@
 # ConcordIO.AsyncApi — Architecture
 
-This document explains the internal design of the shared AsyncAPI library. For the design rationale and overall system vision, see [ConcordIO.AsyncApi.Design.md](../../ConcordIO.AsyncApi.Design.md).
+This document explains the internal design of the shared AsyncAPI library. For an overview of features and purpose, see [README.md](README.md).
 
 ## Target Framework Strategy
 
