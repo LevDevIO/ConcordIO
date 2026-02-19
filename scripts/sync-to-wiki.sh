@@ -53,51 +53,76 @@ fi
 echo "🧹 Cleaning wiki directory..."
 find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
-# Copy documentation files
-echo "📋 Copying documentation files..."
-cp -r "$DOCS_DIR"/* .
+# Flatten documentation files to wiki root and convert links
+# GitHub Wiki does not support subdirectory pages; all pages must be at the root.
+# Subdirectory paths are flattened: getting-started/quick-start.md -> getting-started-quick-start.md
+echo "📋 Flattening and copying documentation files with link conversion..."
+python3 - "$DOCS_DIR" "$WIKI_DIR" << 'PYEOF'
+import os
+import re
+import sys
 
-# Create Home.md from README.md
+docs_dir = os.path.abspath(sys.argv[1])
+wiki_dir = os.path.abspath(sys.argv[2])
+repo_root = os.path.dirname(docs_dir)
+github_repo = 'LevDevIO/ConcordIO'
+
+# Build mapping: abs path -> wiki page name (without .md extension)
+path_to_wiki = {}
+for root, dirs, files in os.walk(docs_dir):
+    for fname in files:
+        if fname.endswith('.md'):
+            abs_path = os.path.abspath(os.path.join(root, fname))
+            rel = os.path.relpath(abs_path, docs_dir)
+            # Flatten subdirectory separators with hyphens
+            wiki_name = rel.replace(os.sep, '-').replace('/', '-')[:-3]
+            path_to_wiki[abs_path] = wiki_name
+
+
+def convert_link(src_abs, link):
+    """Resolve a relative markdown link and return its wiki-format target."""
+    if link.startswith(('http://', 'https://', '#', 'mailto:')):
+        return link
+    anchor = ''
+    if '#' in link:
+        link, anchor = link.split('#', 1)
+        anchor = '#' + anchor
+    if not link or not link.endswith('.md'):
+        return link + anchor
+    src_dir = os.path.dirname(src_abs)
+    abs_target = os.path.abspath(os.path.join(src_dir, link))
+    # Link points into the docs tree: use flattened wiki page name
+    if abs_target in path_to_wiki:
+        return path_to_wiki[abs_target] + anchor
+    # Link points elsewhere in the repo: convert to GitHub blob URL
+    if abs_target.startswith(repo_root + os.sep) or abs_target == repo_root:
+        github_rel = os.path.relpath(abs_target, repo_root).replace(os.sep, '/')
+        return f'https://github.com/{github_repo}/blob/main/{github_rel}{anchor}'
+    return link + anchor
+
+
+for abs_path, wiki_name in sorted(path_to_wiki.items()):
+    with open(abs_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    def replace_match(m, _src=abs_path):
+        return '[' + m.group(1) + '](' + convert_link(_src, m.group(2)) + ')'
+
+    content = re.sub(r'\[([^\]]*)\]\(([^)]+)\)', replace_match, content)
+    dest = os.path.join(wiki_dir, wiki_name + '.md')
+    with open(dest, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print(f'  Wrote: {wiki_name}.md')
+
+print(f'Processed {len(path_to_wiki)} files')
+PYEOF
+
+# Create Home.md from the flattened README
 echo "🏠 Creating Home page..."
 if [ -f "README.md" ]; then
     cp README.md Home.md
     echo "✅ Home.md created from README.md"
 fi
-
-# Function to convert markdown links for wiki format
-convert_links() {
-    local file="$1"
-    echo "  Converting links in: $file"
-    
-    # Detect OS for sed compatibility
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        SED_CMD="sed -i ''"
-    else
-        SED_CMD="sed -i"
-    fi
-    
-    # Convert relative .md links to wiki format (remove .md extension)
-    # Handle anchors first: [text](file.md#section) -> [text](file#section)
-    $SED_CMD 's|\(\[[^]]*\](\)\.\./\([^)#]*\)\.md#\([^)]*\))|\1\2#\3)|g' "$file"
-    $SED_CMD 's|\(\[[^]]*\](\)\./\([^)#]*\)\.md#\([^)]*\))|\1\2#\3)|g' "$file"
-    $SED_CMD 's|\(\[[^]]*\](\)\([^/ )#]*\)\.md#\([^)]*\))|\1\2#\3)|g' "$file"
-    
-    # Then handle links without anchors: [text](./path/file.md) -> [text](path/file)
-    $SED_CMD 's|\(\[[^]]*\](\)\.\./\([^)]*\)\.md)|\1\2)|g' "$file"
-    $SED_CMD 's|\(\[[^]]*\](\)\./\([^)]*\)\.md)|\1\2)|g' "$file"
-    $SED_CMD 's|\(\[[^]]*\](\)\([^/)]*\)\.md)|\1\2)|g' "$file"
-    
-    # Convert links to files in src/ to point to main repository
-    # [text](../../src/...) -> [text](https://github.com/LevDevIO/ConcordIO/tree/main/src/...)
-    $SED_CMD 's|\(\[[^]]*\](\)\.\./\.\./src/\([^)]*\))|\1https://github.com/LevDevIO/ConcordIO/tree/main/src/\2)|g' "$file"
-    $SED_CMD 's|\(\[[^]]*\](\)\.\./src/\([^)]*\))|\1https://github.com/LevDevIO/ConcordIO/tree/main/src/\2)|g' "$file"
-}
-
-# Convert links in all markdown files
-echo "🔗 Converting links for wiki format..."
-find . -name "*.md" -type f | while read -r file; do
-    convert_links "$file"
-done
 
 # Create a _Sidebar.md for better navigation
 echo "📑 Creating sidebar..."
@@ -105,26 +130,26 @@ cat > _Sidebar.md << 'EOF'
 ## ConcordIO Documentation
 
 ### Getting Started
-* [Quick Start](getting-started/quick-start)
-* [Installation](getting-started/installation)
-* [When to Use](getting-started/when-to-use)
-* [Core Concepts](getting-started/concepts)
+* [Quick Start](getting-started-quick-start)
+* [Installation](getting-started-installation)
+* [When to Use](getting-started-when-to-use)
+* [Core Concepts](getting-started-concepts)
 
 ### Tutorials
-* [Publishing First Contract](tutorials/publishing-first-contract)
-* [Consuming Contract](tutorials/consuming-contract)
-* [CI/CD Setup](tutorials/cicd-setup)
+* [Publishing First Contract](tutorials-publishing-first-contract)
+* [Consuming Contract](tutorials-consuming-contract)
+* [CI/CD Setup](tutorials-cicd-setup)
 
 ### Examples
-* [Example Projects](examples/README)
+* [Example Projects](examples-README)
 
 ### AI & Automation
-* [AI Prompts](ai-prompts/README)
+* [AI Prompts](ai-prompts-README)
 
 ### Troubleshooting
-* [FAQ](troubleshooting/faq)
-* [Common Issues](troubleshooting/common-issues)
-* [Known Limitations](troubleshooting/known-limitations)
+* [FAQ](troubleshooting-faq)
+* [Common Issues](troubleshooting-common-issues)
+* [Known Limitations](troubleshooting-known-limitations)
 
 ### Resources
 * [Main Repository](https://github.com/LevDevIO/ConcordIO)
