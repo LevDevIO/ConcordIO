@@ -59,21 +59,21 @@ public class AsyncApiPackageFixture : IAsyncLifetime
 		var clientProjectDir = Path.GetDirectoryName(ClientProjectPath)!;
 		var serverProjectDir = Path.GetDirectoryName(ServerProjectPath)!;
 
-		var (clientBuildExitCode, clientBuildOutput) = await RunDotNetAsync("build", clientProjectDir, "-c Release");
+		var (clientBuildExitCode, clientBuildOutput) = await RunDotNetAsync("build", clientProjectDir, "-c Release --no-restore");
 		if (clientBuildExitCode != 0)
 			throw new Exception($"Client project build failed: {clientBuildOutput}");
 
-		var (serverBuildExitCode, serverBuildOutput) = await RunDotNetAsync("build", serverProjectDir, "-c Release");
+		var (serverBuildExitCode, serverBuildOutput) = await RunDotNetAsync("build", serverProjectDir, "-c Release --no-restore");
 		if (serverBuildExitCode != 0)
 			throw new Exception($"Server project build failed: {serverBuildOutput}");
 
 		var (clientPackExitCode, clientPackOutput) = await RunDotNetAsync("pack", clientProjectDir,
-			$"-c Release -o \"{PackagesDir}\"");
+			$"-c Release --no-restore -o \"{PackagesDir}\"");
 		if (clientPackExitCode != 0)
 			throw new Exception($"Client project pack failed: {clientPackOutput}");
 
 		var (serverPackExitCode, serverPackOutput) = await RunDotNetAsync("pack", serverProjectDir,
-			$"-c Release -o \"{PackagesDir}\"");
+			$"-c Release --no-restore -o \"{PackagesDir}\"");
 		if (serverPackExitCode != 0)
 			throw new Exception($"Server project pack failed: {serverPackOutput}");
 
