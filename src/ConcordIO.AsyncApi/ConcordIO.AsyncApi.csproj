@@ -11,6 +11,7 @@
     <Authors>LevDev</Authors>
     <Description>Core library for AsyncAPI document parsing, code generation, and contract management.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIconUrl>https://raw.githubusercontent.com/LevDevIO/ConcordIO/main/docs/assets/levdev-512-white.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/LevDevIO/ConcordIO</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 

@@ -34,11 +34,11 @@ Yes! ConcordIO is licensed under the Apache License 2.0. Source code is availabl
 
 ### What version of .NET do I need?
 
-.NET 10 SDK or later. The tool itself targets .NET 10, but generated code works with .NET 8, 9, and 10.
+ConcordIO CLI targets .NET 8, 9, and 10, so it runs on the .NET 8 SDK or later. Generated clients and contract packages also work with .NET 8 and later.
 
 ### Does ConcordIO work with older .NET versions?
 
-The CLI tool requires .NET 10 to run. However:
+The CLI tool runs on .NET 8 or later. However:
 - MSBuild task packages support .NET 8, 9, and 10
 - Generated clients can target any .NET version that NSwag supports
 - Contract packages are framework-agnostic (content-only)

@@ -234,21 +234,7 @@ jobs:
         with:
           tag_name: v${{ needs.version.outputs.version }}
           name: Release v${{ needs.version.outputs.version }}
-          body: |
-            ## Release v${{ needs.version.outputs.version }}
-
-            This release was automatically created from the main branch.
-
-            ### Packages
-            - ConcordIO.Tool v${{ needs.version.outputs.version }}
-            - ConcordIO.AsyncApi v${{ needs.version.outputs.version }}
-            - ConcordIO.AsyncApi.Client v${{ needs.version.outputs.version }}
-            - ConcordIO.AsyncApi.Server v${{ needs.version.outputs.version }}
-
-            ### Installation
-            ```bash
-            dotnet tool install --global ConcordIO.Tool --version ${{ needs.version.outputs.version }}
-            ```
+          generate_release_notes: true
           files: |
             ./artifacts/*.nupkg
             ./artifacts/*.snupkg
