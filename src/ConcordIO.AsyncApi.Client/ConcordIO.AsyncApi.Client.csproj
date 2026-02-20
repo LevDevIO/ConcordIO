@@ -21,6 +21,7 @@
     <Description>MSBuild integration for generating C# contract types from AsyncAPI specifications at build time. Generates proper namespaces, cross-references, and detects external types.</Description>
     <PackageTags>asyncapi;masstransit;contracts;messaging;codegen;client</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIconUrl>https://raw.githubusercontent.com/LevDevIO/ConcordIO/main/docs/assets/levdev-mid-nobackground.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/LevDevIO/ConcordIO</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
