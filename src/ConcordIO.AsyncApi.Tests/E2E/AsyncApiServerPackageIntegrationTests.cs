@@ -467,6 +467,7 @@ public class AsyncApiServerPackageIntegrationTests
 			WorkingDirectory = workingDir,
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
+			RedirectStandardInput = false,
 			UseShellExecute = false,
 			CreateNoWindow = true
 		};
@@ -484,6 +485,8 @@ public class AsyncApiServerPackageIntegrationTests
 		try
 		{
 			await process.WaitForExitAsync(cts.Token);
+			// Ensure all streams are fully consumed before continuing
+			await Task.WhenAll(outputTask, errorTask);
 		}
 		catch (OperationCanceledException)
 		{

@@ -104,6 +104,7 @@ public class AsyncApiPackageFixture : IAsyncLifetime
 			WorkingDirectory = workingDir,
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
+			RedirectStandardInput = false,
 			UseShellExecute = false,
 			CreateNoWindow = true
 		};
@@ -120,6 +121,8 @@ public class AsyncApiPackageFixture : IAsyncLifetime
 		try
 		{
 			await process.WaitForExitAsync(cts.Token);
+			// Ensure all streams are fully consumed before continuing
+			await Task.WhenAll(outputTask, errorTask);
 		}
 		catch (OperationCanceledException)
 		{
