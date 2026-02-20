@@ -340,8 +340,7 @@ BookStoreApi/
 │   │   ├── Models/
 │   │   │   └── Book.cs
 │   │   └── BookStore.Api.csproj
-│   ├── BookStore.Contracts/        # Generated spec packaging
-│   │   └── BookStore.Contracts.csproj
+│   ├── BookStore.Contracts/        # Generated spec packaging output
 │   └── BookStore.Consumer/         # Client consumer
 │       └── BookStore.Consumer.csproj
 ```
@@ -573,19 +572,10 @@ This generates `obj/Debug/net10.0/BookStore.Api.json` automatically!
 
 ### Step 4: Package the Generated Spec
 
-Create `src/BookStore.Contracts/BookStore.Contracts.csproj`:
-
-```xml
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <!-- Don't build this project, just use for packaging -->
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
-</Project>
-```
+Create the output folder:
 
 ```bash
+mkdir src/BookStore.Contracts
 cd src/BookStore.Contracts
 
 # Use the generated spec from the API project
@@ -598,7 +588,8 @@ concordio pack \
 ```
 
 Output:
-```
+
+```text
 ✓ Contoso.BookStore.Api.1.0.0.nupkg
 ✓ Contoso.BookStore.Api.Client.1.0.0.nupkg
 ```

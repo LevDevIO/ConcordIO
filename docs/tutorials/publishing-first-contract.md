@@ -2,8 +2,8 @@
 
 This step-by-step tutorial walks you through publishing an OpenAPI contract as a NuGet package using ConcordIO.
 
-**Time Required**: 15 minutes  
-**Prerequisites**: 
+**Time Required**: 15 minutes
+**Prerequisites**:
 - .NET 10 SDK installed
 - A NuGet feed (can be local for testing)
 - Basic familiarity with OpenAPI
@@ -16,6 +16,8 @@ This step-by-step tutorial walks you through publishing an OpenAPI contract as a
 - How to version your contracts
 
 ## Step 1: Create Your API Specification
+
+> **Note:** Instead of manually writing OpenAPI specs, use **Microsoft.Extensions.ApiDescription.Server** to automatically generate specs from your ASP.NET Core API at build time, then package them with ConcordIO.
 
 Let's create a simple API for managing books.
 
