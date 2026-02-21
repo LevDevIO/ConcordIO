@@ -126,11 +126,11 @@ jobs:
             /p:PackageVersion=${{ needs.version.outputs.version }}
 
       - name: Run E2E tests
-        run: dotnet test src/ConcordIO.Tool.Tests/ConcordIO.Tool.Tests.csproj --no-build --filter "FullyQualifiedName~E2E"
+        run: dotnet test src/ConcordIO.Tool.Tests/ConcordIO.Tool.Tests.csproj --no-build --filter "FullyQualifiedName~E2E" -- xunit.parallelizeTestCollections=false
 
   e2e-asyncapi-tests:
     name: E2E Tests (AsyncApi)
-    needs: [version, build-and-test]
+    needs: [version, build-and-test, e2e-tool-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -155,7 +155,7 @@ jobs:
             /p:PackageVersion=${{ needs.version.outputs.version }}
 
       - name: Run E2E tests
-        run: dotnet test src/ConcordIO.AsyncApi.Tests/ConcordIO.AsyncApi.Tests.csproj --no-build --filter "FullyQualifiedName~E2E"
+        run: dotnet test src/ConcordIO.AsyncApi.Tests/ConcordIO.AsyncApi.Tests.csproj --no-build --filter "FullyQualifiedName~E2E" -- xunit.parallelizeTestCollections=false
 
   pack:
     name: Pack NuGet Packages

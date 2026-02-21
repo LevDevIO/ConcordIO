@@ -283,7 +283,7 @@ public class TestContext : IDisposable
 /// <summary>
 /// Collection definition for integration tests that share the fixture.
 /// </summary>
-[CollectionDefinition(Name)]
+[CollectionDefinition(Name, DisableParallelization = true)]
 public class IntegrationTestCollection : ICollectionFixture<IntegrationTestFixture>
 {
 	public const string Name = "Integration Tests";

@@ -63,10 +63,11 @@ jobs:
         run: dotnet build src/ConcordIO.Tool.sln --no-restore
 
       - name: Run E2E tests
-        run: dotnet test src/ConcordIO.Tool.Tests/ConcordIO.Tool.Tests.csproj --no-build --filter "FullyQualifiedName~E2E"
+        run: dotnet test src/ConcordIO.Tool.Tests/ConcordIO.Tool.Tests.csproj --no-build --filter "FullyQualifiedName~E2E" -- xunit.parallelizeTestCollections=false
 
   e2e-asyncapi-tests:
     name: E2E Tests (AsyncApi)
+    needs: e2e-tool-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -87,4 +88,4 @@ jobs:
         run: dotnet build src/ConcordIO.Tool.sln --no-restore
 
       - name: Run E2E tests
-        run: dotnet test src/ConcordIO.AsyncApi.Tests/ConcordIO.AsyncApi.Tests.csproj --no-build --filter "FullyQualifiedName~E2E"
+        run: dotnet test src/ConcordIO.AsyncApi.Tests/ConcordIO.AsyncApi.Tests.csproj --no-build --filter "FullyQualifiedName~E2E" -- xunit.parallelizeTestCollections=false
