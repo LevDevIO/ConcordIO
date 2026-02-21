@@ -277,26 +277,47 @@ jobs:
 
   publish-nuget-org:
     name: Publish to NuGet.org
-    # Depends on check_tag (instead of release) so this job can run even when the
-    # release job is skipped because the tag already exists (e.g. a follow-up push
-    # after the release was already created).
-    needs: [version, pack, check_tag]
+    # 'release' is kept in needs so that a failed release job blocks publishing.
+    # 'if: always()' is required to allow the job to run when 'release' is skipped
+    # (i.e. the tag already existed), while still blocking it when 'release' fails.
+    needs: [version, pack, check_tag, release]
     runs-on: ubuntu-latest
     # Publish to NuGet.org if the version is stable AND one of the following:
     # a) Manual workflow_dispatch with publish_to_nuget_org enabled (original behaviour).
-    # b) Push event where the release tag already exists — allows re-publishing an
-    #    existing release without needing to re-create it.
+    # b) Push event where the release tag already exists — the release was previously
+    #    created and we need to push it to NuGet.org (e.g. after a prior publish failure).
+    #    In this case we download from the GitHub release assets rather than the pack
+    #    job artifacts, ensuring the published packages match the tagged release commit.
     if: |
+      always() &&
+      needs.version.result == 'success' &&
+      needs.pack.result == 'success' &&
+      needs.check_tag.result == 'success' &&
+      (needs.release.result == 'success' || needs.release.result == 'skipped') &&
       needs.version.outputs.preReleaseTag == '' && (
         (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to_nuget_org == 'true') ||
         (github.event_name == 'push' && needs.check_tag.outputs.tag_exists == 'true')
       )
     steps:
-      - name: Download artifacts
+      # For workflow_dispatch, use the freshly packed artifacts from the pack job.
+      - name: Download artifacts (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/download-artifact@v4
         with:
           name: nuget-packages
           path: ./artifacts
+
+      # For push + existing tag, download release assets so the published packages
+      # match the tagged release commit rather than the current follow-up commit.
+      - name: Download release assets (push with existing tag)
+        if: github.event_name == 'push' && needs.check_tag.outputs.tag_exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p ./artifacts
+          gh release download "v${{ needs.version.outputs.version }}" \
+            --dir ./artifacts \
+            --repo "${{ github.repository }}"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
