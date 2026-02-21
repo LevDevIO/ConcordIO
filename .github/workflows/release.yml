@@ -130,7 +130,7 @@ jobs:
 
   e2e-asyncapi-tests:
     name: E2E Tests (AsyncApi)
-    needs: [version, build-and-test]
+    needs: [version, build-and-test, e2e-tool-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
