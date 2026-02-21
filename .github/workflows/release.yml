@@ -19,6 +19,7 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write  # Required for trusted publishing to NuGet.org
 
 jobs:
   version:
@@ -297,20 +298,26 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Publish to NuGet.org
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: nuget_login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Publish to NuGet.org (trusted publishing)
         run: |
           for package in ./artifacts/*.nupkg; do
             echo "Publishing $package to NuGet.org"
             dotnet nuget push "$package" \
-              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --api-key ${{ steps.nuget_login.outputs.NUGET_API_KEY }} \
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
           for symbols in ./artifacts/*.snupkg; do
             echo "Publishing $symbols to NuGet.org"
             dotnet nuget push "$symbols" \
-              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --api-key ${{ steps.nuget_login.outputs.NUGET_API_KEY }} \
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
-          # NuGet.org requires symbol packages to be pushed explicitly
+          # Using trusted publishing: OIDC token → temporary API key via NuGet/login action
